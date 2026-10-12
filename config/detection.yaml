@@ -1,0 +1,31 @@
+# Default detection parameters (project spec 4.4: thresholds and parameters must be configurable).
+# Owner: Member 2. Values below are placeholders - tune them with the simulator in week 5
+# (threshold sweep, test case DQ-04 in Docs/TestPlan).
+
+windows_s: [1, 10, 60]
+
+rules:
+  port_scan:
+    window_s: 10
+    unique_dst_ports_threshold: 100
+  dos:
+    window_s: 1
+    connections_to_target_threshold: 500
+  brute_force:
+    window_s: 60
+    attempts_same_service_threshold: 50
+    services: [22, 3389, 21, 23]
+  abnormal_pattern:
+    window_s: 60
+    baseline_window_s: 600
+
+statistical:
+  method: zscore           # or isolation_forest
+  zscore_threshold: 3.0
+  min_baseline_windows: 10
+
+severity:                  # ratio = observed / threshold
+  LOW: 1.0
+  MEDIUM: 1.5
+  HIGH: 3.0
+  CRITICAL: 5.0

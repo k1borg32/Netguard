@@ -1,0 +1,16 @@
+# Repo-level tool config only (each service/lib has its own deps).
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["services/processor", "services/simulator", "services/persister"]
+addopts = "-m \"not integration\""
+markers = ["integration: needs the running stack (make up)"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["netguard_common"]

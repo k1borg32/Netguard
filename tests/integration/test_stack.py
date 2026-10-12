@@ -1,0 +1,46 @@
+"""Integration tests against the running stack (`make up`, then `make test-int`).
+CI runs these after `docker compose up`."""
+
+import json
+import os
+import time
+import urllib.request
+
+import pytest
+
+pytestmark = pytest.mark.integration
+API = os.getenv("API_URL", "http://localhost:8000")
+
+
+def _get(path):
+    with urllib.request.urlopen(API + path, timeout=5) as r:
+        return json.loads(r.read())
+
+
+def test_api_healthy():
+    assert _get("/health")["status"] == "ok"
+
+
+def test_port_scan_reaches_api():
+    """Thin end-to-end path: simulator -> broker -> processor -> broker -> persister -> DB -> API."""
+    from simulator import port_scan_flow
+
+    from netguard_common import topics
+    from netguard_common.broker import encode, make_producer
+
+    os.environ.setdefault("BROKER_BOOTSTRAP", "localhost:19092")
+    p = make_producer()
+    now = time.time()
+    attacker = f"10.99.{int(now) % 250}.{int(now * 10) % 250}"
+    for port in range(1, 301):
+        f = port_scan_flow(now, attacker, "10.1.0.1")
+        f["dst_port"] = port
+        p.produce(topics.FLOWS_RAW, key=attacker, value=encode(f))
+    p.flush(10)
+
+    deadline = time.time() + 40
+    while time.time() < deadline:
+        if any(d["src_ip"] == attacker for d in _get("/api/v1/detections?limit=200")):
+            return
+        time.sleep(2)
+    pytest.fail(f"no detection for {attacker} within 40 s")
