@@ -1,0 +1,43 @@
+@startuml
+title NetGuard - Network Traffic Processing
+
+autonumber
+
+actor "End User / Developer" as User
+participant "Dashboard" as UI
+participant "REST API" as API
+participant "PCAP Importer / Simulator" as Source
+queue "Message Broker" as Broker
+participant "Flow Processor" as Processor
+participant "Detection Engine" as Detector
+database "Database" as DB
+
+User -> UI: Start PCAP import / simulation
+UI -> API: Start processing
+API -> Source: Initiate data ingestion
+
+loop For each network packet
+    Source -> Broker: Publish packet event
+    Broker -> Processor: Deliver packet
+    Processor -> Processor: Update network flow statistics
+end
+
+Processor -> Detector: Submit network flows
+Detector -> Detector: Analyze time windows
+Detector -> Detector: Apply rules and statistical/ML methods
+
+alt Anomaly detected
+    Detector -> Detector: Classify anomaly and generate evidence
+    Detector -> DB: Store detection result and alert
+else Normal traffic
+    Detector -> DB: Store processed flow data
+end
+
+User -> UI: View monitoring dashboard
+UI -> API: GET /api/alerts and /api/statistics
+API -> DB: Query alerts and statistics
+DB --> API: Results
+API --> UI: Response
+UI --> User: Display alerts and network statistics
+
+@enduml

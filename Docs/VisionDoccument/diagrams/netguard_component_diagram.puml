@@ -1,0 +1,47 @@
+
+@startuml
+title Netguard - Component Diagram
+
+skinparam componentStyle rectangle
+skinparam shadowing false
+left to right direction
+
+package "Data Sources" {
+    component "PCAP Importer" as PCAP
+    component "Traffic Simulator" as Simulator
+}
+
+package "Message Infrastructure" {
+    queue "Message Broker" as Broker
+}
+
+package "Traffic Analysis" {
+    component "Flow Processor" as Flow
+    component "Detection Engine" as Detection
+}
+
+package "Backend & Storage" {
+    database "Database" as DB
+    component "REST API" as API
+}
+
+package "Presentation" {
+    component "Monitoring Dashboard" as Dashboard
+}
+
+PCAP --> Broker : Network packets
+Simulator --> Broker : Synthetic traffic
+
+Broker --> Flow : Packet events
+
+Flow --> Detection : Network flows
+Flow --> DB : Persist flows
+
+Detection --> DB : Persist anomalies / alerts
+
+Dashboard --> API : HTTP / REST
+API --> DB : Query flows / alerts / statistics
+DB --> API : Query results
+API --> Dashboard : JSON responses
+
+@enduml

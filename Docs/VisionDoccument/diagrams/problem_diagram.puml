@@ -1,0 +1,74 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+skinparam rectangle {
+    RoundCorner 10
+}
+
+
+actor "Network Operator" as Operator
+
+rectangle "Network Environment" {
+    rectangle "Network Traffic" as Traffic
+    rectangle "Large Volume of Events" as Volume
+    rectangle "Multiple Connections\nin Time Windows" as TimeContext
+}
+
+rectangle "Problem" {
+    rectangle "Manual Analysis\nis inefficient" as ManualAnalysis
+    rectangle "Suspicious activity\nis hard to detect directly" as DetectionDifficulty
+}
+
+rectangle "NetGuard System" {
+    rectangle "Traffic Analysis" as Analysis
+    rectangle "Time-Window Correlation" as Correlation
+    rectangle "Anomaly Detection" as Detection
+}
+
+rectangle "Detected Anomaly Types" {
+    rectangle "Port Scanning" as PortScan
+    rectangle "DoS / DDoS-like Traffic" as Dos
+    rectangle "Brute-force Patterns" as Brute
+    rectangle "Abnormal Traffic Rates" as Abnormal
+    rectangle "Suspicious Connection Patterns" as Suspicious
+}
+
+rectangle "System Output" {
+    rectangle "Alerts" as Alerts
+    rectangle "Detection Evidence" as Evidence
+    rectangle "Monitoring Support" as Monitoring
+}
+
+Traffic --> Volume
+Traffic --> TimeContext
+
+Volume --> ManualAnalysis
+TimeContext --> DetectionDifficulty
+
+ManualAnalysis --> Analysis
+DetectionDifficulty --> Correlation
+
+Analysis --> Detection
+Correlation --> Detection
+
+Detection --> PortScan
+Detection --> Dos
+Detection --> Brute
+Detection --> Abnormal
+Detection --> Suspicious
+
+PortScan --> Alerts
+Dos --> Alerts
+Brute --> Alerts
+Abnormal --> Alerts
+Suspicious --> Alerts
+
+Detection --> Evidence
+Alerts --> Monitoring
+
+Operator --> Monitoring
+Operator --> Alerts
+Operator --> Evidence
+
+@enduml
