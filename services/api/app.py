@@ -37,4 +37,6 @@ def detections(limit: int = Query(50, ge=1, le=500)) -> list[dict]:
         return c.execute(
             "SELECT detection_id, created_at, type, method, severity, confidence, host(src_ip) AS src_ip, "
             "host(dst_ip) AS dst_ip, window_size_s, features, explanation FROM detections "
-            "ORDER BY created_at DESC LIMIT %s", (limit,)).fetchall()
+            "ORDER BY created_at DESC LIMIT %s",
+            (limit,),
+        ).fetchall()

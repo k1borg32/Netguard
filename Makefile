@@ -1,12 +1,19 @@
-# Windows users: run these from Git Bash or WSL, or copy the command after the colon.
-.PHONY: help setup up down reset logs ps sim perf scale kill-one test test-unit test-int lint trace
+# Windows: install make once (winget install ezwinports.make) and run it from Git Bash,
+# or copy the command under a target and run it directly.
+.PHONY: help setup up down reset logs ps sim perf scale kill-one test test-unit test-int coverage lint format trace
+
+ifeq ($(OS),Windows_NT)
+VENV_BIN := .venv/Scripts
+else
+VENV_BIN := .venv/bin
+endif
 
 help:            ## Show targets
 	@grep -E '^[a-z-]+:.*##' Makefile | sed 's/:.*##/ -/'
 
 setup:           ## First-time: create .env and a local venv with dev tools
 	@test -f .env || cp .env.example .env
-	python -m venv .venv && .venv/bin/pip install -e "libs/common[kafka]" -r requirements-dev.txt
+	python -m venv .venv && $(VENV_BIN)/python -m pip install -e "libs/common[kafka]" -r requirements-dev.txt
 
 up:              ## Start the whole platform
 	@test -f .env || cp .env.example .env
@@ -30,22 +37,30 @@ sim:             ## Run simulator at normal rate (Ctrl+C to stop)
 perf:            ## NFR01 load: 5000 flows/s for 5 min
 	docker compose --profile sim run --rm -e SIM_RATE=5000 -e SIM_DURATION_S=300 simulator
 
-scale:           ## NFR03: three processor instances
-	docker compose up -d --scale processor=3
+scale:           ## NFR03: three processor instances (--no-deps: don't touch DB/broker)
+	docker compose up -d --no-deps --scale processor=3 processor
 
 kill-one:        ## NFR04: kill one processor instance mid-run
 	docker kill $$(docker compose ps -q processor | head -1)
 
 trace:           ## F15: follow one event, e.g. make trace ID=<trace_id>
+	@test -n "$(ID)" || (echo "usage: make trace ID=<trace_id>" && exit 1)
 	docker compose logs --no-color | grep $(ID)
 
 test: test-unit  ## Run unit tests
 
 test-unit:
-	pytest -m "not integration" -q
+	pytest -q
 
 test-int:        ## Integration tests (needs `make up` first)
 	pytest -m integration -q
 
-lint:
+coverage:        ## Unit tests with a coverage report
+	pytest -q --cov --cov-report=term-missing
+
+lint:            ## Lint + formatting check (same as CI)
 	ruff check .
+	ruff format --check .
+
+format:          ## Apply ruff formatting
+	ruff format .

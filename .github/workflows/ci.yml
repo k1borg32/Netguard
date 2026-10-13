@@ -21,9 +21,11 @@ jobs:
       - name: Install
         run: pip install -e "libs/common[kafka]" -r requirements-dev.txt
       - name: Lint
-        run: ruff check .
+        run: |
+          ruff check .
+          ruff format --check .
       - name: Unit tests
-        run: pytest -m "not integration" -q --junitxml=results/unit.xml
+        run: pytest -q --junitxml=results/unit.xml --cov --cov-report=term-missing --cov-report=xml:results/coverage.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:

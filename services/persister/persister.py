@@ -18,8 +18,23 @@ from netguard_common import get_logger, setup_logging, topics
 
 log = get_logger("persister")
 
-FLOW_COLS = ("flow_id", "trace_id", "ingested_at", "ts_start", "duration_ms", "src_ip", "dst_ip",
-             "src_port", "dst_port", "protocol", "packets", "bytes", "tcp_flags", "source", "label")
+FLOW_COLS = (
+    "flow_id",
+    "trace_id",
+    "ingested_at",
+    "ts_start",
+    "duration_ms",
+    "src_ip",
+    "dst_ip",
+    "src_port",
+    "dst_port",
+    "protocol",
+    "packets",
+    "bytes",
+    "tcp_flags",
+    "source",
+    "label",
+)
 
 
 def flow_row(f: dict) -> tuple:
@@ -27,9 +42,23 @@ def flow_row(f: dict) -> tuple:
 
 
 def detection_row(d: dict) -> tuple:
-    return (d["detection_id"], d["created_at"], d["first_ingested_at"], d["type"], d["method"], d["severity"],
-            d["confidence"], d["src_ip"], d["dst_ip"], d["window"]["size_s"], d["window"]["start"],
-            d["window"]["end"], json.dumps(d["features"]), d["explanation"], d["trace_ids"])
+    return (
+        d["detection_id"],
+        d["created_at"],
+        d["first_ingested_at"],
+        d["type"],
+        d["method"],
+        d["severity"],
+        d["confidence"],
+        d["src_ip"],
+        d["dst_ip"],
+        d["window"]["size_s"],
+        d["window"]["start"],
+        d["window"]["end"],
+        json.dumps(d["features"]),
+        d["explanation"],
+        d["trace_ids"],
+    )
 
 
 def main() -> None:
@@ -42,12 +71,13 @@ def main() -> None:
     log.info("persister started")
 
     placeholders = ["to_timestamp(%s)" if c in ("ingested_at", "ts_start") else "%s" for c in FLOW_COLS]
-    flow_sql = (f"INSERT INTO flows ({','.join(FLOW_COLS)}) VALUES ({','.join(placeholders)}) "
-                "ON CONFLICT DO NOTHING")
-    det_sql = ("INSERT INTO detections (detection_id, created_at, first_ingested_at, type, method, severity, "
-               "confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, trace_ids) "
-               "VALUES (%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), "
-               "to_timestamp(%s), %s, %s, %s) ON CONFLICT (detection_id) DO NOTHING")
+    flow_sql = f"INSERT INTO flows ({','.join(FLOW_COLS)}) VALUES ({','.join(placeholders)}) ON CONFLICT DO NOTHING"
+    det_sql = (
+        "INSERT INTO detections (detection_id, created_at, first_ingested_at, type, method, severity, "
+        "confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, trace_ids) "
+        "VALUES (%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), "
+        "to_timestamp(%s), %s, %s, %s) ON CONFLICT (detection_id) DO NOTHING"
+    )
 
     while True:
         flows, dets = [], []

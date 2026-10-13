@@ -23,11 +23,13 @@ importer  --+    key = src_ip      +--------------------------------------+
 | Dashboard | nginx (placeholder, React later) | 3000 |
 | Broker UI (optional) | Redpanda Console | 8081 |
 
+All ports are published on `127.0.0.1` only, so the DB and broker (no real auth in dev) are not reachable from your network.
+
 ## Requirements
 
 - Docker Desktop (or Docker Engine) with Compose v2, **at least 6 GB RAM** given to Docker
-- Python 3.11+ for running tests locally
-- `make` (Linux/macOS; on Windows use Git Bash/WSL or run the commands from the Makefile by hand)
+- Python 3.12 for running tests locally (same version as CI and the containers)
+- `make` is optional. On Windows: `winget install ezwinports.make` and use Git Bash, or run the commands below directly.
 
 ## Run it (NFR05 - one procedure)
 
@@ -37,10 +39,18 @@ docker compose up -d --build
 make sim                  # start traffic, Ctrl+C to stop
 ```
 
+Windows PowerShell, without make:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up -d --build
+docker compose --profile sim run --rm simulator
+```
+
 Open http://localhost:3000 - port-scan detections appear within ~15 s.
 API docs: http://localhost:8000/docs. Broker UI: `docker compose --profile debug up -d`, then http://localhost:8081.
 
-Stop: `make down`. Wipe all data: `make reset`.
+Stop: `make down`. Wipe all data: `make reset` (`docker compose down -v`).
 
 ## Configuration
 
@@ -52,24 +62,48 @@ Stop: `make down`. Wipe all data: `make reset`.
 
 ## Tests
 
+What we test, how and when is described in the [test plan](Docs/TestPlan/README.md).
+
 ```bash
-make setup         # venv + dev tools
-make test          # unit tests (no Docker needed)
+make setup                 # venv + dev tools
+make test                  # unit tests (no Docker needed)
 make up && make test-int   # integration tests against the running stack
-make lint
+make coverage              # unit tests + coverage report
+make lint                  # ruff lint + format check, same as CI
 ```
 
-CI (GitHub Actions) runs lint, unit tests, a secrets scan, and integration tests with the full stack on every PR.
+Without make (activate the venv first: `.venv\Scripts\Activate.ps1` on Windows, `source .venv/bin/activate` elsewhere):
+
+```bash
+python -m venv .venv
+pip install -e "libs/common[kafka]" -r requirements-dev.txt
+pytest                     # unit tests
+pytest -m integration      # integration tests, stack must be running
+ruff check . && ruff format --check .
+```
+
+CI (GitHub Actions) runs lint, unit tests with coverage, a secrets scan, and integration tests with the full stack
+on every PR.
 
 ## Demo commands
 
 | Requirement | Command |
 |---|---|
-| NFR01 load (5,000 flows/s, 5 min) | `make perf` |
+| NFR01 load (5,000 flows/s, 5 min) | `make perf` (generates the load; measuring is part of the performance tests) |
 | NFR03 scaling | `make scale` (3 processor instances) |
-| NFR04 resilience | `make kill-one` while `make sim` runs - detections keep coming |
+| NFR04 resilience | `make kill-one` while `make sim` runs - detections keep coming. The killed container stays down (`docker kill` counts as a manual stop); the others take over its partitions within ~10 s. |
 | F15 traceability | copy a `trace_id` from a detection, `make trace ID=<id>` |
 
-## Team conventions
+## Troubleshooting
 
-See [`Docs/CONVENTIONS.md`](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done.
+- **DB container gets recreated "for no reason" (Windows).** Compose turns `./db/init` into an absolute path, and
+  `d:\netguard` vs `D:\netguard` counts as a different config. VS Code terminals often use the lowercase drive letter,
+  PowerShell the uppercase one. Stick to one terminal, or use `make scale` (it only touches the processor).
+- **Port already in use** (5432, 8000, 3000): something else is running on that port, e.g. a local PostgreSQL.
+  Stop it or change the left side of the port mapping in `docker-compose.yml`.
+
+## Docs
+
+- [Vision Document](Docs/VisionDoccument/README.md) - requirements F01-F15, NFR01-NFR10
+- [Test Plan](Docs/TestPlan/README.md)
+- [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

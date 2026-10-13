@@ -2,8 +2,11 @@
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["services/processor", "services/simulator", "services/persister"]
-addopts = "-m \"not integration\""
+addopts = "--strict-markers -m \"not integration\""
 markers = ["integration: needs the running stack (make up)"]
+
+[tool.coverage.run]
+source = ["libs/common/src", "services"]
 
 [tool.ruff]
 line-length = 120

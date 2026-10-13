@@ -5,9 +5,9 @@ All flows from one source land on one partition -> one processor instance,
 so per-source time windows stay correct when the processor is scaled (NFR03).
 """
 
-FLOWS_RAW = "flows.raw"            # importer + simulator -> processor   (key: src_ip)
-DETECTIONS = "detections"          # processor -> alert/persister        (key: detection_id)
-DEAD_LETTER = "flows.deadletter"   # anything that failed validation      (key: none)
+FLOWS_RAW = "flows.raw"  # importer + simulator -> processor   (key: src_ip)
+DETECTIONS = "detections"  # processor -> alert/persister        (key: detection_id)
+DEAD_LETTER = "flows.deadletter"  # anything that failed validation      (key: none)
 
 PARTITIONS = {
     FLOWS_RAW: 6,

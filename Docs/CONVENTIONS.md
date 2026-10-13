@@ -2,6 +2,16 @@
 
 ## 1. Repo layout
 
+M1-M5 are the roles from the project spec (section 9):
+
+| Role | Who | Area |
+|---|---|---|
+| M1 | Valeriia | Network Data & Flow Processing |
+| M2 | Kuzma | Anomaly Detection & Algorithms |
+| M3 | Jakub | Backend & Data Storage |
+| M4 | Daniyar | Frontend & Visualization |
+| M5 | Vlad | Infrastructure, Testing & DevOps |
+
 | Path | Owner | What |
 |---|---|---|
 | `libs/common/` | M5 | Shared schemas, logging, broker helpers. **Every service uses it.** |
@@ -60,4 +70,6 @@ Only in `.env` (git-ignored). `.env.example` holds placeholders. CI runs gitleak
 
 ## 9. Definition of done (per feature)
 
-Code + unit test + runs in `docker compose up` + logs with trace_id + doc line in README if it adds a command.
+Code + unit test + runs in `docker compose up` + logs with trace_id + doc line in README if it adds a command +
+CI green. If a test covers a requirement from the [test plan](TestPlan/README.md), put the test case ID
+(e.g. `IT-02`) in its docstring, so the traceability table stays true.

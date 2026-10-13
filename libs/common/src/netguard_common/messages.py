@@ -53,8 +53,12 @@ def flow_id_for(source_file: str, record_index: int) -> str:
 
 
 def detection_id(
-    det_type: str, method: str, src_ip: str | None, dst_ip: str | None,
-    window_start: float, window_size_s: int,
+    det_type: str,
+    method: str,
+    src_ip: str | None,
+    dst_ip: str | None,
+    window_start: float,
+    window_size_s: int,
 ) -> str:
     """Same detection seen twice (duplicate/redelivered messages) -> same ID -> DB upsert, no duplicate alert."""
     key = f"{det_type}|{method}|{src_ip}|{dst_ip}|{window_start:.3f}|{window_size_s}"

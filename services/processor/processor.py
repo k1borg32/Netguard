@@ -113,8 +113,14 @@ def main() -> None:
                 if det:
                     with trace_context(w.trace_ids[0]):
                         producer.produce(topics.DETECTIONS, key=det["detection_id"], value=encode(det))
-                        log.info("detection", extra={"detection_id": det["detection_id"], "type": det["type"],
-                                                     "latency_s": round(now - det["first_ingested_at"], 3)})
+                        log.info(
+                            "detection",
+                            extra={
+                                "detection_id": det["detection_id"],
+                                "type": det["type"],
+                                "latency_s": round(now - det["first_ingested_at"], 3),
+                            },
+                        )
             producer.poll(0)
             if got:
                 # KNOWN LIMITATION (doc it in test report): offsets are committed before open windows

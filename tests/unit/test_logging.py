@@ -5,6 +5,7 @@ from netguard_common import get_logger, setup_logging, trace_context
 
 
 def test_log_lines_are_json_with_trace_id(capsys):
+    """UT-04"""
     setup_logging("test-svc")
     log = get_logger("t")
     with trace_context("trace-123"):

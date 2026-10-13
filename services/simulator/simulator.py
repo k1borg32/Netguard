@@ -29,14 +29,19 @@ COMMON_PORTS = [80, 443, 53, 22, 3306, 5432, 8080]
 
 
 def normal_flow(now: float) -> dict:
-    return _flow(now, random.choice(CLIENTS), random.choice(SERVERS),
-                 random.choice(COMMON_PORTS), packets=random.randint(4, 60),
-                 flags="SA", label="normal")
+    return _flow(
+        now,
+        random.choice(CLIENTS),
+        random.choice(SERVERS),
+        random.choice(COMMON_PORTS),
+        packets=random.randint(4, 60),
+        flags="SA",
+        label="normal",
+    )
 
 
 def port_scan_flow(now: float, attacker: str, target: str) -> dict:
-    return _flow(now, attacker, target, random.randint(1, 65535),
-                 packets=1, flags="S", label="port_scan")
+    return _flow(now, attacker, target, random.randint(1, 65535), packets=1, flags="S", label="port_scan")
 
 
 def _flow(now: float, src: str, dst: str, dport: int, packets: int, flags: str, label: str) -> dict:

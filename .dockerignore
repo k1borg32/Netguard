@@ -1,0 +1,14 @@
+# Build context = repo root. Images only need libs/common, services/<name> and config/.
+.git
+.github
+.venv
+.env
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+**/node_modules
+Docs
+tests
+data
+results

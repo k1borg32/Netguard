@@ -18,11 +18,12 @@ def _get(path):
 
 
 def test_api_healthy():
+    """IT-01"""
     assert _get("/health")["status"] == "ok"
 
 
 def test_port_scan_reaches_api():
-    """Thin end-to-end path: simulator -> broker -> processor -> broker -> persister -> DB -> API."""
+    """IT-02: Thin end-to-end path: simulator -> broker -> processor -> broker -> persister -> DB -> API."""
     from simulator import port_scan_flow
 
     from netguard_common import topics

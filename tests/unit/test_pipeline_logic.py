@@ -9,11 +9,13 @@ T0 = 1_760_000_000.0  # aligned to a 10 s boundary
 
 
 def test_simulator_flows_match_schema():
+    """UT-05"""
     for f in generate(["normal", "port_scan"], 500, T0):
         validate_flow(f)
 
 
 def test_port_scan_detected_and_valid():
+    """UT-07"""
     ws = WindowState(size_s=10)
     for _ in range(300):
         ws.add(port_scan_flow(T0 + 1, "10.66.6.6", "10.1.0.1"))
@@ -29,6 +31,7 @@ def test_port_scan_detected_and_valid():
 
 
 def test_normal_traffic_no_detection():
+    """UT-08"""
     ws = WindowState(size_s=10)
     for _ in range(2000):
         ws.add(normal_flow(T0 + 1))
@@ -37,6 +40,7 @@ def test_normal_traffic_no_detection():
 
 
 def test_open_window_not_closed_early():
+    """UT-06"""
     ws = WindowState(size_s=10, grace_s=1)
     ws.add(port_scan_flow(T0 + 5, "10.66.6.6", "10.1.0.1"))
     assert ws.pop_closed(now=T0 + 10.5) == []
@@ -44,12 +48,15 @@ def test_open_window_not_closed_early():
 
 
 def test_duplicate_flows_give_same_detection_id():
+    """UT-09"""
+
     def run():
         ws = WindowState(size_s=10)
         for p in range(150):
             f = port_scan_flow(T0 + 1, "10.66.6.6", "10.1.0.1")
             f["dst_port"] = p + 1
             ws.add(f)
-        (s, st, w), = ws.pop_closed(T0 + 12)
+        ((s, st, w),) = ws.pop_closed(T0 + 12)
         return port_scan_rule(s, st, w, 10, 100, T0 + 12)["detection_id"]
+
     assert run() == run()
