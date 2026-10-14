@@ -104,6 +104,6 @@ on every PR.
 
 ## Docs
 
-- [Vision Document](Docs/VisionDoccument/README.md) - requirements F01-F15, NFR01-NFR10
+- [Vision Document](Docs/VisionDoccument/README.md) - requirements F01-F17, NFR01-NFR11
 - [Test Plan](Docs/TestPlan/README.md)
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

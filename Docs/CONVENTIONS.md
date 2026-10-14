@@ -16,7 +16,7 @@ M1-M5 are the roles from the project spec (section 9):
 |---|---|---|
 | `libs/common/` | M5 | Shared schemas, logging, broker helpers. **Every service uses it.** |
 | `services/importer/` | M1 | PCAP / flow-file import + normalisation (week 3) |
-| `services/simulator/` | M1 (load mode: M5) | Synthetic traffic + 4 scenarios |
+| `services/simulator/` | M1 (load mode: M5) | Synthetic traffic + 5 scenarios |
 | `services/processor/` | M2 | Windows, rules, statistical method |
 | `services/persister/`, `services/api/`, `db/` | M3 | Persistence, classification, REST API |
 | `services/dashboard/` | M4 | React dashboard |
