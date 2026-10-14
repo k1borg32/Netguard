@@ -1,13 +1,13 @@
-# NetGuard - Test Plan v0.1
+# NetGuard - Test Plan v0.2
 
-Preliminary version, week 1 (2026-10-14). Owner: Vlad (M5, Infrastructure, Testing & DevOps).
+Preliminary version, week 1 (2026-10-14), updated for Vision v1.1. Owner: Vlad (M5, Infrastructure, Testing & DevOps).
 Next updates: week 2 (after the architecture document) and week 5 (after the first version of the detection engine).
 
 ## 1. Introduction
 
 This plan describes what we test in NetGuard, how, where, when and who does it, and when a part counts as done.
 It follows section 14 of the project specification and covers the requirements from the
-[Vision Document](../VisionDoccument/README.md) (F01-F15, NFR01-NFR10).
+[Vision Document](../VisionDoccument/README.md) (v1.1: F01-F17, NFR01-NFR11).
 
 Testing is part of development, not a phase at the end. Every feature comes with its tests (definition of done in
 [CONVENTIONS](../CONVENTIONS.md)), CI runs them on every pull request, and results go into the test report during the
@@ -38,9 +38,8 @@ References:
 
 ### 2.2 In scope
 
-All functional requirements F01-F15 and non-functional requirements NFR01-NFR10. Section 11 maps every requirement
-to test cases. Where the Vision document and the project specification differ, we test against the
-specification, because that is what the project is graded on.
+All functional requirements F01-F17 and non-functional requirements NFR01-NFR11 from Vision v1.1. Section 11 maps
+every requirement to test cases.
 
 ### 2.3 Out of scope
 
@@ -104,7 +103,7 @@ the demo checklist by hand on a clean clone of the repository.
 
 ### 3.6 Detection quality tests
 
-Spec 15 asks for precision, recall and F1 on a common test set.
+NFR11 asks for precision, recall and F1 per class on a common labelled test set.
 
 **Ground truth.** Every simulated flow has a `label`. On top of that the simulator writes a manifest of attack
 episodes: class, attacker IP(s), target IP(s), start and end time. For PCAP datasets we write the manifest by hand from
@@ -131,7 +130,7 @@ positive / false negative of the final run the reason (threshold, window boundar
 **Threshold sweep.** For the main threshold of every rule we plot precision and recall over a range of values (for
 example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 
-**Proposed targets** (to be revisited in week 5, after the first measurement):
+**Targets** (NFR11, reviewed in week 5 after the first measurement):
 
 - port scan, DoS, brute force (rule based): precision >= 0.90 and recall >= 0.90 on the synthetic set
 - macro F1 >= 0.80 over all five attack classes on the synthetic set
@@ -143,17 +142,17 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 **Metrics:**
 
 - throughput: flows/s accepted (sent to `flows.raw`), processed and stored
-- detection latency (NFR02, spec 15): time from the moment the data needed for a detection is in the system until
-  the detection is created. See risk R2: the current code measures from the first flow of the window, which makes
-  3 s impossible for 10 s and 60 s windows. Proposal: `latency = created_at - last_ingested_at` (decision in week 2)
+- detection latency (NFR02): from the ingestion of the last flow that contributed to a detection until the detection
+  is created, so `created_at - last_ingested_at`. The detection contract doesn't have `last_ingested_at` yet
+  (risk R2)
 - p50 / p95 / p99 / max of the latency
 - consumer lag of the processor and persister groups, sampled every 5 s. Lag that keeps growing means the system
   can't keep up
 - CPU and memory per container (`docker stats`, every 5 s)
 - lost or rejected messages and producer delivery errors (logged as "message not delivered")
 
-**Load levels:** 100, 1,000, 5,000 (NFR01) and 10,000 flows/s, then further steps until the system saturates. Spec 15
-mentions up to 50,000 flows/s; we report how far one machine gets. Every level gets 1 min of warm-up (not measured)
+**Load levels (NFR01):** 100, 1,000, 5,000 and 10,000 flows/s, then further steps up to 50,000 flows/s or until the
+system saturates; we report how far one machine gets. Every level gets 1 min of warm-up (not measured)
 and 5 min of measurement. About 2 % attack traffic is mixed in, so detections (and therefore latency values) exist
 during the run. The generator has to reach the requested rate, otherwise the run is invalid. For high rates we run
 several simulator instances.
@@ -258,8 +257,8 @@ generator did not reach the requested rate or something else was running on the 
 
 | Week | Test work |
 |---|---|
-| 1 | test plan v0.1; CI with lint, formatting, unit tests + coverage, gitleaks, integration tests; check of the dev environment (section 10) |
-| 2 | plan updated with the architecture; agree on the latency definition and the detection classes (R2, R7); ground-truth manifest format with M1 and M2 |
+| 1 | test plan v0.1, v0.2 for Vision v1.1; CI with lint, formatting, unit tests + coverage, gitleaks, integration tests; check of the dev environment (section 10) |
+| 2 | plan updated with the architecture; detection contract updated to Vision v1.1: `last_ingested_at` and the six classes (R2, R7); ground-truth manifest format with M1 and M2 |
 | 3 | importer: unit tests, broken PCAPs (SEC-02), PCAP -> flow integration tests (IT-03, IT-05) |
 | 4 | simulator scenario tests; SIM-* datasets; first performance baseline at 100 / 1,000 / 5,000 flows/s (PT-01, PT-02), shown at the mid-term presentation |
 | 5 | detection unit tests; evaluation script; first precision/recall/F1 (DQ-01 to DQ-08); targets revisited |
@@ -280,12 +279,12 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 | ID | Risk / finding | Impact | What we do |
 |---|---|---|---|
 | R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | performance baseline already in week 4; validate everything at the edge (importer, simulator) instead of again in every consumer; batch DB writes; scale the processor |
-| R2 | NFR02 is measured from the *first* flow of a window (`first_ingested_at`). That includes the window length (>= 10 s for a 10 s window), so 3 s can never pass. Spec 15 measures from the moment the data needed for the detection was collected. | NFR02 cannot be met as defined | proposal for week 2: `last_ingested_at` in the detection contract and `latency = created_at - last_ingested_at`; M2 to consider firing a rule as soon as its threshold is crossed |
+| R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: add `last_ingested_at` to the detection contract and to the `detection_latency` view; M2 to consider firing a rule as soon as its threshold is crossed |
 | R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and simulator validate everything they send; consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
 | R4 | Slow failover: after killing one of two processors its partitions waited 44 s (librdkafka default session timeout is 45 s). A crashed persister also blocked its own restart for about 45 s. The CI step "kill one processor" waits only 40 s, so it would fail about half of the time. | NFR04, flaky CI | session timeout lowered to 10 s in `libs/common` (week 1), to be re-measured with RT-01; the persister should close its consumer when it exits (M3) |
 | R5 | The persister crashes when the DB connection drops and does not reconnect (seen when the DB container was recreated). | data not stored until the restart | the restart policy covers it for now; reconnect with backoff in week 6 (M3); RT-04 |
 | R6 | Windows: compose recreated the DB container when started from `d:\netguard` instead of `D:\netguard` (bind-mount paths are part of the configuration). | unexpected restarts during a demo | documented in the README; `make scale` only touches the processor; later the init files can be built into the image |
-| R7 | The detection classes in the contract differ from the spec: no split between abnormal traffic and suspicious connection pattern, no Unknown Anomaly. | per-class quality for the spec classes not possible | to be agreed with the team in week 2 |
+| R7 | The message contract still has the old four detection types, Vision v1.1 has the six classes from the spec (Abnormal Traffic and Suspicious Connection Pattern split, Unknown Anomaly added). | per-class quality for the six classes not possible yet | contract update in week 2, together with R2 |
 | R8 | Performance numbers depend on the laptop. | results not comparable | one fixed machine, conditions recorded |
 | R9 | Flaky integration tests (timing, shared stack). | people start ignoring CI | polling with deadlines, unique data per test, logs uploaded when CI fails |
 | R10 | Ground truth for PCAP datasets may be wrong. | wrong precision/recall | start with synthetic data; manifests checked by two people |
@@ -305,15 +304,17 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 | F04 Stream processing | IT-02, IT-04 |
 | F05 Time windows | UT-06, UT-13, DQ-06 |
 | F06 Rule-based detection | UT-07, UT-08, UT-14, IT-04, DQ-01, DQ-02, DQ-04, DQ-06 |
-| F07 Second detection method | UT-15, DQ-01, DQ-02 |
+| F07 Second detection method | UT-15, IT-04, DQ-01, DQ-02, DQ-03 |
 | F08 Classification | UT-02, UT-16, IT-07, DQ-03, DQ-07 |
 | F09 Explainability | UT-07, IT-07, DQ-08, ST-02 |
 | F10 Database | UT-03, IT-02, IT-05, IT-07, RT-03, RT-07 |
-| F11 REST API | IT-01, IT-02, API-01 to API-08, PT-05 |
+| F11 REST API | IT-01, IT-02, API-01 to API-06, PT-05 |
 | F12 Dashboard | ST-02, ST-03, ST-05 |
 | F13 Filtering | API-03, ST-04 |
 | F14 Simulator | UT-05, UT-18, IT-04, API-06 |
 | F15 Traceability | UT-04, IT-06 |
+| F16 Detection configuration | UT-17, API-07, DQ-04 |
+| F17 Alert management | IT-08, API-08 |
 | NFR01 Performance | PT-01, PT-02, PT-06 |
 | NFR02 Latency | PT-03 |
 | NFR03 Scalability | PT-04, RT-01 |
@@ -324,8 +325,7 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 | NFR08 Observability | UT-04, IT-06 |
 | NFR09 Data | ST-01 (everything runs locally), test data sources in section 5 |
 | NFR10 Documentation | ST-06 |
-| UC-07 Configure thresholds | UT-17, API-07, DQ-04 |
-| UC-09 Acknowledge alert | API-08 |
+| NFR11 Detection quality | DQ-01, DQ-02, DQ-03, DQ-05 |
 
 ## 12. Test cases
 
@@ -349,10 +349,10 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-11 | PCAP parser on a known PCAP | F01, F02 | expected flows (5-tuple, packets, bytes, duration) | | week 3 |
 | UT-12 | Feature extraction per window | F03 | correct connection rate and unique ports/addresses | | week 3-5 |
 | UT-13 | 1 s, 10 s and 60 s windows, flows on window boundaries | F05 | each flow counted in the right window | | week 5 |
-| UT-14 | DoS, brute force, abnormal traffic and suspicious pattern rules | F06 | fire above the threshold, silent below | | week 5 |
-| UT-15 | Statistical method | F07 | baseline built, deviation detected, no result before the minimum number of baseline windows | | week 5 |
+| UT-14 | DoS, brute force and suspicious connection pattern rules | F06 | fire above the threshold, silent below | | week 5 |
+| UT-15 | Statistical method | F07 | baseline built, abnormal traffic detected as a deviation from it, other anomalies reported as `unknown`, no result before the minimum number of baseline windows | | week 5 |
 | UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | | week 5 |
-| UT-17 | Invalid or missing values in `detection.yaml` | UC-07 | service refuses to start with a clear error | | week 5 |
+| UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | | week 5 |
 | UT-18 | Simulator parameters | F14 | number of hosts, rate and anomaly ratio respected; same seed -> same output | | week 4 |
 
 ### Integration tests (IT)
@@ -366,6 +366,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | | week 3 |
 | IT-06 | Follow one trace_id | F15, NFR08 | found in the logs of every service and in the detection | | week 3 |
 | IT-07 | Stored detection | F08, F09 | type, severity, confidence, time, source, destination, ID, features and window present | | week 6 |
+| IT-08 | Alert created from a detection | F17 | alert with status `new` in the alert list, linked to its detection | | week 6 |
 
 ### API tests (API)
 
@@ -377,8 +378,8 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | API-04 | Flow list and flow details | F11, UC-08 | correct data, 404 for unknown ID | week 6 |
 | API-05 | Statistics and metrics endpoints | F11 | numbers match the database | week 6 |
 | API-06 | Simulator control: configure, start, stop | F11, F14, UC-10 to UC-13 | simulator follows the commands | week 6 |
-| API-07 | Change a threshold (admin) | UC-07 | new value used by the detection engine | week 6 |
-| API-08 | Acknowledge an alert | UC-09 | status changes and is stored | week 6 |
+| API-07 | Change a threshold (admin) | F16 | new value used by the detection engine | week 6 |
+| API-08 | Acknowledge an alert | F17 | status changes and is stored | week 6 |
 | API-09 | Schemathesis on the OpenAPI schema | NFR06 | no 500 responses | week 9 |
 
 ### System tests (ST)
@@ -396,11 +397,11 @@ which the test is planned. Automated tests carry their ID in the docstring.
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| DQ-01 | Precision, recall, F1 per class on SIM-SCEN | F06, F07, F08 | targets from section 3.6 | weeks 5 and 9 |
-| DQ-02 | False alarms on SIM-NORMAL | F06, F07 | no HIGH/CRITICAL, at most 2 alerts per 10 min | weeks 5 and 9 |
-| DQ-03 | Confusion matrix including `unknown` | F08 | reported, errors analysed | weeks 5 and 9 |
-| DQ-04 | Threshold sweep for every rule | F06, UC-07 | default thresholds justified by the curves | week 5 |
-| DQ-05 | Metrics on PCAP-SET | F01, F06 | reported with error analysis | week 9 |
+| DQ-01 | Precision, recall, F1 per class on SIM-SCEN | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | weeks 5 and 9 |
+| DQ-02 | False alarms on SIM-NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | weeks 5 and 9 |
+| DQ-03 | Confusion matrix including `unknown` | F08, NFR11 | reported, errors analysed | weeks 5 and 9 |
+| DQ-04 | Threshold sweep for every rule | F06, F16 | default thresholds justified by the curves | week 5 |
+| DQ-05 | Metrics on PCAP-SET | F01, F06, NFR11 | reported with error analysis | week 9 |
 | DQ-06 | Hard cases: scan split across two windows, slow scan just below the threshold, attack hidden in heavy normal traffic | F05, F06 | behaviour documented, misses explained | week 5 |
 | DQ-07 | Detection with the labels removed | F08 | exactly the same detections | week 5 |
 | DQ-08 | Content of every detection | F09 | key features, threshold or deviation, window, source/destination, severity and confidence present | week 5 |
