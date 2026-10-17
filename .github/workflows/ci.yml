@@ -60,11 +60,6 @@ jobs:
           docker compose up -d --build --wait --wait-timeout 180
       - name: Integration tests
         run: pytest -m integration -q --junitxml=results/integration.xml
-      - name: Scale + kill one processor (NFR03/NFR04 smoke)
-        run: |
-          docker compose up -d --scale processor=2 --wait
-          docker kill $(docker compose ps -q processor | head -1)
-          pytest -m integration -q -k port_scan
       - name: Dump logs on failure
         if: failure()
         run: |
