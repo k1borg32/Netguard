@@ -83,12 +83,12 @@ services:
   api:
     <<: *py
     build: { context: ., dockerfile: services/python.Dockerfile, args: { SERVICE: api } }
-    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "app.app", "--host", "0.0.0.0", "--port", "8000"]
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       db: { condition: service_healthy }
     healthcheck:
-      test: ["CMD", "python", "-c", "import json, sys, urllib.request; health = json.load(urllib.request.urlopen('http://localhost:8000/health')); sys.exit(health['status'] != 'ok')"]
+      test: ["CMD", "python", "-c", "import json, sys, urllib.request; health = json.load(urllib.request.urlopen('http://localhost:8000/health/ping')); sys.exit(health['status'] != 'ok')"]
       interval: 10s
       timeout: 5s
       retries: 10
