@@ -82,6 +82,8 @@ entity "users" as User {
     password_hash : TEXT
     role : TEXT
     created_at : TIMESTAMPTZ
+    password_hash : TEXT
+
 }
 
 Flow ||--o{ DetectionFlow : contributes
