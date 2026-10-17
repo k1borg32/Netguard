@@ -6,6 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 ROOT_DIR = Path(__file__).resolve().parents[4]
 
+
 class Settings(BaseSettings):
     database_url: str
 
@@ -13,4 +14,3 @@ class Settings(BaseSettings):
         env_file=ROOT_DIR / ".env",
         extra="ignore",
     )
-
