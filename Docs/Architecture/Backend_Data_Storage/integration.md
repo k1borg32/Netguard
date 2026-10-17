@@ -2,7 +2,7 @@
 
 ## 1. Provided Interfaces (Backend → Frontend)
 
-The backend exposes a REST API for accessing and managing network monitoring data stored in PostgreSQL.
+The backend exposes a REST API for accessing and managing network monitoring data stored in TimescaleDB.
 
 All endpoints use the `/api` prefix and exchange data in JSON format.
 
@@ -64,3 +64,57 @@ All endpoints use the `/api` prefix and exchange data in JSON format.
 - **Sorting:** Support timestamp-based sorting.
 - **Error handling:** Standard HTTP status codes and consistent error responses.
 - **Documentation:** API contracts will be documented using OpenAPI.
+
+## 2. Required Interfaces (Backend → Database)
+
+The backend requires direct access to TimescaleDB. It does not communicate directly with the Flow Processor or Detection Engine.
+
+### 2.1 Database Access
+
+| Data | Required Operations |
+|---|---|
+| Network Flows | Read, filter, paginate |
+| Detections | Read, filter, paginate |
+| Alerts | Read, update status |
+| Detection Configurations | Read, create, update, activate |
+| Users / Sessions | Authenticate users, manage sessions |
+| Statistics | Execute aggregation queries |
+
+### 2.2 Data Dependencies
+
+The backend relies on data persisted by other components:
+
+- **Flow Processor** - Writes network flows directly to TimescaleDB.
+- **Detection Engine** - Writes detections and alerts directly to TimescaleDB and reads active detection configurations.
+- **Backend Application** - Reads monitoring data and updates information managed by the operator.
+
+All components must follow the agreed database schema and data types.
+
+## 3. Integration Flow
+
+### 3.1 Traffic Processing
+
+1. PCAP Importer or Traffic Simulator publishes packet events to the Message Broker.
+2. Flow Processor consumes packet events, generates network flows, and stores them in TimescaleDB.
+3. Detection Engine analyzes flows and stores detections and alerts directly in TimescaleDB.
+
+### 3.2 Monitoring
+
+1. Frontend sends HTTP requests to the Backend API.
+2. Backend retrieves the requested data from TimescaleDB.
+3. Backend returns JSON responses to the frontend.
+
+### 3.3 Configuration Management
+
+1. Operator modifies detection settings through the frontend.
+2. Backend validates and stores the configuration in TimescaleDB.
+3. Detection Engine reads the active configuration directly from TimescaleDB.
+
+## 4. Integration Constraints
+
+- The backend must remain independent of traffic processing and anomaly detection.
+- Backend unavailability must not interrupt flow processing or detection persistence.
+- Components must use a consistent database schema.
+- Detection-to-flow correlation must be supported by an agreed data contract.
+- Only authorized users can modify alerts and detection configurations.
+- Real-time updates and advanced analytics are outside the initial MVP scope.
