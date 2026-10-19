@@ -10,6 +10,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from app.exception_handlers import app_exception_handler, database_exception_handler, validation_exception_handler
 from app.features.auth.router import router as auth_router
 from app.features.common.app_exception import AppException
+from app.features.dashboard.router import router as dashboard_router
 from app.features.health.ping.controller import router as ping_router
 from app.infrastructure.database import dispose_engine
 from app.infrastructure.persistence.mappings import configure_mappings
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     application.add_exception_handler(RequestValidationError, validation_exception_handler)
     application.add_exception_handler(SQLAlchemyError, database_exception_handler)
     application.include_router(auth_router)
+    application.include_router(dashboard_router)
     application.include_router(ping_router)
     return application
 

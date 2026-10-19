@@ -1,5 +1,6 @@
 """Real API and disposable local TimescaleDB, without dependency overrides."""
 
+import asyncio
 import os
 import secrets
 import subprocess
@@ -9,9 +10,8 @@ from uuid import uuid4
 
 import psycopg
 import pytest
-from app.abstraction.auth.enums import UserRole
-from app.abstraction.auth.models import AuthUser
-from app.infrastructure.repo.auth_repository import PsycopgAuthRepository
+from app.domain.user import User
+from app.domain.user_role import UserRole
 from app.infrastructure.security.password_hasher import Argon2PasswordHasher
 from fastapi.testclient import TestClient
 from psycopg import sql
@@ -69,7 +69,7 @@ def api_environment(database_url: str) -> Iterator[None]:
     values = {"DATABASE_URL": database_url, "JWT_SECRET": secrets.token_hex(32)}
     previous = {key: os.environ.get(key) for key in values}
     os.environ.update(values)
-    from app.di.security import get_auth, get_dummy_password_hash, get_password_hasher
+    from app.features.auth.common.dependencies import get_auth, get_dummy_password_hash, get_password_hasher
 
     caches = (get_auth, get_dummy_password_hash, get_password_hasher)
     for provider in caches:
@@ -113,21 +113,25 @@ def db(database_url: str, api_environment: None) -> Iterator[psycopg.Connection]
 def client(db: psycopg.Connection) -> Iterator[TestClient]:
     from app.app import app
 
-    with TestClient(app) as test_client:
+    with TestClient(app, backend_options={"loop_factory": asyncio.SelectorEventLoop}) as test_client:
         yield test_client
 
 
 @pytest.fixture
-def create_user(db: psycopg.Connection) -> Callable[..., AuthUser]:
-    """Seed accounts through the real repository and Argon2 password hasher."""
-    repository = PsycopgAuthRepository(db)
+def create_user(db: psycopg.Connection) -> Callable[..., User]:
+    """Seed accounts in PostgreSQL with the real Argon2 password hasher."""
     hasher = Argon2PasswordHasher()
 
     def create(
         username: str = "test-user",
         password: str = "test-password-12345",
         role: UserRole = UserRole.USER,
-    ) -> AuthUser:
-        return repository.create_user(username, hasher.hash(password), role)
+    ) -> User:
+        user = User(username=username, password_hash=hasher.hash(password), role=role)
+        db.execute(
+            "INSERT INTO users (user_id, username, password_hash, role) VALUES (%s, %s, %s, %s)",
+            (user.user_id, user.username, user.password_hash, user.role.value),
+        )
+        return user
 
     return create

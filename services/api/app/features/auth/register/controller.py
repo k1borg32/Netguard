@@ -1,12 +1,11 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, status
 
 from app.domain.user_role import UserRole
 from app.features.auth.common.authentication import require_roles
+from app.features.auth.common.dependencies import Hasher
+from app.features.common.dependencies import Database
 
 from .command import RegisterCommand
-from .dependencies import get_register_handler
 from .handler import RegisterHandler
 from .request import RegisterRequest
 from .response import RegisterResponse
@@ -22,6 +21,8 @@ router = APIRouter()
 )
 async def register(
     request: RegisterRequest,
-    handler: Annotated[RegisterHandler, Depends(get_register_handler)],
+    session: Database,
+    hasher: Hasher,
 ) -> RegisterResponse:
+    handler = RegisterHandler(session, hasher)
     return await handler.handle(RegisterCommand(request.username, request.password, request.role))
