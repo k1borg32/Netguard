@@ -5,7 +5,10 @@ from pathlib import Path
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-ROOT_DIR = Path(__file__).resolve().parents[4]
+
+def _find_env_file() -> Path | None:
+    """The repo's .env for local runs. In the container there is none and Compose passes the variables."""
+    return next((folder / ".env" for folder in Path(__file__).resolve().parents if (folder / ".env").is_file()), None)
 
 
 class Settings(BaseSettings):
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
     jwt_secret: SecretStr
 
     model_config = SettingsConfigDict(
-        env_file=ROOT_DIR / ".env",
+        env_file=_find_env_file(),
         extra="ignore",
     )
 
