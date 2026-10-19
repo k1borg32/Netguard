@@ -2,16 +2,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from uuid import UUID
 
-from .enums import UserRole
-
-
-@dataclass(frozen=True)
-class AuthUser:
-    user_id: UUID
-    username: str
-    password_hash: str = field(repr=False)
-    role: UserRole
-
 
 @dataclass(frozen=True)
 class TokenPair:

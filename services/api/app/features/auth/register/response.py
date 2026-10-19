@@ -2,7 +2,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
-from app.abstraction.auth.enums import UserRole
+from app.domain.user_role import UserRole
 
 
 class RegisterResponse(BaseModel):

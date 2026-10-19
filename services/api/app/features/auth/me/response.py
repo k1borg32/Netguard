@@ -1,5 +1,11 @@
-from app.features.auth.register.response import RegisterResponse
+from uuid import UUID
+
+from pydantic import BaseModel
+
+from app.domain.user_role import UserRole
 
 
-class CurrentUserResponse(RegisterResponse):
-    pass
+class CurrentUserResponse(BaseModel):
+    user_id: UUID
+    username: str
+    role: UserRole

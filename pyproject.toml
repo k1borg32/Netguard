@@ -4,6 +4,7 @@ testpaths = ["tests", "services/api/tests"]
 pythonpath = ["services/processor", "services/simulator", "services/persister", "services/api"]
 addopts = "--strict-markers -m \"not stack\""
 markers = [
+    "unit: domain model tests without external infrastructure",
     "integration: exercises real infrastructure (API tests start their own Docker database)",
     "stack: requires the full application stack (make up)",
 ]
