@@ -1,5 +1,5 @@
 @startuml netguard_ingestion_dataflow
-title NetGuard — Ingestion & Flow Normalisation (M1)
+title NetGuard - Ingestion & Flow Normalisation (M1)
 skinparam shadowing false
 
 |PCAP / flow files|
@@ -7,7 +7,7 @@ start
 :Read packets / flow records;
 note right: data/pcap/*.pcap or flow CSV
 
-|Importer (services/importer) — M1|
+|Importer (services/importer) - M1|
 :Reassemble into flows (group by 5-tuple + time);
 :Normalise to flow.v1 (protocol enum, tcp_flags, ports);
 :flow_id = uuid5(...)   -> deterministic, replay-safe;
@@ -23,7 +23,7 @@ endif
 |Message broker|
 :flows.raw;
 
-|Processor — M2|
+|Processor - M2|
 :Consume -> window -> features -> detect;
 stop
 @enduml
