@@ -1,0 +1,31 @@
+@startuml
+title Write request flow
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary Controller
+control Handler
+database Database as DB
+Client -> Controller : HTTP request
+note over Controller,Handler
+  FastAPI: validation and dependencies.
+  One AsyncSession per request.
+end note
+Controller -> Handler : handle(command)
+Handler -> DB : SQL through AsyncSession
+DB --> Handler : result
+alt success
+  Handler -> DB : COMMIT
+  Handler --> Controller : response DTO
+  Controller --> Client : 2xx + response
+else error
+  Handler --> Controller : exception
+  Controller -> DB : session cleanup / ROLLBACK
+  Controller --> Client : error status + detail
+end
+@enduml

@@ -8,6 +8,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.exception_handlers import app_exception_handler, database_exception_handler, validation_exception_handler
+from app.features.alerts.router import router as alerts_router
 from app.features.auth.router import router as auth_router
 from app.features.common.app_exception import AppException
 from app.features.dashboard.router import router as dashboard_router
@@ -33,6 +34,7 @@ def create_app() -> FastAPI:
     application.add_exception_handler(SQLAlchemyError, database_exception_handler)
     application.include_router(auth_router)
     application.include_router(dashboard_router)
+    application.include_router(alerts_router)
     application.include_router(ping_router)
     return application
 

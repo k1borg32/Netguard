@@ -1,0 +1,30 @@
+@startuml
+title Login
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Login API" as API
+control LoginHandler as Handler
+participant "Argon2 / AuthX" as Security
+database Database as DB
+Client -> API : POST /login + username and password
+API -> Handler : handle(LoginCommand)
+Handler -> DB : SELECT user_id, password_hash
+DB --> Handler : user / missing
+Handler -> Security : verify password\n(stored or dummy hash)
+Security --> Handler : result
+break missing user or invalid password
+  Handler --> API : AuthenticationFailed
+  API --> Client : 401
+end
+Handler -> Security : issue JWT pair
+Security --> Handler : access and refresh tokens
+Handler -> DB : INSERT session with token SHA-256\nCOMMIT
+Handler --> API : LoginResponse
+API --> Client : 200 + token pair
+@enduml

@@ -1,37 +1,45 @@
-# Authentication and authorization
+# Authentication
 
-## Architecture
+Base path: `/api/v1/auth`. Tokens use `Authorization: Bearer <token>`.
 
-The API maps request DTOs to CQRS commands/queries. Handlers depend on Python protocols
-in `app/abstraction/auth`; `app/di` binds them to infrastructure implementations through constructor injection.
-`features` imports neither infrastructure nor FastAPI.
+| Endpoint | Input / permission | Success |
+| --- | --- | --- |
+| `POST /register` | Admin access token; JSON: `username`, `password`, optional `role` | 201, user |
+| `POST /login` | JSON: `username`, `password` | 200, token pair |
+| `POST /refresh` | Refresh token | 200, new token pair |
+| `POST /logout` | Refresh token | 204, empty body |
+| `GET /me` | Access token | 200, current user |
 
-![Auth component diagram](diagrams/auth_architecture.svg)
+Username: 1–128 characters without whitespace. Password: 12–1024 characters at registration,
+1–1024 at login. Role: `user` (default) or `admin`. Extra JSON fields are rejected.
 
-## HTTP contract
+User response: `user_id`, `username`, `role`.
+Token response: `access_token`, `refresh_token`, `token_type="bearer"`.
 
-Base path: `/api/v1/auth`. JWT transport: `Authorization: Bearer <token>`.
+## Rules
 
-| Method | Path | Input / authentication | Success |
-| --- | --- | --- | --- |
-| POST | `/register` | JSON: `username`, `password`, optional `role=user` | 201: `user_id`, `username`, `role` |
-| POST | `/login` | JSON: `username`, `password` | 200: token pair |
-| POST | `/refresh` | Refresh JWT | 200: new token pair |
-| POST | `/logout` | Refresh JWT | 204 |
-| GET | `/me` | Access JWT | 200: `user_id`, `username`, `role` |
+- Passwords: Argon2. JWT: AuthX, HS256, `JWT_SECRET`; access expires after 15 minutes, refresh after 7 days.
+- Admin permissions come from the current database role.
+- Each login creates a session. Only the refresh token's SHA-256 hash is stored.
+- Refresh deletes the old session and inserts its replacement atomically. Reusing the old token returns 401.
+- Logout removes one refresh session; **the access token remains valid until expiry**.
 
-Token pair: `access_token`, `refresh_token`, `token_type="bearer"`.
-**Current behavior:** registration is public and accepts the requested role (`user` or `admin`).
-`require_roles()` delegates to `ensure_role()` using the current database role, but is not attached to existing endpoints.
+First administrator, from `services/api`: `python -m app.infrastructure.bootstrap_admin`.
+The command prompts for credentials and refuses creation if an administrator already exists.
 
-## Security and persistence
+## Sequence diagrams
 
-- AuthX: HS256, `JWT_SECRET`, access lifetime **15 minutes**, refresh lifetime **7 days**; signature, expiry and token-type validation.
-- Passwords: `pwdlib` / Argon2id. Registration: username 1–128 non-whitespace characters; password 12–1024 characters.
-- `users`: `user_id` PK, `username` UNIQUE, `password_hash`, `role`.
-- `auth_refresh_sessions`: `token_hash` PK (SHA-256 of the JWT), `user_id` FK, `expires_at`, `created_at`.
-- Rotation atomically deletes the old session and inserts its replacement. Concurrent reuse fails; insert failure rolls back deletion.
-- Logout deletes the refresh session. Access tokens remain valid until expiry.
+![Registration](diagrams/register_sequence.svg)
 
-![Refresh token rotation sequence](diagrams/refresh_sequence.svg)
+![Login](diagrams/login_sequence.svg)
 
+![Token refresh](diagrams/refresh_sequence.svg)
+
+[PlantUML sources](diagrams/)
+
+## Errors
+
+401: invalid authentication or inactive session. 403: admin required. 409: duplicate username.
+422: invalid input. 503: database error. Errors use `detail`; 401 includes `WWW-Authenticate: Bearer`.
+
+[Architecture](../architecture/README.md) · [Source code](../../../services/api/app/features/auth/)
