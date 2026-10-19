@@ -1,5 +1,9 @@
-from app.features.auth.login.response import LoginResponse
+from typing import Literal
+
+from pydantic import BaseModel, Field
 
 
-class RefreshResponse(LoginResponse):
-    pass
+class RefreshResponse(BaseModel):
+    access_token: str = Field(repr=False)
+    refresh_token: str = Field(repr=False)
+    token_type: Literal["bearer"] = "bearer"

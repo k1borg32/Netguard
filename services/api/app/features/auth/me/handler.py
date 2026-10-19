@@ -1,16 +1,22 @@
-from app.abstraction.auth.models import AuthUser
-from app.abstraction.auth.ports import AuthRepository
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from app.features.auth.exceptions import AuthenticationFailed
+from app.infrastructure.persistence.tables import users
 
 from .query import GetCurrentUserQuery
+from .response import CurrentUserResponse
 
 
 class GetCurrentUserHandler:
-    def __init__(self, repository: AuthRepository) -> None:
-        self._repository = repository
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
 
-    def handle(self, query: GetCurrentUserQuery) -> AuthUser:
-        user = self._repository.find_by_id(query.user_id)
+    async def handle(self, query: GetCurrentUserQuery) -> CurrentUserResponse:
+        result = await self._session.execute(
+            select(users.c.user_id, users.c.username, users.c.role).where(users.c.user_id == query.user_id)
+        )
+        user = result.mappings().one_or_none()
         if user is None:
             raise AuthenticationFailed()
-        return user
+        return CurrentUserResponse.model_validate(user)

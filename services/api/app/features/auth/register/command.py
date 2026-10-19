@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from app.abstraction.auth.enums import UserRole
+from app.domain.user_role import UserRole
 
 
 @dataclass(frozen=True)

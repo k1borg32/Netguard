@@ -1,5 +1,5 @@
-from .ping_query import PingQuery
-from .ping_response import PingResponse
+from .query import PingQuery
+from .response import PingResponse
 
 
 def handle(query: PingQuery) -> PingResponse:

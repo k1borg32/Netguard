@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.abstraction.auth.enums import UserRole
+from app.domain.user_role import UserRole
 
 
 class RegisterRequest(BaseModel):

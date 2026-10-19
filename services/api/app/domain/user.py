@@ -1,18 +1,21 @@
-"""User identities and roles, without authentication behavior."""
+"""User identity, independent of HTTP and persistence."""
 
-from uuid import UUID
+from dataclasses import dataclass, field
+from uuid import UUID, uuid4
 
-from sqlalchemy import Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
-
-from app.domain.base import Base
+from .user_role import UserRole
 
 
-class User(Base):
-    __tablename__ = "users"
+@dataclass(eq=False, kw_only=True)
+class User:
+    username: str
+    password_hash: str = field(repr=False)
+    role: UserRole = UserRole.USER
+    user_id: UUID = field(default_factory=uuid4)
 
-    user_id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True)
-    username: Mapped[str] = mapped_column(Text, nullable=False)
-    role: Mapped[str] = mapped_column(Text, nullable=False)
-    password_hash: Mapped[str] = mapped_column(Text, nullable=False)
+    def __post_init__(self) -> None:
+        if not 1 <= len(self.username) <= 128 or any(char.isspace() for char in self.username):
+            raise ValueError("Username must contain 1–128 characters without whitespace")
+        if not self.password_hash:
+            raise ValueError("Password hash is required")
+        self.role = UserRole(self.role)

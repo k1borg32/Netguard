@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 
-from app.abstraction.auth.models import VerifiedRefreshToken
+from app.infrastructure.security.models import VerifiedRefreshToken
 
 
 @dataclass(frozen=True)

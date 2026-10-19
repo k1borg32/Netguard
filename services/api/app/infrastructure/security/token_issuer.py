@@ -2,7 +2,7 @@ from uuid import UUID
 
 from authx import AuthX, RequestToken
 
-from app.abstraction.auth.models import TokenPair
+from .models import TokenPair
 
 
 class AuthXTokenIssuer:
