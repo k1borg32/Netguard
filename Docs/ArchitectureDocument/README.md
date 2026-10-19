@@ -27,10 +27,9 @@ defined here. It does not detect anomalies and does not touch the database.
 ## 3. Normalised flow model
 
 Every flow published to `flows.raw` conforms to
-`libs/common/src/netguard_common/schemas/flow.v1.json`. The spec's required flow
-fields (Spec §8) map to the schema as follows:
+`libs/common/src/netguard_common/schemas/flow.v1.json`. The flow fields required by the spec (the Network Flow Model) map to the schema as follows:
 
-| Spec §8 field        | `flow.v1` field | Type / notes                          |
+| Required field       | `flow.v1` field | Type / notes                          |
 |----------------------|-----------------|---------------------------------------|
 | start timestamp      | `ts_start`      | Unix epoch seconds (float)            |
 | duration             | `duration_ms`   | milliseconds, ≥ 0                      |
@@ -50,7 +49,7 @@ labelled datasets, used **only** for quality metrics, never read by detectors).
 
 ## 4. Derived features (and where they are computed)
 
-Spec §8 also requires: packets/sec, bytes/sec, connections per window, unique
+The spec also requires these derived features: packets/sec, bytes/sec, connections per window, unique
 destination ports, unique destination addresses, and new-connection rate.
 
 These are **not** stored on the raw flow:
@@ -74,12 +73,15 @@ These are **not** stored on the raw flow:
   the same IDs, so replays deduplicate instead of creating duplicates.
 - **`source`** records where the flow came from (pcap / flowfile / simulator).
 
-## 6. Input validation (F01)
+## 6. Input validation (F01, SEC-02)
 
 Every normalised flow is validated against `flow.v1.json` before publishing.
-A malformed or incomplete record is **logged at ERROR and dropped** — it is never
-published. This protects every downstream component from bad input and satisfies
-F01. (See also issue #8: one malformed message must not stop the pipeline.)
+A malformed or incomplete record is **rejected with its reason** — logged at
+ERROR and dropped, never published — so one bad record cannot stop the pipeline
+(issue #8). At the end of a run the importer prints a short summary: how many
+records were accepted, how many were rejected, and the reason counts. This
+satisfies F01 (report rejected records with the reason) and is what SEC-02 in
+the test plan checks.
 
 ## 7. Trace ID and latency (F15, NFR02)
 
