@@ -7,7 +7,7 @@ podmian handlerów ani `app.dependency_overrides`.
 
 Testujemy modele z `app/domain` w pamięci: reguły domenowe, przejścia stanów
 i relacje. Bez HTTP, bazy danych i Dockera. Obecne modele nie mają metod
-biznesowych, więc przykłady sprawdzają spójność relacji konfiguracja–detekcja–alert.
+biznesowych, więc przykłady sprawdzają spójność relacji konfiguracja-detekcja-alert.
 Ograniczenia egzekwowane przez SQL wymagają testów integracyjnych.
 
 Walidację kontraktów HTTP można sprawdzać bez uruchamiania serwera. Testy
@@ -17,8 +17,8 @@ Nie mockujemy sesji SQLAlchemy w celu testowania zapytań handlera.
 
 ## Integration
 
-Testujemy cały przepływ przez `client`: HTTP → kontroler → handler → rzeczywiste
-SQLAlchemy, Argon2 i JWT → lokalna baza TimescaleDB → odpowiedź HTTP.
+Testujemy cały przepływ przez `client`: HTTP -> kontroler -> handler -> rzeczywiste
+SQLAlchemy, Argon2 i JWT -> lokalna baza TimescaleDB -> odpowiedź HTTP.
 Dashboard sprawdzamy również dla granic zakresu, stref czasowych, błędnych
 parametrów i dostępu bez poprawnego tokena, a także sąsiednich zakresów i wymogu
 przekazywania filtrów w URL. [Dokumentacja dashboardu](../../../Docs/BackendAndDataStorage/dashboard/README.md).

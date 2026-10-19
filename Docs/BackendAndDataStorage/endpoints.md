@@ -9,19 +9,19 @@ Planned endpoints retain the `/api/...` paths from the original plan.
 
 ## Health
 
-- [x] `GET /health/ping` — check that the API is running.
+- [x] `GET /health/ping` - check that the API is running.
 
 ## Authentication
 
-- [x] `POST /api/v1/auth/login` — authenticate a user and issue a token pair.
-- [x] `POST /api/v1/auth/register` — create a user account as an administrator.
-- [x] `POST /api/v1/auth/refresh` — refresh and rotate tokens.
-- [x] `POST /api/v1/auth/logout` — invalidate the refresh token session.
-- [x] `GET /api/v1/auth/me` — retrieve the current user's details.
+- [x] `POST /api/v1/auth/login` - authenticate a user and issue a token pair.
+- [x] `POST /api/v1/auth/register` - create a user account as an administrator.
+- [x] `POST /api/v1/auth/refresh` - refresh and rotate tokens.
+- [x] `POST /api/v1/auth/logout` - invalidate the refresh token session.
+- [x] `GET /api/v1/auth/me` - retrieve the current user's details.
 
 ## Dashboard
 
-- [x] `GET /api/dashboard/summary` — retrieve flow, detection and alert counts within a selected time range.
+- [x] `GET /api/dashboard/summary` - retrieve flow, detection and alert counts within a selected time range.
 
 Requires a Bearer access token belonging to an existing user (user or admin).
 Required query parameters `start_time` and `end_time` are ISO 8601 timestamps with
@@ -43,28 +43,28 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 ## Alerts
 
-- [ ] `GET /api/alerts` — list alerts with filtering, sorting and pagination.
-- [ ] `GET /api/alerts/{id}` — retrieve an alert and its related detection.
-- [ ] `PATCH /api/alerts/{id}/acknowledge` — mark an alert as acknowledged.
+- [ ] `GET /api/alerts` - list alerts with filtering, sorting and pagination.
+- [ ] `GET /api/alerts/{id}` - retrieve an alert and its related detection.
+- [ ] `PATCH /api/alerts/{id}/acknowledge` - mark an alert as acknowledged.
 
 ## Detections
 
-- [ ] `GET /api/detections` — list detected anomalies with pagination.
-- [ ] `GET /api/detections/{id}` — retrieve detection details: type, method, confidence and explanation.
-- [ ] `GET /api/detections/{id}/flows` — retrieve flows associated with a detection.
+- [ ] `GET /api/detections` - list detected anomalies with pagination.
+- [ ] `GET /api/detections/{id}` - retrieve detection details: type, method, confidence and explanation.
+- [ ] `GET /api/detections/{id}/flows` - retrieve flows associated with a detection.
 
 ## Network flows
 
-- [ ] `GET /api/flows` — list flows with filtering, sorting and pagination.
-- [ ] `GET /api/flows/{flowId}?tsStart={timestamp}` — retrieve a flow by its identifier and start time.
+- [ ] `GET /api/flows` - list flows with filtering, sorting and pagination.
+- [ ] `GET /api/flows/{flowId}?tsStart={timestamp}` - retrieve a flow by its identifier and start time.
 
 ## Detection configurations
 
-- [ ] `GET /api/detection-configurations` — list detection configurations.
-- [ ] `GET /api/detection-configurations/{id}` — retrieve configuration details.
-- [ ] `POST /api/detection-configurations` — create a configuration.
-- [ ] `PATCH /api/detection-configurations/{id}` — update a configuration.
-- [ ] `PUT /api/detection-configurations/{id}/activate` — set a configuration as active.
+- [ ] `GET /api/detection-configurations` - list detection configurations.
+- [ ] `GET /api/detection-configurations/{id}` - retrieve configuration details.
+- [ ] `POST /api/detection-configurations` - create a configuration.
+- [ ] `PATCH /api/detection-configurations/{id}` - update a configuration.
+- [ ] `PUT /api/detection-configurations/{id}/activate` - set a configuration as active.
 
 ## Common requirements
 
