@@ -8,7 +8,7 @@ import pytest
 from app.domain.user_role import UserRole
 from fastapi.testclient import TestClient
 
-URL = "/api/dashboard/summary"
+URL = "/api/v1/dashboard/summary"
 START = datetime(2026, 1, 1, tzinfo=UTC)
 END = START + timedelta(days=1)
 PARAMS = {"start_time": START.isoformat(), "end_time": END.isoformat()}
