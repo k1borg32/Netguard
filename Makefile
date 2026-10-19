@@ -1,6 +1,6 @@
 # Windows: install make once (winget install ezwinports.make) and run it from Git Bash,
 # or copy the command under a target and run it directly.
-.PHONY: help setup up down reset logs ps sim perf scale kill-one test test-unit test-int coverage lint format trace
+.PHONY: help setup up down reset logs ps sim perf scale kill-one test test-unit test-int test-stack coverage lint format trace
 
 ifeq ($(OS),Windows_NT)
 VENV_BIN := .venv/Scripts
@@ -47,16 +47,20 @@ trace:           ## F15: follow one event, e.g. make trace ID=<trace_id>
 	@test -n "$(ID)" || (echo "usage: make trace ID=<trace_id>" && exit 1)
 	docker compose logs --no-color | grep $(ID)
 
-test: test-unit  ## Run unit tests
-
-test-unit:
+test:            ## Unit + API integration tests; starts a disposable Docker database
 	pytest -q
 
-test-int:        ## Integration tests (needs `make up` first)
-	pytest -m integration -q
+test-unit:       ## Unit tests only, without Docker
+	pytest -m "not integration" -q
+
+test-int:        ## API integration tests; database starts and stops automatically
+	pytest services/api/tests/integration -q
+
+test-stack:      ## Full-stack smoke tests (needs `make up` first)
+	pytest -m stack -q
 
 coverage:        ## Unit tests with a coverage report
-	pytest -q --cov --cov-report=term-missing
+	pytest -m "not integration" -q --cov --cov-report=term-missing
 
 lint:            ## Lint + formatting check (same as CI)
 	ruff check .

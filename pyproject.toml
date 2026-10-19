@@ -1,9 +1,13 @@
 # Repo-level tool config only (each service/lib has its own deps).
 [tool.pytest.ini_options]
-testpaths = ["tests"]
-pythonpath = ["services/processor", "services/simulator", "services/persister"]
-addopts = "--strict-markers -m \"not integration\""
-markers = ["integration: needs the running stack (make up)"]
+testpaths = ["tests", "services/api/tests"]
+pythonpath = ["services/processor", "services/simulator", "services/persister", "services/api"]
+addopts = "--strict-markers -m \"not stack\""
+markers = [
+    "unit: domain model tests without external infrastructure",
+    "integration: exercises real infrastructure (API tests start their own Docker database)",
+    "stack: requires the full application stack (make up)",
+]
 
 [tool.coverage.run]
 source = ["libs/common/src", "services"]
