@@ -4,24 +4,24 @@ This list was restored from the [integration plan](../Architecture/Backend_Data_
 introduced in commit `12c9058` and updated to reflect the current implementation.
 Checked items are implemented; unchecked items are planned.
 
-Authentication uses the `/api/v1/auth` prefix; dashboard uses `/api/dashboard`.
-Planned endpoints retain the `/api/...` paths from the original plan.
+All endpoints use the `/api/v1` prefix, the planned ones too.
 
 ## Health
 
-- [x] `GET /health/ping` — check that the API is running.
+- [x] `GET /health` - check the API and its database connection (used by the Compose healthcheck).
+- [x] `GET /health/ping` - check that the API is running.
 
 ## Authentication
 
-- [x] `POST /api/v1/auth/login` — authenticate a user and issue a token pair.
-- [x] `POST /api/v1/auth/register` — create a user account as an administrator.
-- [x] `POST /api/v1/auth/refresh` — refresh and rotate tokens.
-- [x] `POST /api/v1/auth/logout` — invalidate the refresh token session.
-- [x] `GET /api/v1/auth/me` — retrieve the current user's details.
+- [x] `POST /api/v1/auth/login` - authenticate a user and issue a token pair.
+- [x] `POST /api/v1/auth/register` - create a user account as an administrator.
+- [x] `POST /api/v1/auth/refresh` - refresh and rotate tokens.
+- [x] `POST /api/v1/auth/logout` - invalidate the refresh token session.
+- [x] `GET /api/v1/auth/me` - retrieve the current user's details.
 
 ## Dashboard
 
-- [x] `GET /api/dashboard/summary` — retrieve flow, detection and alert counts within a selected time range.
+- [x] `GET /api/v1/dashboard/summary` - retrieve flow, detection and alert counts within a selected time range.
 
 Requires a Bearer access token belonging to an existing user (user or admin).
 Required query parameters `start_time` and `end_time` are ISO 8601 timestamps with
@@ -29,7 +29,7 @@ a timezone, for example `2026-01-01T00:00:00Z`. The range is `[start_time, end_t
 `start_time` must be earlier than `end_time`. Invalid or missing parameters return 422;
 missing or invalid authentication returns 401.
 
-Example: `GET /api/dashboard/summary?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z`
+Example: `GET /api/v1/dashboard/summary?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z`
 
 ```json
 {"flow_count": 120, "detection_count": 8, "alert_count": 3}
@@ -43,28 +43,29 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 ## Alerts
 
-- [ ] `GET /api/alerts` — list alerts with filtering, sorting and pagination.
-- [ ] `GET /api/alerts/{id}` — retrieve an alert and its related detection.
-- [ ] `PATCH /api/alerts/{id}/acknowledge` — mark an alert as acknowledged.
+- [ ] `GET /api/v1/alerts` - list alerts with filtering, sorting and pagination.
+- [ ] `GET /api/v1/alerts/{id}` - retrieve an alert and its related detection.
+- [ ] `PATCH /api/v1/alerts/{id}/acknowledge` - mark an alert as acknowledged.
 
 ## Detections
 
-- [ ] `GET /api/detections` — list detected anomalies with pagination.
-- [ ] `GET /api/detections/{id}` — retrieve detection details: type, method, confidence and explanation.
-- [ ] `GET /api/detections/{id}/flows` — retrieve flows associated with a detection.
+- [x] `GET /api/v1/detections` - latest detections, newest first (`limit` 1-500). No pagination yet;
+  no token needed until the dashboard has a login.
+- [ ] `GET /api/v1/detections/{id}` - retrieve detection details: type, method, confidence and explanation.
+- [ ] `GET /api/v1/detections/{id}/flows` - retrieve flows associated with a detection.
 
 ## Network flows
 
-- [ ] `GET /api/flows` — list flows with filtering, sorting and pagination.
-- [ ] `GET /api/flows/{flowId}?tsStart={timestamp}` — retrieve a flow by its identifier and start time.
+- [ ] `GET /api/v1/flows` - list flows with filtering, sorting and pagination.
+- [ ] `GET /api/v1/flows/{flowId}?tsStart={timestamp}` - retrieve a flow by its identifier and start time.
 
 ## Detection configurations
 
-- [ ] `GET /api/detection-configurations` — list detection configurations.
-- [ ] `GET /api/detection-configurations/{id}` — retrieve configuration details.
-- [ ] `POST /api/detection-configurations` — create a configuration.
-- [ ] `PATCH /api/detection-configurations/{id}` — update a configuration.
-- [ ] `PUT /api/detection-configurations/{id}/activate` — set a configuration as active.
+- [ ] `GET /api/v1/detection-configurations` - list detection configurations.
+- [ ] `GET /api/v1/detection-configurations/{id}` - retrieve configuration details.
+- [ ] `POST /api/v1/detection-configurations` - create a configuration.
+- [ ] `PATCH /api/v1/detection-configurations/{id}` - update a configuration.
+- [ ] `PUT /api/v1/detection-configurations/{id}/activate` - set a configuration as active.
 
 ## Common requirements
 

@@ -39,7 +39,7 @@ def main() -> int:
             print("Hasła są różne.", file=sys.stderr)
             return 1
         if not 12 <= len(password) <= 1024:
-            raise ValueError("Hasło musi mieć 12–1024 znaków")
+            raise ValueError("Hasło musi mieć 12-1024 znaków")
         password_hash = Argon2PasswordHasher().hash(password)
         with psycopg.connect(database_dsn(), autocommit=True, connect_timeout=5) as connection:
             create_initial_admin(connection, username, password_hash)
