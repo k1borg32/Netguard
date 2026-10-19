@@ -20,7 +20,7 @@ async def app_exception_handler(request: Request, exc: AppException) -> JSONResp
 async def database_exception_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
     # SQLAlchemy exceptions can include SQL parameters, including password hashes.
     logger.error("Database operation failed: %s", type(exc).__name__)
-    return JSONResponse(status_code=503, content={"detail": "Authentication storage unavailable"})
+    return JSONResponse(status_code=503, content={"detail": "Database storage unavailable"})
 
 
 async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:

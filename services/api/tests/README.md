@@ -10,10 +10,18 @@ i relacje. Bez HTTP, bazy danych i Dockera. Obecne modele nie mają metod
 biznesowych, więc przykłady sprawdzają spójność relacji konfiguracja–detekcja–alert.
 Ograniczenia egzekwowane przez SQL wymagają testów integracyjnych.
 
+Walidację kontraktów HTTP można sprawdzać bez uruchamiania serwera. Testy
+`unit/test_dashboard_summary_request.py` obejmują regułę `start_time < end_time`,
+porównywanie chwil w różnych strefach, minimalny dodatni zakres i błędny początek.
+Nie mockujemy sesji SQLAlchemy w celu testowania zapytań handlera.
+
 ## Integration
 
 Testujemy cały przepływ przez `client`: HTTP → kontroler → handler → rzeczywiste
-repozytorium, Argon2 i JWT → lokalna baza TimescaleDB → odpowiedź HTTP.
+SQLAlchemy, Argon2 i JWT → lokalna baza TimescaleDB → odpowiedź HTTP.
+Dashboard sprawdzamy również dla granic zakresu, stref czasowych, błędnych
+parametrów i dostępu bez poprawnego tokena, a także sąsiednich zakresów i wymogu
+przekazywania filtrów w URL. [Dokumentacja dashboardu](../../../Docs/BackendAndDataStorage/dashboard/README.md).
 
 - Osobny projekt Docker Compose powstaje raz na sesję, na losowym lokalnym porcie.
 - Schemat pochodzi z produkcyjnych skryptów `db/init/*.sql`.
@@ -22,8 +30,7 @@ repozytorium, Argon2 i JWT → lokalna baza TimescaleDB → odpowiedź HTTP.
   przez `TRUNCATE ... RESTART IDENTITY CASCADE`, również po nieudanym teście.
 - Klient powstaje na każdy test, z cyklem startu i zamknięcia aplikacji.
 - Po sesji usuwamy kontener i dane testowe.
-- Testy wykonują się kolejno. Główny `conftest.py` odrzuca uruchomienie
-  z workerami pytest-xdist (`-n auto`, `-n 2` itd.). Nie instalujemy xdist.
+- Testy wykonują się kolejno. Nie uruchamiamy ich z pytest-xdist.
 - Brak działającego Dockera lub błędny schemat powoduje błąd, a nie pominięcie testów.
 
 Fixtures w `integration/conftest.py`:
@@ -34,7 +41,7 @@ Fixtures w `integration/conftest.py`:
 | `api_environment` | sesja | Konfiguracja prawdziwych zależności API |
 | `db` | test, automatyczna | Czyszczenie i rzeczywiste połączenie psycopg do asercji SQL |
 | `client` | test | `TestClient` prawdziwej aplikacji |
-| `create_user` | test | Przygotowanie konta przez prawdziwe repozytorium i Argon2 |
+| `create_user` | test | Przygotowanie konta w PostgreSQL z hashem Argon2 |
 
 Pierwszego administratora przygotowujemy przez `create_user(role=UserRole.ADMIN)`.
 Rejestrację kolejnych użytkowników sprawdzamy przez endpoint HTTP.

@@ -4,7 +4,7 @@ from hashlib import sha256
 
 import psycopg
 import pytest
-from app.abstraction.auth.enums import UserRole
+from app.domain.user_role import UserRole
 from app.infrastructure.security.password_hasher import Argon2PasswordHasher
 from fastapi.testclient import TestClient
 
