@@ -1,0 +1,63 @@
+@startuml
+title Refresh token rotation
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Auth API / DI" as API
+participant "AuthX adapter" as Verify
+control RefreshHandler as Handler
+participant AuthXTokenIssuer as Issuer
+participant PsycopgAuthRepository as Repo
+database TimescaleDB as DB
+
+Client -> API : POST /api/v1/auth/refresh\nAuthorization: Bearer <refresh JWT>
+API -> Verify : verify_request_token(request, "refresh", auth)
+break Invalid signature, expiry, token type or subject
+    Verify --> API : AuthenticationFailed
+    API --> Client : 401
+end
+Verify --> API : (user_id, raw_token)
+API -> Handler : handle(RefreshCommand(VerifiedRefreshToken))
+Handler -> Repo : find_by_id(user_id)
+Repo -> DB : SELECT user
+DB --> Repo : user row / none
+Repo --> Handler : AuthUser / None
+break User no longer exists
+    Handler --> API : AuthenticationFailed
+    API --> Client : 401
+end
+Handler -> Issuer : issue_pair(user_id)
+note right of Issuer : AuthX.create_token_pair()
+Issuer --> Handler : TokenPair
+Handler -> Repo : rotate_refresh_token(user_id, old, new, expires_at)
+critical Atomic session replacement
+    Repo -> DB : BEGIN
+    Repo -> DB : DELETE session WHERE token_hash = SHA-256(old)\nAND user_id = uid AND expires_at > clock_timestamp()\nRETURNING user_id
+    DB --> Repo : deleted row / none
+    alt Session consumed successfully
+        Repo -> DB : INSERT SHA-256(new), user_id, expires_at
+        note right of DB
+            INSERT failure: ROLLBACK;
+            exception propagates to the API (503).
+        end note
+        DB --> Repo : row inserted
+        Repo -> DB : COMMIT
+    else Session revoked, expired or already consumed
+        Repo -> DB : COMMIT (no changes)
+    end
+end
+Repo --> Handler : true / false
+alt Rotation succeeded
+    Handler --> API : TokenPair
+    API --> Client : 200: access_token, refresh_token, token_type
+else Session rejected
+    Handler --> API : AuthenticationFailed
+    API --> Client : 401
+end
+@enduml

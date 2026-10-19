@@ -6,7 +6,7 @@ import urllib.request
 
 import pytest
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.stack]
 API = os.getenv("API_URL", "http://localhost:8000")
 
 
