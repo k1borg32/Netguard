@@ -66,8 +66,10 @@ What we test, how and when is described in the [test plan](Docs/TestPlan/README.
 
 ```bash
 make setup                 # venv + dev tools
-make test                  # unit tests (no Docker needed)
-make up && make test-int   # integration tests against the running stack
+make test                  # unit + API integration tests (Docker database starts automatically)
+make test-unit             # unit tests only (no Docker needed)
+make test-int              # API integration tests with a disposable Docker database
+make up && make test-stack # smoke tests against the full running stack
 make coverage              # unit tests + coverage report
 make lint                  # ruff lint + format check, same as CI
 ```
@@ -77,13 +79,16 @@ Without make (activate the venv first: `.venv\Scripts\Activate.ps1` on Windows, 
 ```bash
 python -m venv .venv
 pip install -e "libs/common[kafka]" -r requirements-dev.txt
-pytest                     # unit tests
-pytest -m integration      # integration tests, stack must be running
+pytest                     # unit + API integration tests; Docker Desktop must be running
+pytest -m "not integration" # unit tests only, without Docker
+pytest -m stack            # full-stack smoke tests; stack must be running
 ruff check . && ruff format --check .
 ```
 
-CI (GitHub Actions) runs lint, unit tests with coverage, a secrets scan, and integration tests with the full stack
-on every PR.
+CI (GitHub Actions) runs lint, unit tests with coverage, a secrets scan, API integration tests with their own
+disposable TimescaleDB, and full-stack smoke tests on every PR. Test cases run sequentially.
+The API test database starts once per session, is cleared before and after each test, and is removed at the end.
+See [API test structure and seeds](services/api/tests/README.md) for adding new tests.
 
 ## Demo commands
 
