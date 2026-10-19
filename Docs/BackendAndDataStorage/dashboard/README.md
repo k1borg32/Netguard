@@ -124,5 +124,5 @@ python -m pytest tests -q
 Integration tests require Docker Desktop with Linux containers. Their database
 is created and removed automatically; application data is not used.
 
-[Architecture](../architecture/README.md) · [Endpoint plan](../endpoints.md) ·
-[Source code](../../../services/api/app/features/dashboard/) · [Test setup](../../../services/api/tests/README.md)
+[Architecture](../architecture/README.md) | [Endpoint plan](../endpoints.md) |
+[Source code](../../../services/api/app/features/dashboard/) | [Test setup](../../../services/api/tests/README.md)

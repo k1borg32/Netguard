@@ -15,7 +15,7 @@ class User:
 
     def __post_init__(self) -> None:
         if not 1 <= len(self.username) <= 128 or any(char.isspace() for char in self.username):
-            raise ValueError("Username must contain 1–128 characters without whitespace")
+            raise ValueError("Username must contain 1-128 characters without whitespace")
         if not self.password_hash:
             raise ValueError("Password hash is required")
         self.role = UserRole(self.role)

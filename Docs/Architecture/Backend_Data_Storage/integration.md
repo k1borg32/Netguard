@@ -1,6 +1,6 @@
 # Backend Integration
 
-## 1. Provided Interfaces (Backend → Frontend)
+## 1. Provided Interfaces (Backend -> Frontend)
 
 The backend exposes a REST API for accessing and managing network monitoring data stored in TimescaleDB.
 
@@ -65,7 +65,7 @@ All endpoints use the `/api` prefix and exchange data in JSON format.
 - **Error handling:** Standard HTTP status codes and consistent error responses.
 - **Documentation:** API contracts will be documented using OpenAPI.
 
-## 2. Required Interfaces (Backend → Database)
+## 2. Required Interfaces (Backend -> Database)
 
 The backend requires direct access to TimescaleDB. It does not communicate directly with the Flow Processor or Detection Engine.
 
