@@ -1,11 +1,11 @@
 # Dashboard
 
-`GET /api/dashboard/summary` returns network flow, detection and alert counts for
+`GET /api/v1/dashboard/summary` returns network flow, detection and alert counts for
 a selected time range. Requires an access token belonging to an existing `user`
 or `admin` account:
 
 ```http
-GET /api/dashboard/summary?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z
+GET /api/v1/dashboard/summary?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z
 Authorization: Bearer <access_token>
 ```
 
@@ -30,7 +30,7 @@ Example from PowerShell, after obtaining an access token through
 
 ```powershell
 $headers = @{ Authorization = "Bearer <access_token>" }
-$uri = 'http://127.0.0.1:8000/api/dashboard/summary?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z'
+$uri = 'http://127.0.0.1:8000/api/v1/dashboard/summary?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z'
 Invoke-RestMethod -Method Get -Uri $uri -Headers $headers
 ```
 
@@ -124,5 +124,5 @@ python -m pytest tests -q
 Integration tests require Docker Desktop with Linux containers. Their database
 is created and removed automatically; application data is not used.
 
-[Architecture](../architecture/README.md) · [Endpoint plan](../endpoints.md) ·
-[Source code](../../../services/api/app/features/dashboard/) · [Test setup](../../../services/api/tests/README.md)
+[Architecture](../architecture/README.md) | [Endpoint plan](../endpoints.md) |
+[Source code](../../../services/api/app/features/dashboard/) | [Test setup](../../../services/api/tests/README.md)

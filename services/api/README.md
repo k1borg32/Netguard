@@ -19,8 +19,10 @@ The Linux container uses `uvicorn app.app:app --host 0.0.0.0 --port 8000`.
 
 Open `/docs` for interactive documentation and `/openapi.json` for the schema.
 `GET /health/ping` returns `{"status": "ok"}` without accessing the database.
+`GET /health` also checks the database and returns `{"status": "ok", "db": "ok"}`; the Compose
+healthcheck uses it.
 
-`GET /api/dashboard/summary` returns `flow_count`, `detection_count` and `alert_count`.
+`GET /api/v1/dashboard/summary` returns `flow_count`, `detection_count` and `alert_count`.
 Send a Bearer access token and required `start_time` / `end_time` query parameters
 as ISO 8601 timestamps with timezones. The start is inclusive, the end exclusive;
 the start must precede the end. See the endpoint plan for a request example.
