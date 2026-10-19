@@ -71,6 +71,7 @@ network_flows = Table(
     Column("bytes", BigInteger),
     Column("tcp_flags", Text),
     Column("source", Text),
+    Column("label", Text),
 )
 
 detections = Table(

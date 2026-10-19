@@ -21,3 +21,4 @@ class NetworkFlow:
     bytes: int | None = None
     tcp_flags: str | None = None
     source: str | None = None
+    label: str | None = None

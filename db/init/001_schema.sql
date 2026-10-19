@@ -46,6 +46,8 @@ CREATE TABLE network_flows (
     bytes BIGINT,
     tcp_flags TEXT,
     source TEXT,
+    -- ground truth from the simulator / labelled datasets, only for quality metrics (NFR11)
+    label TEXT,
 
     PRIMARY KEY (flow_id, ts_start)
 );

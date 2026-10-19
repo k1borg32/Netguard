@@ -71,7 +71,9 @@ def main() -> None:
     log.info("persister started")
 
     placeholders = ["to_timestamp(%s)" if c in ("ingested_at", "ts_start") else "%s" for c in FLOW_COLS]
-    flow_sql = f"INSERT INTO flows ({','.join(FLOW_COLS)}) VALUES ({','.join(placeholders)}) ON CONFLICT DO NOTHING"
+    flow_sql = (
+        f"INSERT INTO network_flows ({','.join(FLOW_COLS)}) VALUES ({','.join(placeholders)}) ON CONFLICT DO NOTHING"
+    )
     det_sql = (
         "INSERT INTO detections (detection_id, created_at, first_ingested_at, type, method, severity, "
         "confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, trace_ids) "
