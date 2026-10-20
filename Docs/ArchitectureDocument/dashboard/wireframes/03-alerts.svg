@@ -1,0 +1,171 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<rect x="0" y="0" width="1280" height="800" fill="#ffffff"/>
+<rect x="0.5" y="0.5" width="1279" height="799" rx="10" fill="#f6f7f9" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="1" y="1" width="1278" height="56" fill="#fff"/><line x1="0" y1="56" x2="1280" y2="56" stroke="#9aa0a6"/>
+<rect x="20" y="16" width="24" height="24" rx="5" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="54" y="34" font-size="18" font-weight="700" fill="#202124" text-anchor="start">NetGuard</text>
+<rect x="720" y="13" width="250" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="738" cy="28" r="5" fill="#2f9e44"/>
+<text x="750" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Simulator running · 200 flows/s</text>
+<rect x="980" y="13" width="110" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="998" cy="28" r="5" fill="#2f9e44"/>
+<text x="1010" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">API · DB ok</text>
+<text x="1170" y="33" font-size="13" font-weight="600" fill="#202124" text-anchor="end">admin ▾</text>
+<text x="1254" y="33" font-size="13" font-weight="400" fill="#3b5bdb" text-anchor="end">Log out</text>
+<rect x="1" y="57" width="200" height="742" fill="#fff"/><line x1="200" y1="56" x2="200" y2="800" stroke="#9aa0a6"/>
+<rect x="26" y="91" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="103" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Overview</text>
+<rect x="12" y="124" width="176" height="36" rx="6" fill="#e7ecff" stroke="#e7ecff" stroke-width="1"/>
+<rect x="26" y="135" width="14" height="14" rx="3" fill="#3b5bdb" stroke="none" stroke-width="1"/>
+<text x="52" y="147" font-size="14" font-weight="700" fill="#3b5bdb" text-anchor="start">Alerts</text>
+<rect x="26" y="179" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="191" font-size="14" font-weight="400" fill="#202124" text-anchor="start">History</text>
+<rect x="26" y="223" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="235" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Flows</text>
+<rect x="26" y="267" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="279" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Settings</text>
+<text x="20" y="780" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Wireframe v1 - not final design</text>
+<text x="224" y="96" font-size="22" font-weight="700" fill="#202124" text-anchor="start">Alerts</text>
+<text x="224" y="116" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Generated from detections. Click a row for details.</text>
+<rect x="224" y="128" width="1032" height="76" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Time</text>
+<rect x="240" y="156" width="140" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="250" y="177" font-size="13" font-weight="400" fill="#202124" text-anchor="start">Last 1 hour</text>
+<text x="364" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="392" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Status</text>
+<rect x="392" y="156" width="110" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="402" y="177" font-size="13" font-weight="400" fill="#202124" text-anchor="start">NEW</text>
+<text x="486" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="514" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Severity</text>
+<rect x="514" y="156" width="110" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="524" y="177" font-size="13" font-weight="400" fill="#202124" text-anchor="start">Any</text>
+<text x="608" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="636" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Type</text>
+<rect x="636" y="156" width="130" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="646" y="177" font-size="13" font-weight="400" fill="#202124" text-anchor="start">Any</text>
+<text x="750" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="778" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Source IP</text>
+<rect x="778" y="156" width="120" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="788" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">e.g. 10.0.0.5</text>
+<text x="910" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Destination IP</text>
+<rect x="910" y="156" width="120" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="920" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start"></text>
+<text x="1042" y="150" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Protocol</text>
+<rect x="1042" y="156" width="90" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1052" y="177" font-size="13" font-weight="400" fill="#202124" text-anchor="start">Any</text>
+<text x="1116" y="177" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<rect x="1176" y="156" width="64" height="32" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1208" y="177" font-size="13" font-weight="600" fill="#202124" text-anchor="middle">Reset</text>
+<rect x="224" y="220" width="1032" height="414" rx="4" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="224" y="220" width="1032" height="46" rx="4" fill="#eceff3" stroke="#9aa0a6" stroke-width="1"/>
+<text x="234" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Time</text>
+<text x="338.35955056179773" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Severity</text>
+<text x="454.314606741573" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Type</text>
+<text x="628.2471910112359" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Source</text>
+<text x="755.7977528089888" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Destination</text>
+<text x="894.943820224719" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Confidence</text>
+<text x="999.3033707865168" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Status</text>
+<text x="1150.0449438202247" y="248" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start"></text>
+<text x="234" y="294" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:07</text>
+<rect x="338.35955056179773" y="280" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<text x="361.35955056179773" y="294" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
+<text x="454.314606741573" y="294" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
+<text x="628.2471910112359" y="294" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
+<text x="755.7977528089888" y="294" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1</text>
+<text x="894.943820224719" y="294" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.94</text>
+<rect x="999.3033707865168" y="280" width="37" height="19" rx="9" fill="#e7f0ff" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1017.8033707865168" y="294" font-size="11" font-weight="700" fill="#3b5bdb" text-anchor="middle">NEW</text>
+<text x="1150.0449438202247" y="294" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Acknowledge</text>
+<line x1="224" y1="312" x2="1256" y2="312" stroke="#d0d4da"/>
+<text x="234" y="340" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:40:52</text>
+<rect x="338.35955056179773" y="326" width="76" height="19" rx="9" fill="#c92a2a" stroke="#c92a2a" stroke-width="1"/>
+<text x="376.35955056179773" y="340" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">CRITICAL</text>
+<text x="454.314606741573" y="340" font-size="12" font-weight="400" fill="#202124" text-anchor="start">DoS/DDoS-like</text>
+<text x="628.2471910112359" y="340" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.17</text>
+<text x="755.7977528089888" y="340" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.4</text>
+<text x="894.943820224719" y="340" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.98</text>
+<rect x="999.3033707865168" y="326" width="37" height="19" rx="9" fill="#e7f0ff" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1017.8033707865168" y="340" font-size="11" font-weight="700" fill="#3b5bdb" text-anchor="middle">NEW</text>
+<text x="1150.0449438202247" y="340" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Acknowledge</text>
+<line x1="224" y1="358" x2="1256" y2="358" stroke="#d0d4da"/>
+<text x="234" y="386" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:39:30</text>
+<rect x="338.35955056179773" y="372" width="61" height="19" rx="9" fill="#e8a400" stroke="#e8a400" stroke-width="1"/>
+<text x="368.85955056179773" y="386" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">MEDIUM</text>
+<text x="454.314606741573" y="386" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Brute Force</text>
+<text x="628.2471910112359" y="386" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.1.33</text>
+<text x="755.7977528089888" y="386" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.2:22</text>
+<text x="894.943820224719" y="386" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.81</text>
+<rect x="999.3033707865168" y="372" width="37" height="19" rx="9" fill="#e7f0ff" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1017.8033707865168" y="386" font-size="11" font-weight="700" fill="#3b5bdb" text-anchor="middle">NEW</text>
+<text x="1150.0449438202247" y="386" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Acknowledge</text>
+<line x1="224" y1="404" x2="1256" y2="404" stroke="#d0d4da"/>
+<text x="234" y="432" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:37:12</text>
+<rect x="338.35955056179773" y="418" width="38.5" height="19" rx="9" fill="#868e96" stroke="#868e96" stroke-width="1"/>
+<text x="357.60955056179773" y="432" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">LOW</text>
+<text x="454.314606741573" y="432" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Abnormal Traffic</text>
+<text x="628.2471910112359" y="432" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.88</text>
+<text x="755.7977528089888" y="432" font-size="12" font-weight="400" fill="#202124" text-anchor="start">-</text>
+<text x="894.943820224719" y="432" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.62</text>
+<rect x="999.3033707865168" y="418" width="100" height="19" rx="9" fill="#ebfbee" stroke="#2f9e44" stroke-width="1"/>
+<text x="1049.3033707865168" y="432" font-size="11" font-weight="700" fill="#2f9e44" text-anchor="middle">ACKNOWLEDGED</text>
+<text x="1150.0449438202247" y="432" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">by admin</text>
+<line x1="224" y1="450" x2="1256" y2="450" stroke="#d0d4da"/>
+<text x="234" y="478" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:35:45</text>
+<rect x="338.35955056179773" y="464" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<text x="361.35955056179773" y="478" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
+<text x="454.314606741573" y="478" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Suspicious Pattern</text>
+<text x="628.2471910112359" y="478" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.5</text>
+<text x="755.7977528089888" y="478" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.9</text>
+<text x="894.943820224719" y="478" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.77</text>
+<rect x="999.3033707865168" y="464" width="100" height="19" rx="9" fill="#ebfbee" stroke="#2f9e44" stroke-width="1"/>
+<text x="1049.3033707865168" y="478" font-size="11" font-weight="700" fill="#2f9e44" text-anchor="middle">ACKNOWLEDGED</text>
+<text x="1150.0449438202247" y="478" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">by jakub</text>
+<line x1="224" y1="496" x2="1256" y2="496" stroke="#d0d4da"/>
+<text x="234" y="524" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:31:02</text>
+<rect x="338.35955056179773" y="510" width="61" height="19" rx="9" fill="#e8a400" stroke="#e8a400" stroke-width="1"/>
+<text x="368.85955056179773" y="524" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">MEDIUM</text>
+<text x="454.314606741573" y="524" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Unknown Anomaly</text>
+<text x="628.2471910112359" y="524" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.41</text>
+<text x="755.7977528089888" y="524" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.3</text>
+<text x="894.943820224719" y="524" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.55</text>
+<rect x="999.3033707865168" y="510" width="37" height="19" rx="9" fill="#e7f0ff" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1017.8033707865168" y="524" font-size="11" font-weight="700" fill="#3b5bdb" text-anchor="middle">NEW</text>
+<text x="1150.0449438202247" y="524" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Acknowledge</text>
+<line x1="224" y1="542" x2="1256" y2="542" stroke="#d0d4da"/>
+<text x="234" y="570" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:28:19</text>
+<rect x="338.35955056179773" y="556" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<text x="361.35955056179773" y="570" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
+<text x="454.314606741573" y="570" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
+<text x="628.2471910112359" y="570" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
+<text x="755.7977528089888" y="570" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.7</text>
+<text x="894.943820224719" y="570" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.92</text>
+<rect x="999.3033707865168" y="556" width="100" height="19" rx="9" fill="#ebfbee" stroke="#2f9e44" stroke-width="1"/>
+<text x="1049.3033707865168" y="570" font-size="11" font-weight="700" fill="#2f9e44" text-anchor="middle">ACKNOWLEDGED</text>
+<text x="1150.0449438202247" y="570" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">by admin</text>
+<line x1="224" y1="588" x2="1256" y2="588" stroke="#d0d4da"/>
+<text x="234" y="616" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:22:48</text>
+<rect x="338.35955056179773" y="602" width="38.5" height="19" rx="9" fill="#868e96" stroke="#868e96" stroke-width="1"/>
+<text x="357.60955056179773" y="616" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">LOW</text>
+<text x="454.314606741573" y="616" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Abnormal Traffic</text>
+<text x="628.2471910112359" y="616" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.1.2</text>
+<text x="755.7977528089888" y="616" font-size="12" font-weight="400" fill="#202124" text-anchor="start">-</text>
+<text x="894.943820224719" y="616" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.58</text>
+<rect x="999.3033707865168" y="602" width="37" height="19" rx="9" fill="#e7f0ff" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1017.8033707865168" y="616" font-size="11" font-weight="700" fill="#3b5bdb" text-anchor="middle">NEW</text>
+<text x="1150.0449438202247" y="616" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Acknowledge</text>
+<text x="224" y="664" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Showing 1-8 of 312 · sorted by time, newest first</text>
+<rect x="976" y="646" width="34" height="30" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="993" y="666" font-size="13" font-weight="400" fill="#202124" text-anchor="middle">‹</text>
+<rect x="1016" y="646" width="34" height="30" rx="6" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1033" y="666" font-size="13" font-weight="400" fill="#fff" text-anchor="middle">1</text>
+<rect x="1056" y="646" width="34" height="30" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1073" y="666" font-size="13" font-weight="400" fill="#202124" text-anchor="middle">2</text>
+<rect x="1096" y="646" width="34" height="30" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1113" y="666" font-size="13" font-weight="400" fill="#202124" text-anchor="middle">3</text>
+<rect x="1136" y="646" width="34" height="30" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1153" y="666" font-size="13" font-weight="400" fill="#202124" text-anchor="middle">…</text>
+<rect x="1176" y="646" width="34" height="30" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1193" y="666" font-size="13" font-weight="400" fill="#202124" text-anchor="middle">39</text>
+<rect x="1216" y="646" width="34" height="30" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1233" y="666" font-size="13" font-weight="400" fill="#202124" text-anchor="middle">›</text>
+</svg>
