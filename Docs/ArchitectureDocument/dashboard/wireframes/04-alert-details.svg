@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<rect x="0" y="0" width="1280" height="800" fill="#ffffff"/>
+<rect x="0.5" y="0.5" width="1279" height="799" rx="10" fill="#f6f7f9" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="1" y="1" width="1278" height="56" fill="#fff"/><line x1="0" y1="56" x2="1280" y2="56" stroke="#9aa0a6"/>
+<rect x="20" y="16" width="24" height="24" rx="5" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="54" y="34" font-size="18" font-weight="700" fill="#202124" text-anchor="start">NetGuard</text>
+<rect x="720" y="13" width="250" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="738" cy="28" r="5" fill="#2f9e44"/>
+<text x="750" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Simulator running · 200 flows/s</text>
+<rect x="980" y="13" width="110" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="998" cy="28" r="5" fill="#2f9e44"/>
+<text x="1010" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">API · DB ok</text>
+<text x="1170" y="33" font-size="13" font-weight="600" fill="#202124" text-anchor="end">admin ▾</text>
+<text x="1254" y="33" font-size="13" font-weight="400" fill="#3b5bdb" text-anchor="end">Log out</text>
+<rect x="1" y="57" width="200" height="742" fill="#fff"/><line x1="200" y1="56" x2="200" y2="800" stroke="#9aa0a6"/>
+<rect x="26" y="91" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="103" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Overview</text>
+<rect x="12" y="124" width="176" height="36" rx="6" fill="#e7ecff" stroke="#e7ecff" stroke-width="1"/>
+<rect x="26" y="135" width="14" height="14" rx="3" fill="#3b5bdb" stroke="none" stroke-width="1"/>
+<text x="52" y="147" font-size="14" font-weight="700" fill="#3b5bdb" text-anchor="start">Alerts</text>
+<rect x="26" y="179" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="191" font-size="14" font-weight="400" fill="#202124" text-anchor="start">History</text>
+<rect x="26" y="223" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="235" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Flows</text>
+<rect x="26" y="267" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="279" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Settings</text>
+<text x="20" y="780" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Wireframe v1 - not final design</text>
+<text x="224" y="96" font-size="22" font-weight="700" fill="#202124" text-anchor="start"></text>
+<text x="224" y="84" font-size="12" font-weight="400" fill="#3b5bdb" text-anchor="start">Alerts  /  7c1e9a42-…-d03f</text>
+<rect x="224" y="105" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<text x="247" y="119" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
+<text x="286" y="124" font-size="22" font-weight="700" fill="#202124" text-anchor="start">Port Scan from 10.66.6.6</text>
+<rect x="576" y="105" width="37" height="19" rx="9" fill="#e7f0ff" stroke="#3b5bdb" stroke-width="1"/>
+<text x="594.5" y="119" font-size="11" font-weight="700" fill="#3b5bdb" text-anchor="middle">NEW</text>
+<rect x="1126" y="100" width="130" height="32" rx="6" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1191" y="121" font-size="13" font-weight="600" fill="#fff" text-anchor="middle">Acknowledge</text>
+<rect x="224" y="148" width="420" height="300" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="174" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Summary</text>
+<text x="240" y="200" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Detected at</text>
+<text x="384" y="200" font-size="13" font-weight="400" fill="#202124" text-anchor="start">2026-10-20 12:41:07</text>
+<text x="240" y="230" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Method</text>
+<text x="384" y="230" font-size="13" font-weight="400" fill="#202124" text-anchor="start">rule (port_scan, v1)</text>
+<text x="240" y="260" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Confidence</text>
+<text x="384" y="260" font-size="13" font-weight="400" fill="#202124" text-anchor="start">0.94</text>
+<text x="240" y="290" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Source</text>
+<text x="384" y="290" font-size="13" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
+<text x="240" y="320" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Destination</text>
+<text x="384" y="320" font-size="13" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1</text>
+<text x="240" y="350" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Protocol</text>
+<text x="384" y="350" font-size="13" font-weight="400" fill="#202124" text-anchor="start">TCP</text>
+<text x="240" y="380" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Window</text>
+<text x="384" y="380" font-size="13" font-weight="400" fill="#202124" text-anchor="start">10 s (12:40:57 - 12:41:07)</text>
+<text x="240" y="410" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Detection latency</text>
+<text x="384" y="410" font-size="13" font-weight="400" fill="#202124" text-anchor="start">0.8 s</text>
+<rect x="660" y="148" width="596" height="110" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="676" y="174" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Explanation</text>
+<text x="676" y="196" font-size="13" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6 contacted 212 distinct ports on 10.1.0.1 within 10 s</text>
+<text x="676" y="218" font-size="13" font-weight="400" fill="#202124" text-anchor="start">(threshold: 3). 98% of the flows were single SYN packets.</text>
+<rect x="660" y="270" width="596" height="178" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="676" y="296" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Feature values (evidence)</text>
+<rect x="672" y="306" width="572" height="136" rx="4" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="672" y="306" width="572" height="34" rx="4" fill="#eceff3" stroke="#9aa0a6" stroke-width="1"/>
+<text x="682" y="328" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Feature</text>
+<text x="886.2857142857142" y="328" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Value</text>
+<text x="988.4285714285713" y="328" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Threshold</text>
+<text x="1090.5714285714284" y="328" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start"></text>
+<text x="682" y="362" font-size="12" font-weight="400" fill="#202124" text-anchor="start">unique_dst_ports</text>
+<text x="886.2857142857142" y="362" font-size="12" font-weight="400" fill="#202124" text-anchor="start">212</text>
+<text x="988.4285714285713" y="362" font-size="12" font-weight="400" fill="#202124" text-anchor="start">3</text>
+<text x="1090.5714285714284" y="362" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">70x over</text>
+<line x1="672" y1="374" x2="1244" y2="374" stroke="#d0d4da"/>
+<text x="682" y="396" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flows_in_window</text>
+<text x="886.2857142857142" y="396" font-size="12" font-weight="400" fill="#202124" text-anchor="start">230</text>
+<text x="988.4285714285713" y="396" font-size="12" font-weight="400" fill="#202124" text-anchor="start">-</text>
+<line x1="672" y1="408" x2="1244" y2="408" stroke="#d0d4da"/>
+<text x="682" y="430" font-size="12" font-weight="400" fill="#202124" text-anchor="start">syn_only_ratio</text>
+<text x="886.2857142857142" y="430" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.98</text>
+<text x="988.4285714285713" y="430" font-size="12" font-weight="400" fill="#202124" text-anchor="start">-</text>
+<rect x="224" y="464" width="1032" height="316" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="490" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Contributing flows</text>
+<text x="1240" y="490" font-size="12" font-weight="400" fill="#3b5bdb" text-anchor="end">Open in Flows →</text>
+<rect x="236" y="504" width="1008" height="204" rx="4" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="236" y="504" width="1008" height="34" rx="4" fill="#eceff3" stroke="#9aa0a6" stroke-width="1"/>
+<text x="246" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Start</text>
+<text x="376.4470588235294" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Source</text>
+<text x="542.4705882352941" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Destination</text>
+<text x="708.4941176470588" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Proto</text>
+<text x="779.6470588235294" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Packets</text>
+<text x="862.6588235294117" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Bytes</text>
+<text x="945.6705882352941" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Flags</text>
+<text x="1016.8235294117646" y="526" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Trace ID</text>
+<text x="246" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.912</text>
+<text x="376.4470588235294" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6:51022</text>
+<text x="542.4705882352941" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1:22</text>
+<text x="708.4941176470588" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">TCP</text>
+<text x="779.6470588235294" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
+<text x="862.6588235294117" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
+<text x="945.6705882352941" y="560" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
+<text x="1016.8235294117646" y="560" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">tr-8f2c…a91</text>
+<line x1="236" y1="572" x2="1244" y2="572" stroke="#d0d4da"/>
+<text x="246" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.907</text>
+<text x="376.4470588235294" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6:51022</text>
+<text x="542.4705882352941" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1:23</text>
+<text x="708.4941176470588" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">TCP</text>
+<text x="779.6470588235294" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
+<text x="862.6588235294117" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
+<text x="945.6705882352941" y="594" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
+<text x="1016.8235294117646" y="594" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">tr-8f2c…a92</text>
+<line x1="236" y1="606" x2="1244" y2="606" stroke="#d0d4da"/>
+<text x="246" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.901</text>
+<text x="376.4470588235294" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6:51022</text>
+<text x="542.4705882352941" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1:25</text>
+<text x="708.4941176470588" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">TCP</text>
+<text x="779.6470588235294" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
+<text x="862.6588235294117" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
+<text x="945.6705882352941" y="628" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
+<text x="1016.8235294117646" y="628" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">tr-8f2c…a93</text>
+<line x1="236" y1="640" x2="1244" y2="640" stroke="#d0d4da"/>
+<text x="246" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.893</text>
+<text x="376.4470588235294" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6:51022</text>
+<text x="542.4705882352941" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1:80</text>
+<text x="708.4941176470588" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">TCP</text>
+<text x="779.6470588235294" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
+<text x="862.6588235294117" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
+<text x="945.6705882352941" y="662" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
+<text x="1016.8235294117646" y="662" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">tr-8f2c…a94</text>
+<line x1="236" y1="674" x2="1244" y2="674" stroke="#d0d4da"/>
+<text x="246" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.880</text>
+<text x="376.4470588235294" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6:51022</text>
+<text x="542.4705882352941" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.1.0.1:110</text>
+<text x="708.4941176470588" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">TCP</text>
+<text x="779.6470588235294" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
+<text x="862.6588235294117" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
+<text x="945.6705882352941" y="696" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
+<text x="1016.8235294117646" y="696" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">tr-8f2c…a95</text>
+<text x="236" y="760" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Showing 5 of 230 flows · trace IDs can be followed with: make trace ID=&lt;id&gt;</text>
+</svg>
