@@ -20,7 +20,7 @@ importer  --+    key = src_ip      +--------------------------------------+
 | Broker | Redpanda (Kafka API) | 19092 |
 | DB | PostgreSQL 16 + TimescaleDB | 5432 |
 | API | FastAPI | 8000 |
-| Dashboard | nginx (placeholder, React later) | 3000 |
+| Dashboard | React + nginx | 3000 |
 | Broker UI (optional) | Redpanda Console | 8081 |
 
 All ports are published on `127.0.0.1` only, so the DB and broker (no real auth in dev) are not reachable from your network.
@@ -47,7 +47,14 @@ docker compose up -d --build
 docker compose --profile sim run --rm simulator
 ```
 
-Open http://localhost:3000 - port-scan detections appear within ~15 s.
+Create the first dashboard user once per DB volume (asks for a username and a password of 12+ characters):
+
+```bash
+docker compose exec api python -m app.infrastructure.bootstrap_admin
+```
+
+Open http://localhost:3000 and sign in - port-scan detections appear within ~15 s.
+Dashboard development: [services/dashboard/README.md](services/dashboard/README.md).
 API docs: http://localhost:8000/docs. Broker UI: `docker compose --profile debug up -d`, then http://localhost:8081.
 
 Stop: `make down`. Wipe all data: `make reset` (`docker compose down -v`).
