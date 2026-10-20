@@ -1,0 +1,48 @@
+@startuml system_overview
+title NetGuard - System Overview
+
+!pragma layout smetana
+left to right direction
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor white
+skinparam packageStyle rectangle
+
+actor "Operator" as Operator
+
+package "Data sources" {
+    component "PCAP Importer\n(planned, week 3)" as Importer
+    component "Traffic Simulator" as Simulator
+}
+
+package "Message broker (Redpanda)" {
+    queue "detections" as DetectionsTopic
+    queue "flows.raw\nkey = src_ip" as FlowsTopic
+}
+
+package "Processing" {
+    component "Processor\nwindows, rules, statistics\n1..N instances" as Processor
+    component "Persister" as Persister
+}
+
+database "TimescaleDB" as DB
+
+package "Presentation" {
+    component "REST API\nFastAPI, /api/v1" as API
+    component "Dashboard\nReact + nginx" as Dashboard
+}
+
+Importer --> FlowsTopic : normalised flows
+Simulator --> FlowsTopic : synthetic flows
+FlowsTopic --> Processor : flows
+Processor --> DetectionsTopic : detections
+FlowsTopic --> Persister : flows
+DetectionsTopic --> Persister : detections
+Persister --> DB : batch inserts
+API --> DB : queries
+Dashboard --> API : HTTP / JSON
+Operator --> Dashboard : browser
+
+@enduml
