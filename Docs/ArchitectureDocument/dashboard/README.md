@@ -271,7 +271,7 @@ p95 detection latency (`detection_latency` view). Can come later.
 
 **Other notes for the API:**
 
-- Rate limiting (NFR06, SEC-04/05): one dashboard tab makes about 4 requests per 5 s; the limit should allow a few
+- Rate limiting (NFR06, SEC-07): one dashboard tab makes about 4 requests per 5 s; the limit should allow a few
   tabs per user.
 - Keep error bodies as they are now (`{"detail": ...}`), the UI shows `detail` when it is a string and maps
   validation errors to form fields.
