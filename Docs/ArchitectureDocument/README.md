@@ -110,3 +110,50 @@ Source: [`diagrams/ingestion_dataflow.puml`](diagrams/ingestion_dataflow.puml)
   files, apply §5 normalisation, validate (§6), and publish to `flows.raw`.
 - Unit tests for normalisation and validation; mark tests that cover test-plan IDs
   in their docstrings (Conventions §9).
+
+  ## 11. Simulator control (F11 — design)
+
+> Design note only. Implementation comes later (simulator week 4, API week 6);
+> this records how the dashboard will start/stop the simulator so M3/M4 can build
+> against it.
+
+Today the simulator runs as `docker compose run`. F11 needs an operator to start
+and stop it from the dashboard. The simulator is already a broker producer (it
+publishes flows to `flows.raw`), so the consistent design is to let it **also
+consume a control topic** — no new HTTP server inside the simulator.
+
+**Control path:**
+1. Operator clicks Start / Stop on the dashboard (M4).
+2. Dashboard calls a REST endpoint, e.g. `POST /api/v1/simulator/start` and
+   `POST /api/v1/simulator/stop` (M3).
+3. The API authorises the call (administrative operation → auth required, NFR06),
+   creates a `trace_id`, and publishes a control message to topic
+   `simulator.control`.
+4. The simulator subscribes to `simulator.control`. On `start` it begins
+   generating (optionally for a given scenario and rate); on `stop` it halts.
+   Generated flows carry the same `trace_id` to `flows.raw` as today.
+
+**Control message (`simulator.control`, proposed `simulator_control.v1`):**
+
+| Field | Type | Notes |
+|---|---|---|
+| `schema_version` | const 1 | |
+| `command` | enum `start` / `stop` | |
+| `scenario` | string, optional | `normal`, `port_scan`, `dos`, `brute_force`, `abnormal_pattern`, or `mixed` |
+| `rate` | integer, optional | target flows/sec for load mode |
+| `trace_id` | string | created by the API (first component to touch the request) |
+| `issued_at` | number | unix epoch seconds |
+
+**Status (so the dashboard can show running / stopped):** the simulator publishes
+its state to `simulator.status` (or a heartbeat); the API exposes
+`GET /api/v1/simulator/status` reading the latest.
+
+**Why the broker and not a direct call into the simulator:** keeps the simulator
+a pure broker client like every other service, adds no inbound HTTP surface,
+survives instance restarts (NFR04), and every control action gets a `trace_id`
+like all other events (F15, NFR08).
+
+**Ownership:** control-topic consumer in the simulator — M1. REST endpoints +
+auth — M3. Dashboard buttons — M4. The `simulator.control` topic and its schema
+are a shared contract, so adding them to `libs/common` (`topics.py` + `schemas/`)
+goes through the team PR process (Conventions §2).
