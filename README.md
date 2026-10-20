@@ -4,16 +4,15 @@ Defensive, lab-only platform: imports PCAP/flow data or simulated traffic, proce
 detects and classifies anomalies (rules + statistical method), stores results, and shows them in an API and dashboard.
 **No real networks, no real attacks, no production data.**
 
-> Status: week 1-2 skeleton. A thin pipeline (simulator -> broker -> processor -> persister -> DB -> API -> dashboard)
-> works with a placeholder port-scan rule. Components get replaced by their owners per the schedule.
+> Status: week 2. The pipeline runs end to end with a placeholder port-scan rule, and the API has login, alerts and a
+> dashboard summary. The other detection rules, the PCAP importer and the dashboard pages follow the schedule.
 
-## Architecture (current)
+## Architecture
 
-```
-simulator --+                      +--> processor (xN) --> [detections] --+
-            +--> [flows.raw] ------+                                      +--> persister --> TimescaleDB --> API --> dashboard
-importer  --+    key = src_ip      +--------------------------------------+
-```
+![NetGuard system overview](Docs/ArchitectureDocument/diagrams/system_overview.svg)
+
+Flows are keyed by source IP, so all flows of one source reach the same processor instance and the processor can be
+scaled (NFR03). Diagram source: [system_overview.puml](Docs/ArchitectureDocument/diagrams/system_overview.puml).
 
 | Component | Tech | Port |
 |---|---|---|
@@ -117,5 +116,8 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
 ## Docs
 
 - [Vision Document](Docs/VisionDoccument/README.md) - requirements F01-F17, NFR01-NFR11
+- [Architecture Document](Docs/ArchitectureDocument/README.md) - data ingestion and the flow model
+- [Domain Data Model](Docs/DomainDataModel/README.md) and [Database Schema](Docs/DatabaseSchema/README.md)
+- [Backend and Data Storage](Docs/BackendAndDataStorage/README.md) - API, authentication, endpoints
 - [Test Plan](Docs/TestPlan/README.md)
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done
