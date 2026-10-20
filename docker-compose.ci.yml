@@ -1,0 +1,21 @@
+# CI only: keeps the image build layers in the GitHub Actions cache, so a run that changes
+# nothing in a service doesn't build its image again. Locally Docker has its own build cache.
+# Used through COMPOSE_FILE in .github/workflows/ci.yml.
+
+services:
+  processor:
+    build:
+      cache_from: ["type=gha,scope=processor"]
+      cache_to: ["type=gha,scope=processor,mode=max"]
+  persister:
+    build:
+      cache_from: ["type=gha,scope=persister"]
+      cache_to: ["type=gha,scope=persister,mode=max"]
+  api:
+    build:
+      cache_from: ["type=gha,scope=api"]
+      cache_to: ["type=gha,scope=api,mode=max"]
+  dashboard:
+    build:
+      cache_from: ["type=gha,scope=dashboard"]
+      cache_to: ["type=gha,scope=dashboard,mode=max"]
