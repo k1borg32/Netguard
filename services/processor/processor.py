@@ -29,6 +29,7 @@ class SourceWindow:
     dst_ips: set[str] = field(default_factory=set)
     flows: int = 0
     first_ingested_at: float = float("inf")
+    last_ingested_at: float = 0.0
     trace_ids: list[str] = field(default_factory=list)
 
 
@@ -49,6 +50,7 @@ class WindowState:
         w.dst_ips.add(flow["dst_ip"])
         w.flows += 1
         w.first_ingested_at = min(w.first_ingested_at, flow["ingested_at"])
+        w.last_ingested_at = max(w.last_ingested_at, flow["ingested_at"])
         if len(w.trace_ids) < 20:
             w.trace_ids.append(flow["trace_id"])
 
@@ -70,6 +72,7 @@ def port_scan_rule(src: str, start: float, w: SourceWindow, size_s: int, thresho
         "trace_ids": w.trace_ids,
         "created_at": now,
         "first_ingested_at": w.first_ingested_at,
+        "last_ingested_at": w.last_ingested_at,
         "type": "port_scan",
         "method": "rule",
         "severity": severity,
@@ -118,7 +121,7 @@ def main() -> None:
                             extra={
                                 "detection_id": det["detection_id"],
                                 "type": det["type"],
-                                "latency_s": round(now - det["first_ingested_at"], 3),
+                                "latency_s": round(now - det["last_ingested_at"], 3),
                             },
                         )
             producer.poll(0)

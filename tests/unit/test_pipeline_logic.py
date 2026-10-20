@@ -30,6 +30,18 @@ def test_port_scan_detected_and_valid():
     assert det["severity"] in {"MEDIUM", "HIGH", "CRITICAL", "LOW"}
 
 
+def test_first_and_last_ingested_at():
+    """UT-07: NFR02 latency is measured from last_ingested_at, time to detect from first_ingested_at."""
+    ws = WindowState(size_s=10)
+    for port, ingested_at in [(1, T0 + 1), (2, T0 + 5), (3, T0 + 3)]:
+        flow = port_scan_flow(T0 + 1, "10.66.6.6", "10.1.0.1")
+        flow.update(dst_port=port, ingested_at=ingested_at)
+        ws.add(flow)
+    ((src, start, w),) = ws.pop_closed(T0 + 12)
+    det = port_scan_rule(src, start, w, 10, threshold=3, now=T0 + 12)
+    assert (det["first_ingested_at"], det["last_ingested_at"]) == (T0 + 1, T0 + 5)
+
+
 def test_normal_traffic_no_detection():
     """UT-08"""
     ws = WindowState(size_s=10)

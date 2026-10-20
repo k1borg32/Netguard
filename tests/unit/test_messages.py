@@ -23,6 +23,26 @@ FLOW = {
     "label": "normal",
 }
 
+DETECTION = {
+    "schema_version": 1,
+    "detection_id": detection_id("dos", "rule", "a", "b", 0, 1),
+    "trace_ids": ["t1"],
+    "created_at": 2.0,
+    "first_ingested_at": 0.5,
+    "last_ingested_at": 1.0,
+    "type": "dos",
+    "method": "rule",
+    "severity": "HIGH",
+    "confidence": 0.9,
+    "src_ip": "10.0.0.1",
+    "dst_ip": "10.1.0.1",
+    "window": {"size_s": 1, "start": 0, "end": 1},
+    "features": {"conn": 900},
+    "explanation": "x",
+}
+
+SPEC_CLASSES = ["port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern", "unknown"]
+
 
 def test_valid_flow_passes():
     """UT-01"""
@@ -78,24 +98,27 @@ def test_detection_id_deterministic_for_duplicates():
 
 def test_detection_schema_rejects_bad_severity_and_confidence():
     """UT-02"""
-    det = {
-        "schema_version": 1,
-        "detection_id": detection_id("dos", "rule", "a", "b", 0, 1),
-        "trace_ids": ["t1"],
-        "created_at": 2.0,
-        "first_ingested_at": 1.0,
-        "type": "dos",
-        "method": "rule",
-        "severity": "HIGH",
-        "confidence": 0.9,
-        "src_ip": "10.0.0.1",
-        "dst_ip": "10.1.0.1",
-        "window": {"size_s": 1, "start": 0, "end": 1},
-        "features": {"conn": 900},
-        "explanation": "x",
-    }
-    validate_detection(det)
+    validate_detection(DETECTION)
     with pytest.raises(SchemaError):
-        validate_detection({**det, "severity": "SEVERE"})
+        validate_detection({**DETECTION, "severity": "SEVERE"})
     with pytest.raises(SchemaError):
-        validate_detection({**det, "confidence": 1.5})
+        validate_detection({**DETECTION, "confidence": 1.5})
+
+
+def test_detection_requires_last_ingested_at():
+    """UT-02: last_ingested_at is where the NFR02 latency measurement starts."""
+    det = {k: v for k, v in DETECTION.items() if k != "last_ingested_at"}
+    with pytest.raises(SchemaError, match="last_ingested_at"):
+        validate_detection(det)
+
+
+@pytest.mark.parametrize("det_type", SPEC_CLASSES)
+def test_spec_classes_valid(det_type):
+    """UT-02: the six classes from spec 4.5."""
+    validate_detection({**DETECTION, "type": det_type})
+
+
+@pytest.mark.parametrize("label", [c for c in SPEC_CLASSES if c != "unknown"] + ["normal"])
+def test_scenario_labels_valid(label):
+    """UT-01: the five scenarios from spec 5, plus normal traffic."""
+    validate_flow({**FLOW, "label": label})
