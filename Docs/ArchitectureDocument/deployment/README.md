@@ -90,7 +90,7 @@ same branch cancels the older one.
 |---|---|---|
 | `lint-and-unit` | ruff lint + format check, unit tests with coverage | ~20 s |
 | `secrets-scan` | gitleaks over the whole git history (SEC-09) | ~10 s |
-| `dashboard` | `npm ci`, oxlint, vitest component tests, production build (Node 24) | ~1 min |
+| `dashboard` | `npm ci`, oxlint, vitest component tests, production build (Node 24) | ~20 s |
 | `integration` | API integration tests with their own disposable DB; then the stack with the README command; full-stack tests (IT-01, IT-02); scale the processor to 2, kill one, IT-02 again (NFR03/NFR04 smoke); logs dumped on failure; tear down | ~2.5 min |
 
 - **Branch protection on `main`:** pull request with 1 approval, the jobs above must be green, approvals are
