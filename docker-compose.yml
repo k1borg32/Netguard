@@ -83,7 +83,7 @@ services:
   api:
     <<: *py
     build: { context: ., dockerfile: services/python.Dockerfile, args: { SERVICE: api } }
-    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000"]
     ports: ["127.0.0.1:8000:8000"]
     depends_on:
       db: { condition: service_healthy }
@@ -94,12 +94,15 @@ services:
       retries: 10
 
   dashboard:
-    image: nginx:1.27-alpine
-    volumes:
-      - ./services/dashboard/index.html:/usr/share/nginx/html/index.html:ro
-      - ./services/dashboard/nginx.conf:/etc/nginx/conf.d/default.conf:ro
-    ports: ["127.0.0.1:3000:80"]
+    build: { context: services/dashboard }   # React app built into nginx (multi-stage Dockerfile)
+    restart: unless-stopped
+    ports: ["127.0.0.1:3000:8080"]
     depends_on: [api]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/ > /dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   dbdata:

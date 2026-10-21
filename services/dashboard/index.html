@@ -1,24 +1,13 @@
 <!doctype html>
-<!-- PLACEHOLDER (owner: Member 4). Replaced by the React dashboard in week 7. -->
 <html lang="en">
-<head><meta charset="utf-8"><title>NetGuard</title>
-<style>body{font-family:system-ui;margin:2rem;background:#0f1419;color:#e6e6e6}td,th{padding:.3rem .8rem;text-align:left}</style>
-</head>
-<body>
-<h1>NetGuard - pipeline smoke view</h1>
-<p id="health">checking API...</p>
-<table><thead><tr><th>Time</th><th>Type</th><th>Severity</th><th>Source</th><th>Explanation</th></tr></thead><tbody id="rows"></tbody></table>
-<script>
-async function load() {
-  try {
-    const h = await (await fetch('/api/health')).json();
-    document.getElementById('health').textContent = 'API: ' + h.status + ' / DB: ' + h.db;
-    const d = await (await fetch('/api/api/v1/detections?limit=20')).json();
-    document.getElementById('rows').innerHTML = d.map(x =>
-      `<tr><td>${x.created_at}</td><td>${x.type}</td><td>${x.severity}</td><td>${x.src_ip}</td><td>${x.explanation}</td></tr>`).join('');
-  } catch (e) { document.getElementById('health').textContent = 'API unreachable'; }
-}
-load(); setInterval(load, 3000);
-</script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NetGuard</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
 </html>

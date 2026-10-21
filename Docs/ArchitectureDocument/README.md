@@ -1,13 +1,13 @@
-# Architecture Document — Network Data Ingestion & Flow Processing (M1)
+# Architecture Document - Network Data Ingestion & Flow Processing (M1)
 
-> Owner: Valeriia (M1 — Network Data & Flow Processing)
+> Owner: Valeriia (M1, Network Data & Flow Processing)
 > Covers: `services/importer/`, the normalised flow contract (`flow.v1.json`),
-> and the ingestion half of the data-flow (spec steps 1–4, F01–F03).
+> and the ingestion half of the data-flow (spec steps 1-4, F01-F03).
 
 ## 1. Responsibility
 
-This component turns raw input — prepared PCAP/flow files or synthetic traffic
-from the simulator — into a stream of **normalised flows** on the broker topic
+This component turns raw input (prepared PCAP/flow files or synthetic traffic
+from the simulator) into a stream of **normalised flows** on the broker topic
 `flows.raw`. It is the first stage of the pipeline; everything downstream
 (windowing, detection, persistence, API, dashboard) consumes the contract
 defined here. It does not detect anomalies and does not touch the database.
@@ -22,7 +22,7 @@ defined here. It does not detect anomalies and does not touch the database.
   without any real network.
 - **Boundary out:** both publish to `flows.raw`, keyed by `src_ip`, so all flows
   from one source land on the same partition and are windowed consistently by one
-  processor instance (see Conventions §2).
+  processor instance (see Conventions, section 2).
 
 ## 3. Normalised flow model
 
@@ -32,17 +32,17 @@ Every flow published to `flows.raw` conforms to
 | Required field       | `flow.v1` field | Type / notes                          |
 |----------------------|-----------------|---------------------------------------|
 | start timestamp      | `ts_start`      | Unix epoch seconds (float)            |
-| duration             | `duration_ms`   | milliseconds, ≥ 0                      |
+| duration             | `duration_ms`   | milliseconds, >= 0                     |
 | source IP            | `src_ip`        | IPv4 or IPv6                          |
 | destination IP       | `dst_ip`        | IPv4 or IPv6                          |
-| source port          | `src_port`      | 0–65535                               |
-| destination port     | `dst_port`      | 0–65535                               |
+| source port          | `src_port`      | 0-65535                               |
+| destination port     | `dst_port`      | 0-65535                               |
 | protocol             | `protocol`      | enum: TCP / UDP / ICMP / OTHER        |
-| packet count         | `packets`       | integer ≥ 0                           |
-| byte count           | `bytes`         | integer ≥ 0                           |
+| packet count         | `packets`       | integer >= 0                          |
+| byte count           | `bytes`         | integer >= 0                          |
 | TCP flag information  | `tcp_flags`     | string (e.g. `SA`), null when not TCP |
 
-Additional schema fields that exist for pipeline correctness, not from Spec §8:
+Additional schema fields that exist for pipeline correctness, not from the spec:
 `schema_version`, `flow_id`, `trace_id`, `ingested_at`, `source`
 (pcap/flowfile/simulator), and `label` (ground truth from the simulator /
 labelled datasets, used **only** for quality metrics, never read by detectors).
@@ -76,8 +76,8 @@ These are **not** stored on the raw flow:
 ## 6. Input validation (F01, SEC-02)
 
 Every normalised flow is validated against `flow.v1.json` before publishing.
-A malformed or incomplete record is **rejected with its reason** — logged at
-ERROR and dropped, never published — so one bad record cannot stop the pipeline
+A malformed or incomplete record is **rejected with its reason**: logged at
+ERROR and dropped, never published, so one bad record cannot stop the pipeline
 (issue #8). At the end of a run the importer prints a short summary: how many
 records were accepted, how many were rejected, and the reason counts. This
 satisfies F01 (report rejected records with the reason) and is what SEC-02 in
@@ -107,11 +107,11 @@ Source: [`diagrams/ingestion_dataflow.puml`](diagrams/ingestion_dataflow.puml)
 ## 10. Week-3 plan (implementation)
 
 - Build `services/importer/` to read PCAP (e.g. via a packet library) and flow
-  files, apply §5 normalisation, validate (§6), and publish to `flows.raw`.
+  files, apply the section 5 normalisation, validate (section 6), and publish to `flows.raw`.
 - Unit tests for normalisation and validation; mark tests that cover test-plan IDs
-  in their docstrings (Conventions §9).
+  in their docstrings (Conventions, section 9).
 
-  ## 11. Simulator control (F11 — design)
+## 11. Simulator control (F11, design)
 
 > Design note only. Implementation comes later (simulator week 4, API week 6);
 > this records how the dashboard will start/stop the simulator so M3/M4 can build
@@ -120,14 +120,17 @@ Source: [`diagrams/ingestion_dataflow.puml`](diagrams/ingestion_dataflow.puml)
 Today the simulator runs as `docker compose run`. F11 needs an operator to start
 and stop it from the dashboard. The simulator is already a broker producer (it
 publishes flows to `flows.raw`), so the consistent design is to let it **also
-consume a control topic** — no new HTTP server inside the simulator.
+consume a control topic**, with no new HTTP server inside the simulator. For this
+the simulator becomes a long-running service that waits for commands instead of
+exiting after `SIM_DURATION_S`.
 
 **Control path:**
+
 1. Operator clicks Start / Stop on the dashboard (M4).
 2. Dashboard calls a REST endpoint, e.g. `POST /api/v1/simulator/start` and
    `POST /api/v1/simulator/stop` (M3).
-3. The API authorises the call (administrative operation → auth required, NFR06),
-   creates a `trace_id`, and publishes a control message to topic
+3. The API authorises the call (administrative operation, admin role required,
+   NFR06, SEC-04), creates a `trace_id`, and publishes a control message to topic
    `simulator.control`.
 4. The simulator subscribes to `simulator.control`. On `start` it begins
    generating (optionally for a given scenario and rate); on `stop` it halts.
@@ -139,21 +142,33 @@ consume a control topic** — no new HTTP server inside the simulator.
 |---|---|---|
 | `schema_version` | const 1 | |
 | `command` | enum `start` / `stop` | |
-| `scenario` | string, optional | `normal`, `port_scan`, `dos`, `brute_force`, `abnormal_pattern`, or `mixed` |
+| `scenario` | string, optional | `normal`, `port_scan`, `dos`, `brute_force`, `abnormal_traffic`, `suspicious_pattern` (same names as the flow labels and the ground-truth manifest) or `mixed` |
 | `rate` | integer, optional | target flows/sec for load mode |
 | `trace_id` | string | created by the API (first component to touch the request) |
 | `issued_at` | number | unix epoch seconds |
 
+**Delivery rules for the control topic:**
+
+- One partition, so commands keep their order.
+- Every simulator instance must get every command (load mode runs several
+  instances), so each instance uses its own consumer group (for example
+  `simulator-<hostname>`), not a shared one.
+- A restarted simulator must not replay old commands: it starts reading from the
+  latest offset and ignores messages with an `issued_at` older than its own start.
+
 **Status (so the dashboard can show running / stopped):** the simulator publishes
-its state to `simulator.status` (or a heartbeat); the API exposes
-`GET /api/v1/simulator/status` reading the latest.
+its state (`running` / `stopped`, scenario, rate, `updated_at`) to
+`simulator.status` on every change and every 10 s. The topic is compacted, so it
+always keeps the last state; the API exposes `GET /api/v1/simulator/status`
+reading the latest message.
 
 **Why the broker and not a direct call into the simulator:** keeps the simulator
 a pure broker client like every other service, adds no inbound HTTP surface,
 survives instance restarts (NFR04), and every control action gets a `trace_id`
 like all other events (F15, NFR08).
 
-**Ownership:** control-topic consumer in the simulator — M1. REST endpoints +
-auth — M3. Dashboard buttons — M4. The `simulator.control` topic and its schema
-are a shared contract, so adding them to `libs/common` (`topics.py` + `schemas/`)
-goes through the team PR process (Conventions §2).
+**Ownership:** control-topic consumer in the simulator: M1. REST endpoints +
+auth: M3. Dashboard buttons: M4. The `simulator.control` and `simulator.status`
+topics and their schemas are a shared contract, so adding them to `libs/common`
+(`topics.py` + `schemas/`) goes through the team PR process (Conventions,
+section 2).

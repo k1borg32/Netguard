@@ -1,5 +1,4 @@
-"""Integration tests against the running stack (`make up`, then `make test-int`).
-CI runs these after `docker compose up`."""
+"""Smoke tests against the full running stack (`make up`, then `make test-stack`)."""
 
 import json
 import os
@@ -8,7 +7,7 @@ import urllib.request
 
 import pytest
 
-pytestmark = pytest.mark.integration
+pytestmark = [pytest.mark.integration, pytest.mark.stack]
 API = os.getenv("API_URL", "http://localhost:8000")
 
 
@@ -18,18 +17,17 @@ def _get(path):
 
 
 def test_api_healthy():
-    """IT-01"""
-    assert _get("/health")["status"] == "ok"
+    """IT-01: the API is up and reaches the database."""
+    assert _get("/health") == {"status": "ok", "db": "ok"}
 
 
 def test_port_scan_reaches_api():
-    """IT-02: Thin end-to-end path: simulator -> broker -> processor -> broker -> persister -> DB -> API."""
+    """IT-02: simulator -> broker -> processor -> broker -> persister -> DB -> API."""
     from simulator import port_scan_flow
 
     from netguard_common import topics
     from netguard_common.broker import encode, make_producer
 
-    os.environ.setdefault("BROKER_BOOTSTRAP", "localhost:19092")
     p = make_producer()
     now = time.time()
     attacker = f"10.99.{int(now) % 250}.{int(now * 10) % 250}"

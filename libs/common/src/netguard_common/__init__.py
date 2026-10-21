@@ -8,6 +8,7 @@ from netguard_common.messages import (
     flow_id_for,
     validate_detection,
     validate_flow,
+    validate_manifest,
 )
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     "trace_context",
     "validate_detection",
     "validate_flow",
+    "validate_manifest",
 ]

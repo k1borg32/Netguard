@@ -1,0 +1,187 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<rect x="0" y="0" width="1280" height="800" fill="#ffffff"/>
+<rect x="0.5" y="0.5" width="1279" height="799" rx="10" fill="#f6f7f9" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="1" y="1" width="1278" height="56" fill="#fff"/><line x1="0" y1="56" x2="1280" y2="56" stroke="#9aa0a6"/>
+<rect x="20" y="16" width="24" height="24" rx="5" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="54" y="34" font-size="18" font-weight="700" fill="#202124" text-anchor="start">NetGuard</text>
+<rect x="720" y="13" width="250" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="738" cy="28" r="5" fill="#2f9e44"/>
+<text x="750" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Simulator running · 200 flows/s</text>
+<rect x="980" y="13" width="110" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="998" cy="28" r="5" fill="#2f9e44"/>
+<text x="1010" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">API · DB ok</text>
+<text x="1170" y="33" font-size="13" font-weight="600" fill="#202124" text-anchor="end">admin ▾</text>
+<text x="1254" y="33" font-size="13" font-weight="400" fill="#3b5bdb" text-anchor="end">Log out</text>
+<rect x="1" y="57" width="200" height="742" fill="#fff"/><line x1="200" y1="56" x2="200" y2="800" stroke="#9aa0a6"/>
+<rect x="12" y="80" width="176" height="36" rx="6" fill="#e7ecff" stroke="#e7ecff" stroke-width="1"/>
+<rect x="26" y="91" width="14" height="14" rx="3" fill="#3b5bdb" stroke="none" stroke-width="1"/>
+<text x="52" y="103" font-size="14" font-weight="700" fill="#3b5bdb" text-anchor="start">Overview</text>
+<rect x="26" y="135" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="147" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Alerts</text>
+<rect x="26" y="179" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="191" font-size="14" font-weight="400" fill="#202124" text-anchor="start">History</text>
+<rect x="26" y="223" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="235" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Flows</text>
+<rect x="26" y="267" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="279" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Settings</text>
+<text x="20" y="780" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Wireframe v1 - not final design</text>
+<text x="224" y="96" font-size="22" font-weight="700" fill="#202124" text-anchor="start">Overview</text>
+<text x="224" y="116" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Live view - refreshes every 5 s</text>
+<rect x="1046" y="74" width="210" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1056" y="95" font-size="13" font-weight="400" fill="#202124" text-anchor="start">Last 15 minutes</text>
+<text x="1240" y="95" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="924" y="95" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Updated 3 s ago</text>
+<rect x="224" y="136" width="246" height="96" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="160" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Flows</text>
+<text x="240" y="196" font-size="28" font-weight="700" fill="#202124" text-anchor="start">182,430</text>
+<text x="240" y="218" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">+4% vs prev. 15 min</text>
+<rect x="486" y="136" width="246" height="96" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="502" y="160" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Flows / s (now)</text>
+<text x="502" y="196" font-size="28" font-weight="700" fill="#202124" text-anchor="start">203</text>
+<text x="502" y="218" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">processor x2</text>
+<rect x="748" y="136" width="246" height="96" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="764" y="160" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Detections</text>
+<text x="764" y="196" font-size="28" font-weight="700" fill="#202124" text-anchor="start">37</text>
+<text x="764" y="218" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">12 HIGH or CRITICAL</text>
+<rect x="1010" y="136" width="246" height="96" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1026" y="160" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Open alerts</text>
+<text x="1026" y="196" font-size="28" font-weight="700" fill="#202124" text-anchor="start">9</text>
+<text x="1026" y="218" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">NEW, not acknowledged</text>
+<rect x="224" y="248" width="640" height="250" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="274" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Traffic - flows per second</text>
+<rect x="584" y="265" width="10" height="10" rx="2" fill="#3b5bdb"/>
+<text x="598" y="274" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">flows/s</text>
+<rect x="661.5" y="265" width="10" height="10" rx="2" fill="#adb5bd"/>
+<text x="675.5" y="274" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">bytes/s</text>
+<line x1="276" y1="296" x2="276" y2="466" stroke="#9aa0a6"/>
+<line x1="276" y1="466" x2="848" y2="466" stroke="#9aa0a6"/>
+<line x1="276" y1="423.5" x2="848" y2="423.5" stroke="#d0d4da" stroke-dasharray="3 4"/>
+<line x1="276" y1="381" x2="848" y2="381" stroke="#d0d4da" stroke-dasharray="3 4"/>
+<line x1="276" y1="338.5" x2="848" y2="338.5" stroke="#d0d4da" stroke-dasharray="3 4"/>
+<text x="276" y="482" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:27</text>
+<text x="389.6" y="482" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:30</text>
+<text x="503.2" y="482" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:33</text>
+<text x="616.8" y="482" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:36</text>
+<text x="730.4" y="482" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:39</text>
+<text x="844" y="482" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:42</text>
+<polyline points="276.0,389.7 290.6,388.3 305.1,397.3 319.7,394.7 334.3,390.7 348.8,389.4 363.4,398.1 377.9,381.8 392.5,387.7 407.1,391.3 421.6,393.9 436.2,383.8 450.8,386.3 465.3,398.1 479.9,389.5 494.5,394.9 509.0,386.0 523.6,396.5 538.2,388.3 552.7,389.8 567.3,396.1 581.8,398.7 596.4,380.5 611.0,379.9 625.5,397.2 640.1,390.6 654.7,380.2 669.2,366.1 683.8,331.6 698.4,358.7 712.9,386.0 727.5,394.0 742.1,396.2 756.6,379.6 771.2,390.6 785.7,395.0 800.3,388.5 814.9,393.0 829.4,396.6 844.0,383.9" fill="none" stroke="#3b5bdb" stroke-width="2"/>
+<polyline points="276.0,417.3 290.6,418.8 305.1,409.1 319.7,416.6 334.3,412.8 348.8,418.4 363.4,408.7 377.9,415.9 392.5,416.7 407.1,415.2 421.6,408.9 436.2,412.0 450.8,416.9 465.3,413.2 479.9,412.3 494.5,421.6 509.0,409.6 523.6,411.8 538.2,410.1 552.7,419.6 567.3,418.6 581.8,417.5 596.4,410.4 611.0,413.3 625.5,410.9 640.1,417.1 654.7,417.5 669.2,395.0 683.8,386.4 698.4,394.9 712.9,414.9 727.5,414.7 742.1,418.0 756.6,414.1 771.2,421.5 785.7,416.6 800.3,417.5 814.9,421.5 829.4,415.6 844.0,419.5" fill="none" stroke="#adb5bd" stroke-width="2" stroke-dasharray="6 4"/>
+<rect x="880" y="248" width="376" height="250" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="896" y="274" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Detections by type</text>
+<text x="896" y="300" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Port Scan</text>
+<rect x="1020" y="286" width="167" height="18" rx="3" fill="#3b5bdb" opacity="1"/>
+<text x="1195.4" y="300" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">13</text>
+<text x="896" y="334" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">DoS/DDoS-like</text>
+<rect x="1020" y="320" width="102" height="18" rx="3" fill="#3b5bdb" opacity="0.88"/>
+<text x="1130.3" y="334" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">8</text>
+<text x="896" y="368" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Brute Force</text>
+<rect x="1020" y="354" width="74" height="18" rx="3" fill="#3b5bdb" opacity="0.76"/>
+<text x="1102.4" y="368" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">6</text>
+<text x="896" y="402" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Abnormal Traffic</text>
+<rect x="1020" y="388" width="56" height="18" rx="3" fill="#3b5bdb" opacity="0.64"/>
+<text x="1083.8" y="402" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">4</text>
+<text x="896" y="436" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Suspicious Pattern</text>
+<rect x="1020" y="422" width="37" height="18" rx="3" fill="#3b5bdb" opacity="0.52"/>
+<text x="1065.2" y="436" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">3</text>
+<text x="896" y="470" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Unknown Anomaly</text>
+<rect x="1020" y="456" width="19" height="18" rx="3" fill="#3b5bdb" opacity="0.4"/>
+<text x="1046.6" y="470" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">1</text>
+<rect x="224" y="514" width="640" height="266" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="540" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Detections over time, by severity</text>
+<rect x="524" y="531" width="10" height="10" rx="2" fill="#868e96"/>
+<text x="538" y="540" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">LOW</text>
+<rect x="575.5" y="531" width="10" height="10" rx="2" fill="#e8a400"/>
+<text x="589.5" y="540" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">MEDIUM</text>
+<rect x="646.5" y="531" width="10" height="10" rx="2" fill="#e8590c"/>
+<text x="660.5" y="540" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">HIGH</text>
+<rect x="704.5" y="531" width="10" height="10" rx="2" fill="#c92a2a"/>
+<text x="718.5" y="540" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">CRITICAL</text>
+<line x1="248" y1="742" x2="840" y2="742" stroke="#9aa0a6"/>
+<rect x="251.0" y="727.4" width="33.5" height="14.6" fill="#868e96"/>
+<rect x="251.0" y="715.3" width="33.5" height="12.1" fill="#e8a400"/>
+<rect x="251.0" y="708.0" width="33.5" height="7.3" fill="#e8590c"/>
+<rect x="290.5" y="724.7" width="33.5" height="17.3" fill="#868e96"/>
+<rect x="290.5" y="710.2" width="33.5" height="14.4" fill="#e8a400"/>
+<rect x="290.5" y="701.6" width="33.5" height="8.7" fill="#e8590c"/>
+<rect x="329.9" y="731.2" width="33.5" height="10.8" fill="#868e96"/>
+<rect x="329.9" y="722.2" width="33.5" height="9.0" fill="#e8a400"/>
+<rect x="329.9" y="716.9" width="33.5" height="5.4" fill="#e8590c"/>
+<rect x="369.4" y="733.3" width="33.5" height="8.7" fill="#868e96"/>
+<rect x="369.4" y="726.1" width="33.5" height="7.2" fill="#e8a400"/>
+<rect x="369.4" y="721.7" width="33.5" height="4.3" fill="#e8590c"/>
+<rect x="408.9" y="732.0" width="33.5" height="10.0" fill="#868e96"/>
+<rect x="408.9" y="723.6" width="33.5" height="8.4" fill="#e8a400"/>
+<rect x="408.9" y="718.6" width="33.5" height="5.0" fill="#e8590c"/>
+<rect x="448.3" y="726.2" width="33.5" height="15.8" fill="#868e96"/>
+<rect x="448.3" y="713.1" width="33.5" height="13.1" fill="#e8a400"/>
+<rect x="448.3" y="705.2" width="33.5" height="7.9" fill="#e8590c"/>
+<rect x="487.8" y="732.3" width="33.5" height="9.7" fill="#868e96"/>
+<rect x="487.8" y="724.3" width="33.5" height="8.1" fill="#e8a400"/>
+<rect x="487.8" y="719.5" width="33.5" height="4.8" fill="#e8590c"/>
+<rect x="527.3" y="730.9" width="33.5" height="11.1" fill="#868e96"/>
+<rect x="527.3" y="721.7" width="33.5" height="9.2" fill="#e8a400"/>
+<rect x="527.3" y="716.1" width="33.5" height="5.5" fill="#e8590c"/>
+<rect x="566.7" y="725.8" width="33.5" height="16.2" fill="#868e96"/>
+<rect x="566.7" y="712.3" width="33.5" height="13.5" fill="#e8a400"/>
+<rect x="566.7" y="704.1" width="33.5" height="8.1" fill="#e8590c"/>
+<rect x="606.2" y="730.8" width="33.5" height="11.2" fill="#868e96"/>
+<rect x="606.2" y="721.4" width="33.5" height="9.3" fill="#e8a400"/>
+<rect x="606.2" y="715.8" width="33.5" height="5.6" fill="#e8590c"/>
+<rect x="645.7" y="727.8" width="33.5" height="14.2" fill="#868e96"/>
+<rect x="645.7" y="715.9" width="33.5" height="11.9" fill="#e8a400"/>
+<rect x="645.7" y="661.9" width="33.5" height="54.0" fill="#e8590c"/>
+<rect x="685.1" y="725.3" width="33.5" height="16.7" fill="#868e96"/>
+<rect x="685.1" y="711.4" width="33.5" height="13.9" fill="#e8a400"/>
+<rect x="685.1" y="657.4" width="33.5" height="54.0" fill="#e8590c"/>
+<rect x="685.1" y="630.4" width="33.5" height="27.0" fill="#c92a2a"/>
+<rect x="724.6" y="724.2" width="33.5" height="17.8" fill="#868e96"/>
+<rect x="724.6" y="709.3" width="33.5" height="14.9" fill="#e8a400"/>
+<rect x="724.6" y="700.4" width="33.5" height="8.9" fill="#e8590c"/>
+<rect x="764.1" y="728.8" width="33.5" height="13.2" fill="#868e96"/>
+<rect x="764.1" y="717.9" width="33.5" height="11.0" fill="#e8a400"/>
+<rect x="764.1" y="711.3" width="33.5" height="6.6" fill="#e8590c"/>
+<rect x="803.5" y="731.2" width="33.5" height="10.8" fill="#868e96"/>
+<rect x="803.5" y="722.2" width="33.5" height="9.0" fill="#e8a400"/>
+<rect x="803.5" y="716.9" width="33.5" height="5.4" fill="#e8590c"/>
+<text x="248" y="758" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:27</text>
+<text x="544" y="758" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:34</text>
+<text x="840" y="758" font-size="10" font-weight="400" fill="#6b7280" text-anchor="middle">12:42</text>
+<rect x="880" y="514" width="376" height="266" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="896" y="540" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Latest alerts</text>
+<text x="1240" y="540" font-size="12" font-weight="400" fill="#3b5bdb" text-anchor="end">View all →</text>
+<rect x="892" y="554" width="352" height="204" rx="4" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="892" y="554" width="352" height="34" rx="4" fill="#eceff3" stroke="#9aa0a6" stroke-width="1"/>
+<text x="902" y="576" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Time</text>
+<text x="968.5945945945946" y="576" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Severity</text>
+<text x="1054.2162162162163" y="576" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Type</text>
+<text x="1168.3783783783783" y="576" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Source</text>
+<text x="902" y="610" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:07</text>
+<rect x="968.5945945945946" y="596" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<text x="991.5945945945946" y="610" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
+<text x="1054.2162162162163" y="610" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
+<text x="1168.3783783783783" y="610" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
+<line x1="892" y1="622" x2="1244" y2="622" stroke="#d0d4da"/>
+<text x="902" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:40:52</text>
+<rect x="968.5945945945946" y="630" width="76" height="19" rx="9" fill="#c92a2a" stroke="#c92a2a" stroke-width="1"/>
+<text x="1006.5945945945946" y="644" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">CRITICAL</text>
+<text x="1054.2162162162163" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">DoS/DDoS-like</text>
+<text x="1168.3783783783783" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.17</text>
+<line x1="892" y1="656" x2="1244" y2="656" stroke="#d0d4da"/>
+<text x="902" y="678" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:39:30</text>
+<rect x="968.5945945945946" y="664" width="61" height="19" rx="9" fill="#e8a400" stroke="#e8a400" stroke-width="1"/>
+<text x="999.0945945945946" y="678" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">MEDIUM</text>
+<text x="1054.2162162162163" y="678" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Brute Force</text>
+<text x="1168.3783783783783" y="678" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.1.33</text>
+<line x1="892" y1="690" x2="1244" y2="690" stroke="#d0d4da"/>
+<text x="902" y="712" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:37:12</text>
+<rect x="968.5945945945946" y="698" width="38.5" height="19" rx="9" fill="#868e96" stroke="#868e96" stroke-width="1"/>
+<text x="987.8445945945946" y="712" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">LOW</text>
+<text x="1054.2162162162163" y="712" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Abnormal Traffic</text>
+<text x="1168.3783783783783" y="712" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.88</text>
+<line x1="892" y1="724" x2="1244" y2="724" stroke="#d0d4da"/>
+<text x="902" y="746" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:35:45</text>
+<rect x="968.5945945945946" y="732" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<text x="991.5945945945946" y="746" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
+<text x="1054.2162162162163" y="746" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Suspicious Pattern</text>
+<text x="1168.3783783783783" y="746" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.0.0.5</text>
+</svg>

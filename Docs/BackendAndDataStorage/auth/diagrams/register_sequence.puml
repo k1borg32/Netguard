@@ -1,0 +1,37 @@
+@startuml
+title User registration
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Administrator
+boundary "API and authorization" as API
+control RegisterHandler as Handler
+database Database as DB
+Administrator -> API : POST /register + access token + JSON
+API -> API : validate JWT
+API -> DB : SELECT current role
+DB --> API : role / missing user
+break invalid token, missing user or role other than admin
+  API --> Administrator : 401 or 403
+end
+API -> Handler : handle(RegisterCommand)
+Handler -> DB : SELECT username
+DB --> Handler : existing / available
+break username already exists
+  Handler --> API : conflict
+  API --> Administrator : 409
+end
+Handler -> Handler : Argon2: hash password\ncreate User
+Handler -> DB : INSERT users + COMMIT
+alt successful write
+  Handler --> API : RegisterResponse
+  API --> Administrator : 201 + user
+else UNIQUE conflict during concurrent registration
+  Handler -> DB : ROLLBACK
+  API --> Administrator : 409
+end
+@enduml
