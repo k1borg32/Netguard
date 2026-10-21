@@ -6,6 +6,8 @@ function detection(createdAt: string, severity: Severity): Detection {
   return {
     detection_id: createdAt + severity,
     created_at: createdAt,
+    first_ingested_at: null,
+    last_ingested_at: null,
     type: 'port_scan',
     method: 'rule',
     severity,

@@ -81,6 +81,7 @@ detections = Table(
     Column("configuration_id", UUID(as_uuid=True), ForeignKey("detection_configs.configuration_id")),
     Column("created_at", TIMESTAMP(timezone=True), nullable=False),
     Column("first_ingested_at", TIMESTAMP(timezone=True)),
+    Column("last_ingested_at", TIMESTAMP(timezone=True)),
     Column("type", Text, nullable=False),
     Column("method", Text, nullable=False),
     Column("severity", Text, nullable=False),

@@ -59,6 +59,8 @@ def test_detections_preserve_public_list_contract_and_limit(client: TestClient, 
     assert set(item) == {
         "detection_id",
         "created_at",
+        "first_ingested_at",
+        "last_ingested_at",
         "type",
         "method",
         "severity",

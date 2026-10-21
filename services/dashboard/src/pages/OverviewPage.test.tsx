@@ -32,6 +32,8 @@ function renderOverview(detections: Partial<Detection>[]) {
 const base: Detection = {
   detection_id: '7c1e9a42-0000-0000-0000-00000000d03f',
   created_at: new Date().toISOString(),
+  first_ingested_at: null,
+  last_ingested_at: null,
   type: 'port_scan',
   method: 'rule',
   severity: 'HIGH',

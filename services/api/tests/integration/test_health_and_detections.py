@@ -46,3 +46,29 @@ def test_detections_are_listed_newest_first(client: TestClient, db: psycopg.Conn
 def test_invalid_limit_is_rejected(client: TestClient, limit: str) -> None:
     """API-02"""
     assert client.get("/api/v1/detections", params={"limit": limit}).status_code == 422
+
+
+@pytest.mark.parametrize("first_ingested_at", [START - timedelta(seconds=13, microseconds=123456), None])
+@pytest.mark.parametrize("last_ingested_at", [START - timedelta(seconds=3, microseconds=123456), None])
+def test_detections_include_ingestion_timestamps(
+    client: TestClient,
+    db: psycopg.Connection,
+    first_ingested_at: datetime | None,
+    last_ingested_at: datetime | None,
+) -> None:
+    db.execute(
+        "INSERT INTO detections (detection_id, created_at, type, method, severity, "
+        "first_ingested_at, last_ingested_at) "
+        "VALUES (%s, %s, 'port_scan', 'rule', 'HIGH', %s, %s)",
+        (uuid4(), START, first_ingested_at, last_ingested_at),
+    )
+
+    response = client.get("/api/v1/detections")
+
+    assert response.status_code == 200, response.text
+    detection = response.json()["items"][0]
+    for field, expected in (("first_ingested_at", first_ingested_at), ("last_ingested_at", last_ingested_at)):
+        if expected is None:
+            assert detection[field] is None
+        else:
+            assert datetime.fromisoformat(detection[field]) == expected
