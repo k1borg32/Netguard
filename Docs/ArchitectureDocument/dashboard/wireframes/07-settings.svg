@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+<rect x="0" y="0" width="1280" height="800" fill="#ffffff"/>
+<rect x="0.5" y="0.5" width="1279" height="799" rx="10" fill="#f6f7f9" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="1" y="1" width="1278" height="56" fill="#fff"/><line x1="0" y1="56" x2="1280" y2="56" stroke="#9aa0a6"/>
+<rect x="20" y="16" width="24" height="24" rx="5" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="54" y="34" font-size="18" font-weight="700" fill="#202124" text-anchor="start">NetGuard</text>
+<rect x="720" y="13" width="250" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="738" cy="28" r="5" fill="#2f9e44"/>
+<text x="750" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Simulator running · 200 flows/s</text>
+<rect x="980" y="13" width="110" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<circle cx="998" cy="28" r="5" fill="#2f9e44"/>
+<text x="1010" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">API · DB ok</text>
+<text x="1170" y="33" font-size="13" font-weight="600" fill="#202124" text-anchor="end">admin ▾</text>
+<text x="1254" y="33" font-size="13" font-weight="400" fill="#3b5bdb" text-anchor="end">Log out</text>
+<rect x="1" y="57" width="200" height="742" fill="#fff"/><line x1="200" y1="56" x2="200" y2="800" stroke="#9aa0a6"/>
+<rect x="26" y="91" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="103" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Overview</text>
+<rect x="26" y="135" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="147" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Alerts</text>
+<rect x="26" y="179" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="191" font-size="14" font-weight="400" fill="#202124" text-anchor="start">History</text>
+<rect x="26" y="223" width="14" height="14" rx="3" fill="#d0d4da" stroke="none" stroke-width="1"/>
+<text x="52" y="235" font-size="14" font-weight="400" fill="#202124" text-anchor="start">Flows</text>
+<rect x="12" y="256" width="176" height="36" rx="6" fill="#e7ecff" stroke="#e7ecff" stroke-width="1"/>
+<rect x="26" y="267" width="14" height="14" rx="3" fill="#3b5bdb" stroke="none" stroke-width="1"/>
+<text x="52" y="279" font-size="14" font-weight="700" fill="#3b5bdb" text-anchor="start">Settings</text>
+<text x="20" y="780" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Wireframe v1 - not final design</text>
+<text x="224" y="96" font-size="22" font-weight="700" fill="#202124" text-anchor="start">Settings</text>
+<text x="224" y="116" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Detection thresholds and traffic simulator. Changes are admin only (F16, NFR06).</text>
+<rect x="224" y="128" width="600" height="652" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="240" y="154" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Detection configurations</text>
+<rect x="240" y="168" width="568" height="190" rx="4" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<rect x="240" y="168" width="568" height="38" rx="4" fill="#eceff3" stroke="#9aa0a6" stroke-width="1"/>
+<text x="250" y="192" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Type</text>
+<text x="457.80487804878044" y="192" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Method</text>
+<text x="596.3414634146341" y="192" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Active</text>
+<text x="707.1707317073169" y="192" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start"></text>
+<text x="250" y="230" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
+<text x="457.80487804878044" y="230" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
+<text x="596.3414634146341" y="230" font-size="12" font-weight="400" fill="#202124" text-anchor="start">active</text>
+<text x="707.1707317073169" y="230" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Edit</text>
+<line x1="240" y1="244" x2="808" y2="244" stroke="#d0d4da"/>
+<text x="250" y="268" font-size="12" font-weight="400" fill="#202124" text-anchor="start">DoS/DDoS-like</text>
+<text x="457.80487804878044" y="268" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
+<text x="596.3414634146341" y="268" font-size="12" font-weight="400" fill="#6b7280" text-anchor="start">inactive</text>
+<text x="707.1707317073169" y="268" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Edit</text>
+<line x1="240" y1="282" x2="808" y2="282" stroke="#d0d4da"/>
+<text x="250" y="306" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Brute Force</text>
+<text x="457.80487804878044" y="306" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
+<text x="596.3414634146341" y="306" font-size="12" font-weight="400" fill="#202124" text-anchor="start">active</text>
+<text x="707.1707317073169" y="306" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Edit</text>
+<line x1="240" y1="320" x2="808" y2="320" stroke="#d0d4da"/>
+<text x="250" y="344" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Abnormal Traffic</text>
+<text x="457.80487804878044" y="344" font-size="12" font-weight="400" fill="#202124" text-anchor="start">z-score</text>
+<text x="596.3414634146341" y="344" font-size="12" font-weight="400" fill="#202124" text-anchor="start">active</text>
+<text x="707.1707317073169" y="344" font-size="12" font-weight="600" fill="#3b5bdb" text-anchor="start">Edit</text>
+<rect x="240" y="372" width="568" height="394" rx="6" fill="#f6f7f9" stroke="#9aa0a6" stroke-width="1" stroke-dasharray="5 4"/>
+<text x="256" y="400" font-size="13" font-weight="700" fill="#202124" text-anchor="start">Edit: Port Scan (rule)</text>
+<text x="256" y="426" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Window (s)</text>
+<rect x="256" y="432" width="250" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="266" y="453" font-size="13" font-weight="400" fill="#202124" text-anchor="start">10</text>
+<text x="490" y="453" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="524" y="453" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">one of 1 / 10 / 60 (F05)</text>
+<text x="256" y="490" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Unique destination ports threshold</text>
+<rect x="256" y="496" width="250" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="266" y="517" font-size="13" font-weight="400" fill="#202124" text-anchor="start">3</text>
+<text x="256" y="554" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Minimum flows in window</text>
+<rect x="256" y="560" width="250" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="266" y="581" font-size="13" font-weight="400" fill="#202124" text-anchor="start">20</text>
+<text x="256" y="618" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Severity when exceeded</text>
+<rect x="256" y="624" width="250" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="266" y="645" font-size="13" font-weight="400" fill="#202124" text-anchor="start">HIGH</text>
+<text x="490" y="645" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<text x="256" y="684" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Fields come from the configuration's parameters (JSONB).</text>
+<text x="256" y="700" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Users without admin role see this form read-only.</text>
+<rect x="256" y="718" width="170" height="32" rx="6" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="341" y="739" font-size="13" font-weight="600" fill="#fff" text-anchor="middle">Save as new version</text>
+<rect x="438" y="718" width="90" height="32" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="483" y="739" font-size="13" font-weight="600" fill="#202124" text-anchor="middle">Activate</text>
+<rect x="540" y="718" width="80" height="32" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="580" y="739" font-size="13" font-weight="600" fill="#202124" text-anchor="middle">Cancel</text>
+<rect x="840" y="128" width="416" height="652" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="856" y="154" font-size="14" font-weight="700" fill="#202124" text-anchor="start">Traffic simulator</text>
+<circle cx="864" cy="180" r="6" fill="#2f9e44"/>
+<text x="878" y="185" font-size="13" font-weight="400" fill="#202124" text-anchor="start">Running for 04:12 · 51,230 flows sent</text>
+<text x="856" y="226" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Scenarios</text>
+<rect x="856" y="240" width="16" height="16" rx="3" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="864" y="253" font-size="12" font-weight="400" fill="#fff" text-anchor="middle">✓</text>
+<text x="882" y="253" font-size="13" font-weight="400" fill="#202124" text-anchor="start">normal</text>
+<rect x="1046" y="240" width="16" height="16" rx="3" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="1054" y="253" font-size="12" font-weight="400" fill="#fff" text-anchor="middle">✓</text>
+<text x="1072" y="253" font-size="13" font-weight="400" fill="#202124" text-anchor="start">port_scan</text>
+<rect x="856" y="270" width="16" height="16" rx="3" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="882" y="283" font-size="13" font-weight="400" fill="#202124" text-anchor="start">dos</text>
+<rect x="1046" y="270" width="16" height="16" rx="3" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1072" y="283" font-size="13" font-weight="400" fill="#202124" text-anchor="start">brute_force</text>
+<rect x="856" y="300" width="16" height="16" rx="3" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="882" y="313" font-size="13" font-weight="400" fill="#202124" text-anchor="start">abnormal_traffic</text>
+<rect x="1046" y="300" width="16" height="16" rx="3" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1072" y="313" font-size="13" font-weight="400" fill="#202124" text-anchor="start">suspicious_pattern</text>
+<text x="856" y="354" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Rate (flows/s)</text>
+<rect x="856" y="360" width="180" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="866" y="381" font-size="13" font-weight="400" fill="#202124" text-anchor="start">200</text>
+<text x="1052" y="354" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Hosts</text>
+<rect x="1052" y="360" width="180" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1062" y="381" font-size="13" font-weight="400" fill="#202124" text-anchor="start">200</text>
+<text x="856" y="418" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Anomalous share (%)</text>
+<rect x="856" y="424" width="180" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="866" y="445" font-size="13" font-weight="400" fill="#202124" text-anchor="start">5</text>
+<text x="1052" y="418" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Duration (s, 0 = until stopped)</text>
+<rect x="1052" y="424" width="180" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1062" y="445" font-size="13" font-weight="400" fill="#202124" text-anchor="start">0</text>
+<text x="856" y="482" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Load profile</text>
+<rect x="856" y="488" width="376" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="866" y="509" font-size="13" font-weight="400" fill="#202124" text-anchor="start">constant</text>
+<text x="1216" y="509" font-size="13" font-weight="400" fill="#6b7280" text-anchor="start">▾</text>
+<rect x="856" y="548" width="100" height="32" rx="6" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
+<text x="906" y="569" font-size="13" font-weight="600" fill="#fff" text-anchor="middle">Start</text>
+<rect x="968" y="548" width="100" height="32" rx="6" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
+<text x="1018" y="569" font-size="13" font-weight="600" fill="#202124" text-anchor="middle">Stop</text>
+<text x="856" y="610" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">F14: hosts, rate, anomalous share and load profile</text>
+<text x="856" y="626" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">are configurable. Start/stop needs a simulator control</text>
+<text x="856" y="642" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">endpoint (not in the API plan yet).</text>
+</svg>

@@ -1,7 +1,12 @@
-# NetGuard - Test Plan v0.2
+# NetGuard - Test Plan v0.3
 
-Preliminary version, week 1 (2026-10-14), updated for Vision v1.1. Owner: Vlad (M5, Infrastructure, Testing & DevOps).
-Next updates: week 2 (after the architecture document) and week 5 (after the first version of the detection engine).
+Version 0.3, week 2 (2026-10-20), updated after the architecture document. Owner: Vlad (M5, Infrastructure, Testing &
+DevOps). Next update: week 5 (after the first version of the detection engine).
+
+Changes in v0.3: state of the components after week 2 (2.1), how the test groups are run (3.1), ground-truth manifest
+format (3.6), latency from `last_ingested_at` (3.7, R2), dashboard job in CI (4), first API tests passing (12). How the
+system is deployed and how CI works is described in the
+[architecture document, deployment section](../ArchitectureDocument/deployment/README.md).
 
 ## 1. Introduction
 
@@ -25,16 +30,16 @@ References:
 
 ### 2.1 Test items
 
-| Component | Code | Owner | State in week 1 |
+| Component | Code | Owner | State in week 2 |
 |---|---|---|---|
 | Traffic simulator | `services/simulator` | M1 (load mode M5) | normal traffic + port scan |
 | PCAP importer | `services/importer` | M1 | planned, week 3 |
 | Broker + message contracts | Redpanda, `libs/common` | M5 | working |
 | Flow processor / detection engine | `services/processor` | M2 | placeholder port scan rule |
-| Persister + database | `services/persister`, `db/` | M3 | working, schema v1 |
-| REST API | `services/api` | M3 | health + list of detections |
-| Dashboard | `services/dashboard` | M4 | placeholder page |
-| Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working |
+| Persister + database | `services/persister`, `db/` | M3 | working, schema by M3 (flows hypertable, detections, alerts, users) |
+| REST API | `services/api` | M3 | login (JWT), detections, alerts, dashboard summary |
+| Dashboard | `services/dashboard` | M4 | React app skeleton in the nginx container, screens from week 4 |
+| Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working, dashboard job and build cache added in week 2 |
 
 ### 2.2 In scope
 
@@ -66,8 +71,10 @@ every requirement to test cases.
 | Resilience | failure and restart of components, recovery | pytest + docker CLI | CI smoke + campaign week 8-9 | M5 |
 | Security | input validation, auth, rate limiting, secrets, dependencies | pytest, gitleaks, pip-audit, Trivy, OWASP ZAP | CI + campaign week 9 | M5 + M3 |
 
-Plain `pytest` runs only unit tests (no Docker needed). `pytest -m integration` runs the tests that need the running
-stack. New groups (for example resilience) get their own pytest marker when their first test is written.
+`pytest -m "not integration"` runs only the unit tests (no Docker needed). Plain `pytest` also runs the API
+integration tests, which start their own disposable DB in Docker. `pytest -m stack` runs the full-stack tests against
+the running stack (`make up`). New groups (for example resilience) get their own pytest marker when their first test
+is written.
 
 ### 3.2 Unit tests
 
@@ -110,6 +117,12 @@ episodes: class, attacker IP(s), target IP(s), start and end time. For PCAP data
 the dataset description and a second person checks it. Detectors never see the labels: DQ-07 runs the detection with
 labels removed and expects exactly the same result.
 
+**Manifest format** (agreed in week 2, issue #6): `libs/common/src/netguard_common/schemas/manifest.v1.json`, checked
+by `validate_manifest()` (UT-19). One episode has an ID, the class (one of the five scenarios), attacker and target IPs
+or CIDR networks, start and end in flow time (`ts_start`) and optional generation parameters. The simulator writes it
+to `data/runs/<dataset>-<seed>/manifest.json`; PCAP manifests are written by hand next to the file. Example and rules:
+[architecture document, section 8](../ArchitectureDocument/deployment/README.md#8-test-data-and-ground-truth-6).
+
 **Matching detections to episodes.**
 
 - a detection matches an episode when the class is the same, the detection's source (destination for DDoS with many
@@ -143,8 +156,8 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 
 - throughput: flows/s accepted (sent to `flows.raw`), processed and stored
 - detection latency (NFR02): from the ingestion of the last flow that contributed to a detection until the detection
-  is created, so `created_at - last_ingested_at`. The detection contract doesn't have `last_ingested_at` yet
-  (risk R2)
+  is created, so `created_at - last_ingested_at` (`latency_s` in the `detection_latency` view). Added to the
+  detection contract in week 2 (PR #44, risk R2). `created_at - first_ingested_at` is reported as time to detect
 - p50 / p95 / p99 / max of the latency
 - consumer lag of the processor and persister groups, sampled every 5 s. Lag that keeps growing means the system
   can't keep up
@@ -197,7 +210,7 @@ and an OWASP ZAP baseline scan are added in week 9.
 | Environment | Used for | Setup |
 |---|---|---|
 | Developer machine | unit tests, quick integration runs | Docker Desktop/Engine with Compose v2, >= 6 GB RAM for Docker, Python 3.12, `docker compose up -d --build` |
-| CI | every PR and every push to `main` | GitHub Actions `ubuntu-latest`: lint + unit tests with coverage, gitleaks, integration tests on the full stack |
+| CI | every PR and every push to `main` | GitHub Actions `ubuntu-latest`: lint + unit tests with coverage, gitleaks, dashboard lint/tests/build, API integration tests, integration tests on the full stack |
 | Performance machine | performance and resilience campaign | one fixed machine, specs recorded, nothing else running |
 
 - the same compose file and configuration everywhere. Tests use the committed defaults unless a test case says
@@ -279,12 +292,12 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 | ID | Risk / finding | Impact | What we do |
 |---|---|---|---|
 | R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | performance baseline already in week 4; validate everything at the edge (importer, simulator) instead of again in every consumer; batch DB writes; scale the processor |
-| R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: add `last_ingested_at` to the detection contract and to the `detection_latency` view; M2 to consider firing a rule as soon as its threshold is crossed |
+| R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: `last_ingested_at` in the detection contract, DB column and `detection_latency` view (PR #44). Still open: a rule that fires only when its window closes adds up to one window to the latency, so M2 fires rules as soon as the threshold is crossed |
 | R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and simulator validate everything they send; consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
 | R4 | Slow failover: after killing one of two processors its partitions waited 44 s (librdkafka default session timeout is 45 s). A crashed persister also blocked its own restart for about 45 s. The CI step "kill one processor" waits only 40 s, so it would fail about half of the time. | NFR04, flaky CI | session timeout lowered to 10 s in `libs/common` (week 1), to be re-measured with RT-01; the persister should close its consumer when it exits (M3) |
 | R5 | The persister crashes when the DB connection drops and does not reconnect (seen when the DB container was recreated). | data not stored until the restart | the restart policy covers it for now; reconnect with backoff in week 6 (M3); RT-04 |
 | R6 | Windows: compose recreated the DB container when started from `d:\netguard` instead of `D:\netguard` (bind-mount paths are part of the configuration). | unexpected restarts during a demo | documented in the README; `make scale` only touches the processor; later the init files can be built into the image |
-| R7 | The message contract still has the old four detection types, Vision v1.1 has the six classes from the spec (Abnormal Traffic and Suspicious Connection Pattern split, Unknown Anomaly added). | per-class quality for the six classes not possible yet | contract update in week 2, together with R2 |
+| R7 | The message contract still has the old four detection types, Vision v1.1 has the six classes from the spec (Abnormal Traffic and Suspicious Connection Pattern split, Unknown Anomaly added). | per-class quality for the six classes not possible yet | six classes in the contract in week 2 (PR #44), the dashboard already shows both old and new names |
 | R8 | Performance numbers depend on the laptop. | results not comparable | one fixed machine, conditions recorded |
 | R9 | Flaky integration tests (timing, shared stack). | people start ignoring CI | polling with deadlines, unique data per test, logs uploaded when CI fails |
 | R10 | Ground truth for PCAP datasets may be wrong. | wrong precision/recall | start with synthetic data; manifests checked by two people |
@@ -325,11 +338,11 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 | NFR08 Observability | UT-04, IT-06 |
 | NFR09 Data | ST-01 (everything runs locally), test data sources in section 5 |
 | NFR10 Documentation | ST-06 |
-| NFR11 Detection quality | DQ-01, DQ-02, DQ-03, DQ-05 |
+| NFR11 Detection quality | UT-19, DQ-01, DQ-02, DQ-03, DQ-05 |
 
 ## 12. Test cases
 
-Status: **pass** = automated and passing in week 1, **fails** = reproduced problem (see risks), otherwise the week in
+Status: **pass** = automated and passing in week 2, **fails** = reproduced problem (see risks), otherwise the week in
 which the test is planned. Automated tests carry their ID in the docstring.
 
 ### Unit tests (UT)
@@ -354,6 +367,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | | week 5 |
 | UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | | week 5 |
 | UT-18 | Simulator parameters | F14 | number of hosts, rate and anomaly ratio respected; same seed -> same output | | week 4 |
+| UT-19 | Ground-truth manifest: valid manifest accepted; unknown class, empty attackers, end before start, duplicate episode IDs rejected | NFR11 | `SchemaError` naming the problem | `tests/unit/test_manifest.py` | pass |
 
 ### Integration tests (IT)
 
@@ -372,8 +386,8 @@ which the test is planned. Automated tests carry their ID in the docstring.
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| API-01 | Detection list | F11 | contains every field the dashboard uses | week 6 |
-| API-02 | Invalid query parameters (`limit=0`, `-1`, `501`, `abc`) | NFR06 | 422, never 500 | week 6 |
+| API-01 | Detection list | F11 | contains every field the dashboard uses | pass (`services/api/tests/integration`) |
+| API-02 | Invalid query parameters (`limit=0`, `-1`, `501`, `abc`) | NFR06 | 422, never 500 | pass (`services/api/tests/integration`) |
 | API-03 | Filters by time, type, severity and source | F13 | only matching rows | week 6 |
 | API-04 | Flow list and flow details | F11, UC-08 | correct data, 404 for unknown ID | week 6 |
 | API-05 | Statistics and metrics endpoints | F11 | numbers match the database | week 6 |

@@ -44,8 +44,14 @@ Why key by src_ip: flows from one source always hit the same partition, so they'
 ## 4. Latency measurement (NFR02)
 
 - `ingested_at` = time NetGuard accepted the flow (set once, never overwritten).
-- Detection carries `first_ingested_at` and `created_at`.
-- `latency = created_at - first_ingested_at`. View `detection_latency` in the DB, p95 computed by the perf test.
+- Detection carries `first_ingested_at`, `last_ingested_at` (earliest / latest flow that contributed) and `created_at`.
+- `latency = created_at - last_ingested_at`: from the moment the evidence was complete to the detection
+  (spec 15, test plan risk R2). `created_at - first_ingested_at` is the time to detect, which also contains the
+  wait for the window to close.
+- Both are in the DB view `detection_latency` (`latency_s`, `time_to_detect_s`); p95 is computed by the
+  performance tests (PT-03).
+- A rule that only fires when its window closes adds up to one window to `latency_s`, so rules should fire as soon
+  as the threshold is crossed (M2).
 
 ## 5. Delivery and duplicates
 

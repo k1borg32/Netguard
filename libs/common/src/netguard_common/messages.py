@@ -47,6 +47,18 @@ def validate_detection(msg: dict[str, Any]) -> dict[str, Any]:
     return _validate("detection.v1.json", msg)
 
 
+def validate_manifest(manifest: dict[str, Any]) -> dict[str, Any]:
+    """Ground-truth manifest written next to a labelled dataset (test plan 3.6). Not a broker message."""
+    _validate("manifest.v1.json", manifest)
+    ids = [e["episode_id"] for e in manifest["episodes"]]
+    if len(ids) != len(set(ids)):
+        raise SchemaError("manifest.v1.json: episodes: episode_id must be unique")
+    for i, e in enumerate(manifest["episodes"]):
+        if e["end"] < e["start"]:
+            raise SchemaError(f"manifest.v1.json: episodes.{i}: end is before start")
+    return manifest
+
+
 def flow_id_for(source_file: str, record_index: int) -> str:
     """Deterministic flow ID for imported data: re-importing the same file gives the same IDs."""
     return str(uuid.uuid5(NETGUARD_NS, f"{source_file}#{record_index}"))

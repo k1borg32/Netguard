@@ -76,6 +76,7 @@ CREATE TABLE detections (
     configuration_id UUID REFERENCES detection_configs(configuration_id),
     created_at TIMESTAMPTZ NOT NULL,
     first_ingested_at TIMESTAMPTZ,
+    last_ingested_at TIMESTAMPTZ,
     type TEXT NOT NULL,
     method TEXT NOT NULL,
     severity TEXT NOT NULL
@@ -130,12 +131,19 @@ CREATE INDEX alerts_status_idx
 -- Detection Latency View
 -- =========================
 
+-- latency_s (NFR02): from the moment the evidence was complete (last contributing flow ingested)
+-- to the detection. time_to_detect_s also contains the wait for the window to close.
 CREATE VIEW detection_latency AS
 SELECT
     detection_id,
     EXTRACT(
+        EPOCH FROM (created_at - last_ingested_at)
+    ) AS latency_s,
+    EXTRACT(
         EPOCH FROM (created_at - first_ingested_at)
-    ) AS latency_s
+    ) AS time_to_detect_s,
+    type,
+    created_at
 FROM detections;
 
 
@@ -150,4 +158,21 @@ CREATE TABLE IF NOT EXISTS auth_refresh_sessions (
 );
 CREATE INDEX IF NOT EXISTS auth_refresh_sessions_user_idx ON auth_refresh_sessions(user_id);
 CREATE INDEX IF NOT EXISTS auth_refresh_sessions_expiry_idx ON auth_refresh_sessions(expires_at);
+COMMIT;
+
+-- Additive migration for NFR02 latency (#5); apply once to existing databases. Auto-run for new volumes.
+BEGIN;
+ALTER TABLE detections ADD COLUMN IF NOT EXISTS last_ingested_at TIMESTAMPTZ;
+CREATE OR REPLACE VIEW detection_latency AS
+SELECT
+    detection_id,
+    EXTRACT(
+        EPOCH FROM (created_at - last_ingested_at)
+    ) AS latency_s,
+    EXTRACT(
+        EPOCH FROM (created_at - first_ingested_at)
+    ) AS time_to_detect_s,
+    type,
+    created_at
+FROM detections;
 COMMIT;

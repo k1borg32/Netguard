@@ -46,6 +46,7 @@ def detection_row(d: dict) -> tuple:
         d["detection_id"],
         d["created_at"],
         d["first_ingested_at"],
+        d["last_ingested_at"],
         d["type"],
         d["method"],
         d["severity"],
@@ -75,10 +76,10 @@ def main() -> None:
         f"INSERT INTO network_flows ({','.join(FLOW_COLS)}) VALUES ({','.join(placeholders)}) ON CONFLICT DO NOTHING"
     )
     det_sql = (
-        "INSERT INTO detections (detection_id, created_at, first_ingested_at, type, method, severity, "
-        "confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, trace_ids) "
-        "VALUES (%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, %s, to_timestamp(%s), "
-        "to_timestamp(%s), %s, %s, %s) ON CONFLICT (detection_id) DO NOTHING"
+        "INSERT INTO detections (detection_id, created_at, first_ingested_at, last_ingested_at, type, method, "
+        "severity, confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, "
+        "trace_ids) VALUES (%s, to_timestamp(%s), to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, "
+        "%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s) ON CONFLICT (detection_id) DO NOTHING"
     )
 
     while True:
