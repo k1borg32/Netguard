@@ -35,7 +35,9 @@ def test_detections_are_listed_newest_first(client: TestClient, db: psycopg.Conn
     response = client.get("/api/v1/detections", params={"limit": 2})
 
     assert response.status_code == 200, response.text
-    detections = response.json()
+    body = response.json()
+    assert (body["total"], body["page"], body["page_size"]) == (3, 1, 2)
+    detections = body["items"]
     assert [detection["src_ip"] for detection in detections] == ["10.66.6.3", "10.66.6.2"]
     assert DASHBOARD_FIELDS <= detections[0].keys()
 

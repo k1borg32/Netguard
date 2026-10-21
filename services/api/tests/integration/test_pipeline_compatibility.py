@@ -38,7 +38,7 @@ def test_health_reports_database_outage_but_ping_stays_available(client: TestCli
 
 
 def test_detections_preserve_public_list_contract_and_limit(client: TestClient, db: psycopg.Connection) -> None:
-    assert client.get("/api/v1/detections").json() == []
+    assert client.get("/api/v1/detections").json() == {"items": [], "total": 0, "page": 1, "page_size": 50}
     identifiers = [uuid4() for _ in range(55)]
     for index, detection_id in enumerate(identifiers):
         db.execute(
@@ -51,9 +51,11 @@ def test_detections_preserve_public_list_contract_and_limit(client: TestClient, 
 
     response = client.get("/api/v1/detections")
     assert response.status_code == 200, response.text
-    assert len(response.json()) == 50
-    assert [item["detection_id"] for item in response.json()] == [str(value) for value in reversed(identifiers[5:])]
-    item = client.get("/api/v1/detections", params={"limit": 1}).json()[0]
+    body = response.json()
+    assert (body["total"], body["page"], body["page_size"]) == (55, 1, 50)
+    assert len(body["items"]) == 50
+    assert [item["detection_id"] for item in body["items"]] == [str(value) for value in reversed(identifiers[5:])]
+    item = client.get("/api/v1/detections", params={"limit": 1}).json()["items"][0]
     assert set(item) == {
         "detection_id",
         "created_at",
@@ -71,7 +73,7 @@ def test_detections_preserve_public_list_contract_and_limit(client: TestClient, 
     assert item["dst_ip"] == "2001:db8::1"
     assert item["features"] == {"unique_dst_ports": 150}
     assert item["confidence"] == 0.9
-    assert len(client.get("/api/v1/detections", params={"limit": 500}).json()) == 55
+    assert len(client.get("/api/v1/detections", params={"limit": 500}).json()["items"]) == 55
 
 
 def test_detections_allow_nullable_evidence_and_order_timestamp_ties(
@@ -86,9 +88,9 @@ def test_detections_allow_nullable_evidence_and_order_timestamp_ties(
         )
     response = client.get("/api/v1/detections")
     assert response.status_code == 200, response.text
-    assert [row["detection_id"] for row in response.json()] == [str(value) for value in identifiers]
-    assert response.json()[0]["src_ip"] is None
-    assert response.json()[0]["features"] is None
+    assert [row["detection_id"] for row in response.json()["items"]] == [str(value) for value in identifiers]
+    assert response.json()["items"][0]["src_ip"] is None
+    assert response.json()["items"][0]["features"] is None
 
 
 @pytest.mark.parametrize("limit", [0, 501, -1, "invalid"])

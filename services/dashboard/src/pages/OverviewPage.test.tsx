@@ -15,7 +15,9 @@ function renderOverview(detections: Partial<Detection>[]) {
       if (url.startsWith('/api/v1/dashboard/summary')) {
         return json({ flow_count: 182430, detection_count: 37, alert_count: 9 })
       }
-      if (url.startsWith('/api/v1/detections')) return json(detections)
+      if (url.startsWith('/api/v1/detections')) {
+        return json({ items: detections, total: detections.length, page: 1, page_size: 500 })
+      }
       throw new Error(`unexpected request ${url}`)
     }),
   )
