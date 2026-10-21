@@ -15,6 +15,10 @@ Walidację kontraktów HTTP można sprawdzać bez uruchamiania serwera. Testy
 porównywanie chwil w różnych strefach, minimalny dodatni zakres i błędny początek.
 Nie mockujemy sesji SQLAlchemy w celu testowania zapytań handlera.
 
+`unit/test_dashboard_timeseries_request.py` zawiera 5 podstawowych przypadków:
+domyślny początek względem końca i normalizację UTC, oba dokładne limity zapytania,
+limit uwzględniający częściowe kubełki oraz odrzucenie daty bez strefy czasowej.
+
 ## Integration
 
 Testujemy cały przepływ przez `client`: HTTP -> kontroler -> handler -> rzeczywiste
@@ -22,6 +26,11 @@ SQLAlchemy, Argon2 i JWT -> lokalna baza TimescaleDB -> odpowiedź HTTP.
 Dashboard sprawdzamy również dla granic zakresu, stref czasowych, błędnych
 parametrów i dostępu bez poprawnego tokena, a także sąsiednich zakresów i wymogu
 przekazywania filtrów w URL. [Dokumentacja dashboardu](../../../Docs/BackendAndDataStorage/dashboard/README.md).
+
+`integration/test_dashboard_timeseries.py` zawiera 13 podstawowych przypadków:
+agregację obu zbiorów dla czterech interwałów, puste i częściowe kubełki, kolejność,
+granice `[from, to)`, domyślne 24 godziny, błędne parametry i zbyt długi zakres oraz
+brak uwierzytelniania. [Kontrakt time series](../../../Docs/BackendAndDataStorage/dashboard/README.md#time-series).
 
 - Osobny projekt Docker Compose powstaje raz na sesję, na losowym lokalnym porcie.
 - Schemat pochodzi z produkcyjnych skryptów `db/init/*.sql`.
@@ -64,3 +73,12 @@ Testy integracyjne wymagają działającego Docker Desktop z kontenerami Linux.
 Nie trzeba uruchamiać całego stosu aplikacji ani ustawiać `.env`.
 Konfiguracja pytest jest wspólna, w głównym `pyproject.toml` repozytorium.
 Z głównego katalogu wybieraj `services/api/tests` albo użyj `make test-int`.
+
+Tylko time series, bez zbierania testów pozostałych features:
+
+```powershell
+python -m pytest tests/unit/test_dashboard_timeseries_request.py -q
+python -m pytest tests/integration/test_dashboard_timeseries.py -q
+python -m ruff check app tests
+python -m ruff format --check app tests
+```
