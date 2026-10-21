@@ -1,0 +1,31 @@
+@startuml
+title Detection details - lookup by UUID
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Get detection controller" as API
+control GetDetectionHandler as Handler
+database TimescaleDB as DB
+
+Client -> API : GET /api/v1/detections/{id}
+API -> API : Validate UUID
+note over API,Handler : Controller creates handler with request-scoped AsyncSession
+API -> Handler : handle(GetDetectionQuery(id))
+Handler -> DB : SELECT detection by primary key\nAsyncSession.get(Detection, id)
+alt Detection exists
+    DB --> Handler : Detection
+    Handler -> Handler : Validate GetDetectionResponse
+    Handler --> API : GetDetectionResponse
+    API --> Client : 200 + detection details
+else Detection does not exist
+    DB --> Handler : None
+    Handler --> API : DetectionNotFoundError
+    API --> Client : 404 {detail: "Detection not found"}
+end
+note over Client,API : Invalid UUID: 422 before handler dispatch\nUnavailable database: 503 via shared exception handler
+@enduml

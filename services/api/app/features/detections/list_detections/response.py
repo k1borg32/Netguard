@@ -10,6 +10,8 @@ class DetectionResponse(BaseModel):
 
     detection_id: UUID
     created_at: datetime
+    first_ingested_at: datetime | None
+    last_ingested_at: datetime | None
     type: str
     method: str
     severity: str

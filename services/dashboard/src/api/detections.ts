@@ -7,6 +7,8 @@ export type Severity = (typeof SEVERITIES)[number]
 export interface Detection {
   detection_id: string
   created_at: string
+  first_ingested_at: string | null
+  last_ingested_at: string | null
   type: string
   method: string
   severity: Severity
