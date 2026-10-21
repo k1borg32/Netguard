@@ -18,7 +18,15 @@ export interface Detection {
   explanation: string | null
 }
 
-/** Latest detections, newest first. Filters and paging come with the history endpoint (API gap G5). */
-export function getLatestDetections(limit = 50): Promise<Detection[]> {
-  return api<Detection[]>('/detections', { query: { limit } })
+export interface ListDetectionsResponse {
+  items: Detection[]
+  total: number
+  page: number
+  page_size: number
+}
+
+/** Latest detections, newest first, from the first page. */
+export async function getLatestDetections(limit = 50): Promise<Detection[]> {
+  const response = await api<ListDetectionsResponse>('/detections', { query: { page: 1, page_size: limit } })
+  return response.items
 }

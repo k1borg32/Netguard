@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class DetectionResponse(BaseModel):
@@ -19,3 +19,10 @@ class DetectionResponse(BaseModel):
     window_size_s: int | None
     features: dict[str, Any] | None
     explanation: str | None
+
+
+class ListDetectionsResponse(BaseModel):
+    items: list[DetectionResponse]
+    total: int = Field(ge=0)
+    page: int = Field(ge=1)
+    page_size: int = Field(ge=1, le=500)
