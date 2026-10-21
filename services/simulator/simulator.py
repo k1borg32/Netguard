@@ -4,7 +4,7 @@ Generates synthetic flows (no real packets, no real network) and publishes
 them to flows.raw. Every flow carries a ground-truth `label` for detection metrics.
 
 Implemented now: normal traffic + port_scan (enough for the week-3 thin pipeline).
-TODO week 4: dos, brute_force, abnormal_pattern scenarios.
+TODO week 4: dos, brute_force, abnormal_traffic, suspicious_pattern scenarios.
 
 Env:
   SIM_RATE        flows per second (default 200; perf test uses 5000+)

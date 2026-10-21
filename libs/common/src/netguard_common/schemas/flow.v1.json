@@ -13,7 +13,7 @@
     "schema_version": { "const": 1 },
     "flow_id":     { "type": "string", "format": "uuid", "description": "Unique per flow. Deterministic (uuid5) when imported from a file so replays dedupe." },
     "trace_id":    { "type": "string", "minLength": 8, "maxLength": 64, "description": "Correlation ID carried to every downstream event and log line (F15, NFR08)." },
-    "ingested_at": { "type": "number", "description": "Unix epoch seconds (float) when NetGuard accepted the data. Start point for p95 latency (NFR02)." },
+    "ingested_at": { "type": "number", "description": "Unix epoch seconds (float) when NetGuard accepted the data. Basis of the latency measurement (NFR02)." },
     "ts_start":    { "type": "number", "description": "Unix epoch seconds (float) of first packet." },
     "duration_ms": { "type": "number", "minimum": 0 },
     "src_ip":      { "type": "string", "anyOf": [{ "format": "ipv4" }, { "format": "ipv6" }] },
@@ -25,6 +25,6 @@
     "bytes":       { "type": "integer", "minimum": 0 },
     "tcp_flags":   { "type": ["string", "null"], "pattern": "^[FSRPAUEC]*$", "description": "e.g. 'S', 'SA', 'FA'. Null when not TCP / unknown." },
     "source":      { "enum": ["pcap", "flowfile", "simulator"] },
-    "label":       { "type": ["string", "null"], "enum": [null, "normal", "port_scan", "dos", "brute_force", "abnormal_pattern"], "description": "Ground truth from simulator/labelled datasets. Used ONLY for metrics, never by detectors." }
+    "label":       { "type": ["string", "null"], "enum": [null, "normal", "port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern"], "description": "Ground truth from simulator/labelled datasets. Used ONLY for metrics, never by detectors." }
   }
 }

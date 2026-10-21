@@ -4,23 +4,22 @@ Defensive, lab-only platform: imports PCAP/flow data or simulated traffic, proce
 detects and classifies anomalies (rules + statistical method), stores results, and shows them in an API and dashboard.
 **No real networks, no real attacks, no production data.**
 
-> Status: week 1-2 skeleton. A thin pipeline (simulator -> broker -> processor -> persister -> DB -> API -> dashboard)
-> works with a placeholder port-scan rule. Components get replaced by their owners per the schedule.
+> Status: week 2. The pipeline runs end to end with a placeholder port-scan rule, and the API has login, alerts and a
+> dashboard summary. The other detection rules, the PCAP importer and the dashboard pages follow the schedule.
 
-## Architecture (current)
+## Architecture
 
-```
-simulator --+                      +--> processor (xN) --> [detections] --+
-            +--> [flows.raw] ------+                                      +--> persister --> TimescaleDB --> API --> dashboard
-importer  --+    key = src_ip      +--------------------------------------+
-```
+![NetGuard system overview](Docs/ArchitectureDocument/diagrams/system_overview.svg)
+
+Flows are keyed by source IP, so all flows of one source reach the same processor instance and the processor can be
+scaled (NFR03). Diagram source: [system_overview.puml](Docs/ArchitectureDocument/diagrams/system_overview.puml).
 
 | Component | Tech | Port |
 |---|---|---|
 | Broker | Redpanda (Kafka API) | 19092 |
 | DB | PostgreSQL 16 + TimescaleDB | 5432 |
 | API | FastAPI | 8000 |
-| Dashboard | nginx (placeholder, React later) | 3000 |
+| Dashboard | React + nginx | 3000 |
 | Broker UI (optional) | Redpanda Console | 8081 |
 
 All ports are published on `127.0.0.1` only, so the DB and broker (no real auth in dev) are not reachable from your network.
@@ -47,7 +46,14 @@ docker compose up -d --build
 docker compose --profile sim run --rm simulator
 ```
 
-Open http://localhost:3000 - port-scan detections appear within ~15 s.
+Create the first dashboard user once per DB volume (asks for a username and a password of 12+ characters):
+
+```bash
+docker compose exec api python -m app.infrastructure.bootstrap_admin
+```
+
+Open http://localhost:3000 and sign in - port-scan detections appear within ~15 s.
+Dashboard development: [services/dashboard/README.md](services/dashboard/README.md).
 API docs: http://localhost:8000/docs. Broker UI: `docker compose --profile debug up -d`, then http://localhost:8081.
 
 Stop: `make down`. Wipe all data: `make reset` (`docker compose down -v`).
@@ -110,5 +116,10 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
 ## Docs
 
 - [Vision Document](Docs/VisionDoccument/README.md) - requirements F01-F17, NFR01-NFR11
+- Architecture Document: [data ingestion and the flow model](Docs/ArchitectureDocument/README.md),
+  [dashboard](Docs/ArchitectureDocument/dashboard/README.md),
+  [deployment, CI/CD and testing](Docs/ArchitectureDocument/deployment/README.md)
+- [Domain Data Model](Docs/DomainDataModel/README.md) and [Database Schema](Docs/DatabaseSchema/README.md)
+- [Backend and Data Storage](Docs/BackendAndDataStorage/README.md) - API, authentication, endpoints
 - [Test Plan](Docs/TestPlan/README.md)
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

@@ -19,6 +19,7 @@ dist/
 # Data and results
 data/pcap/*.pcap
 !data/pcap/.gitkeep
+data/runs/
 results/
 
 .idea/
