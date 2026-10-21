@@ -41,6 +41,19 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 [Dashboard documentation and tests](dashboard/README.md).
 
+- [x] `GET /api/v1/dashboard/timeseries` - retrieve shared UTC buckets containing flow and detection counts.
+
+Requires the same Bearer access token as summary. Optional query parameters:
+`from` (inclusive), `to` (exclusive), and `interval` (`5m`, `15m`, `1h`, `1d`).
+Defaults to the last 24 hours and `1h`. Empty buckets contain zeros; results are
+chronological. Counts use `network_flows.ts_start` and `detections.created_at`.
+Bounds are ISO 8601 timestamps with timezones and responses use UTC. Queries may
+span at most 366 days and intersect at most 2000 buckets; invalid input returns 422.
+
+Example: `GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T03:00:00Z&interval=1h`
+
+[Time-series contract](dashboard/README.md#time-series).
+
 ## Alerts
 
 - [ ] `GET /api/v1/alerts` - list alerts with filtering, sorting and pagination.

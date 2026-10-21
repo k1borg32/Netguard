@@ -1,0 +1,24 @@
+@startuml
+title Dashboard summary - successful request
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Summary controller" as API
+control GetDashboardSummaryHandler as Handler
+database TimescaleDB as DB
+
+Client -> API : GET /api/v1/dashboard/summary\nstart_time, end_time + Bearer token
+ref over API,DB : Existing JWT and user/admin role checks
+API -> API : Validate timezone-aware bounds\nstart_time < end_time
+note over API,Handler : Controller creates handler with request-scoped AsyncSession
+API -> Handler : handle(GetDashboardSummaryQuery)
+Handler -> DB : One SELECT: independent COUNT(*) subqueries\nflows.ts_start, detections.created_at, alerts.created_at\n[start_time, end_time)
+DB --> Handler : flow_count, detection_count, alert_count
+Handler --> API : DashboardSummaryResponse
+API --> Client : 200 + JSON counts
+@enduml
