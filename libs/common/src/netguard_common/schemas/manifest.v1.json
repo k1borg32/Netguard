@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "netguard/manifest.v1",
+  "title": "Ground-truth manifest of attack episodes (detection quality tests, test plan 3.6)",
+  "type": "object",
+  "required": ["schema_version", "dataset", "source", "seed", "created_at", "episodes"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "dataset":        { "type": "string", "minLength": 1, "description": "Dataset ID from the test plan (section 5), e.g. SIM-SCEN or PCAP-SET/<file>." },
+    "source":         { "enum": ["simulator", "pcap", "flowfile"] },
+    "seed":           { "type": ["integer", "null"], "description": "Simulator seed, so the run can be reproduced. Null for files." },
+    "created_at":     { "type": "number", "description": "Epoch seconds when the manifest was written." },
+    "notes":          { "type": "string", "description": "Free text, e.g. how a hand-written manifest was checked (second person)." },
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["episode_id", "class", "attackers", "targets", "start", "end"],
+        "additionalProperties": false,
+        "properties": {
+          "episode_id": { "type": "string", "minLength": 1, "description": "Unique inside the manifest, e.g. port_scan-003." },
+          "class":      { "enum": ["port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern"], "description": "The five scenarios of spec 5. Normal traffic is everything that is not inside an episode." },
+          "attackers":  { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "Source IPs or CIDR networks (DDoS with many sources)." },
+          "targets":    { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 }, "description": "Destination IPs or CIDR networks." },
+          "start":      { "type": "number", "description": "Flow time (ts_start, epoch seconds) of the first attack flow. Not the ingestion time: replayed PCAPs keep their original timestamps." },
+          "end":        { "type": "number", "description": "Flow time (ts_start) of the last attack flow." },
+          "params":     { "type": "object", "description": "How the episode was generated, e.g. {ports: 300, rate_per_s: 50, variant: weak}. Used in the error analysis.", "additionalProperties": { "type": ["number", "string", "boolean"] } }
+        }
+      }
+    }
+  }
+}
