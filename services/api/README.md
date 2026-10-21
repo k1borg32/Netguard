@@ -4,23 +4,27 @@
 - [Architecture](../../Docs/BackendAndDataStorage/architecture/README.md)
 - [Authentication](../../Docs/BackendAndDataStorage/auth/README.md)
 - [Dashboard](../../Docs/BackendAndDataStorage/dashboard/README.md)
+- [Detections](../../Docs/BackendAndDataStorage/detections/README.md)
 
 ## Run
 
 Install `requirements.txt`. Set `DATABASE_URL` and `JWT_SECRET` in the environment
-or the repository's `.env`. From `services/api`, with the environment activated:
+or the repository's `.env`. To load `.env` explicitly, run from `services/api`
+with the environment activated:
 
 ```powershell
-python -m app.app
+python run.py
 ```
 
-This entry point configures the Windows event loop required by psycopg async.
+Use `python -m app.app` when the variables are already exported; it configures the
+Windows event loop required by psycopg async. Settings do not discover `.env`
+automatically. Missing settings fail at startup without exposing their values.
 The Linux container uses `uvicorn app.app:app --host 0.0.0.0 --port 8000`.
 
 Open `/docs` for interactive documentation and `/openapi.json` for the schema.
 `GET /health/ping` returns `{"status": "ok"}` without accessing the database.
 `GET /health` also checks the database and returns `{"status": "ok", "db": "ok"}`; the Compose
-healthcheck uses it.
+healthcheck uses it. An unavailable database returns HTTP 503 with degraded status.
 
 `GET /api/v1/dashboard/summary` returns `flow_count`, `detection_count` and `alert_count`.
 Send a Bearer access token and required `start_time` / `end_time` query parameters

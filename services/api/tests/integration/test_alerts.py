@@ -10,7 +10,7 @@ from app.domain.user_role import UserRole
 from fastapi.testclient import TestClient
 from psycopg.types.json import Jsonb
 
-URL = "/api/alerts"
+URL = "/api/v1/alerts"
 START = datetime(2026, 1, 1, tzinfo=UTC)
 END = START + timedelta(days=1)
 
