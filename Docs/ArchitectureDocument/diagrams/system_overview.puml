@@ -1,0 +1,49 @@
+@startuml system_overview
+title NetGuard - System Overview (UML component diagram)
+
+!pragma layout smetana
+skinparam componentStyle uml2
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor white
+
+' Provided interface: ball on a solid line.
+' Required interface: usage dependency, a dashed arrow from the user to the interface.
+
+component "PCAP Importer" as Importer
+component "Traffic Simulator" as Simulator
+interface "flows.raw" as FlowsTopic
+component "Processor" as Processor
+component "Redpanda" <<broker>> as Broker
+component "Persister" as Persister
+interface "detections" as DetectionsTopic
+component "TimescaleDB" <<database>> as DB
+interface "SQL" as Sql
+component "REST API" as API
+interface "REST /api/v1" as Rest
+component "Dashboard" as Dashboard
+
+FlowsTopic -down- Broker
+Broker -down- DetectionsTopic
+DB -down- Sql
+API -down- Rest
+
+Importer .down.> FlowsTopic : <<use>>\npublish
+Simulator .down.> FlowsTopic : <<use>>\npublish
+Processor .up.> FlowsTopic : <<use>>\nsubscribe
+Processor .down.> DetectionsTopic : <<use>>\npublish
+Persister .up.> FlowsTopic : <<use>>\nsubscribe
+Persister .down.> DetectionsTopic : <<use>>\nsubscribe
+Persister .right.> Sql : <<use>>\nwrite
+API .left.> Sql : <<use>>\nread
+Dashboard .left.> Rest : <<use>>
+
+' Keeps the broker between the two services that use it.
+Processor -[hidden]right- Broker
+Broker -[hidden]right- Persister
+
+note left of Importer : planned, week 3
+note left of Processor : 1..N instances\n(NFR03)
+
+@enduml

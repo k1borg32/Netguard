@@ -1,0 +1,44 @@
+@startuml
+title Token refresh
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Refresh API" as API
+control RefreshHandler as Handler
+database Database as DB
+Client -> API : POST /refresh + refresh token
+API -> API : validate JWT
+break invalid token
+  API --> Client : 401
+end
+API -> Handler : handle(RefreshCommand)
+Handler -> DB : SELECT user
+DB --> Handler : user / missing
+break user does not exist
+  Handler --> API : AuthenticationFailed
+  API --> Client : 401
+end
+Handler -> Handler : issue new JWT pair
+group Single transaction
+  Handler -> DB : DELETE active session\nby token SHA-256 and user_id\nRETURNING user_id
+  DB --> Handler : deleted row / none
+  alt session exists and has not expired
+    Handler -> DB : INSERT replacement session + COMMIT
+    Handler --> API : RefreshResponse
+    API --> Client : 200 + new token pair
+  else consumed, expired or logged-out session
+    Handler --> API : AuthenticationFailed
+    API -> DB : session cleanup / ROLLBACK
+    API --> Client : 401
+  end
+end
+note over Handler,DB
+  Failure before commit rolls back the change.
+  Successful rotation invalidates the old token.
+end note
+@enduml

@@ -1,0 +1,35 @@
+@startuml deployment
+title NetGuard - Deployment (UML deployment diagram)
+
+!pragma layout smetana
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam backgroundColor white
+
+' Nodes are 3D boxes, communication paths are solid lines labelled with the protocol.
+
+node "Lab machine (developer laptop or CI runner)" <<device>> {
+  node "Web browser" <<executionEnvironment>> as Browser
+  node "Docker Engine + Compose" <<executionEnvironment>> {
+    node "dashboard\nnginx-unprivileged 1.27" <<container>> as Dashboard
+    node "api\npython 3.12, uvicorn" <<container>> as Api
+    node "simulator\n(profile sim)" <<container>> as Simulator
+    node "processor\n1..6 instances" <<container>> as Processor
+    node "persister" <<container>> as Persister
+    node "redpanda v24.2" <<container>> as Broker
+    node "db\ntimescaledb 2.17 pg16" <<container>> as Db
+    artifact "dbdata\n(volume)" as Volume
+  }
+}
+
+Browser -- Dashboard : HTTP\n127.0.0.1:3000
+Dashboard -- Api : HTTP\n/api/v1 (proxy)
+Api -- Db : PostgreSQL
+Simulator -- Broker : Kafka
+Processor -- Broker : Kafka
+Persister -- Broker : Kafka
+Persister -- Db : PostgreSQL
+Db ..> Volume : <<use>>
+
+@enduml
