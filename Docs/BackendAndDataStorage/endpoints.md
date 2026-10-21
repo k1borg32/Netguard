@@ -62,10 +62,12 @@ Example: `GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-
 
 ## Detections
 
-- [x] `GET /api/v1/detections` - latest detections, newest first (`limit` 1-500). No pagination yet;
-  no token needed until the dashboard has a login.
-- [ ] `GET /api/v1/detections/{id}` - retrieve detection details: type, method, confidence and explanation.
-- [ ] `GET /api/v1/detections/{id}/flows` - retrieve flows associated with a detection.
+- [x] `GET /api/v1/detections` - filter, sort and paginate detections (`page_size` 1-500; legacy `limit` alias).
+  Public for now; newest first by default.
+- [x] `GET /api/v1/detections/{id}` - retrieve detection details: type, method, confidence and explanation.
+- [x] `GET /api/v1/detections/{id}/flows` - paginate retained flows matching the detection's trace-ID sample.
+
+[Detection contracts, tests and PlantUML sequences](detections/README.md).
 
 ## Network flows
 

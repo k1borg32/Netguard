@@ -72,3 +72,44 @@ HTTP/ORM/database path: complete evidence and read-only lookup, nullable fields,
 independent ingestion timestamps, missing records, invalid UUIDs, a real database
 connection refusal and the OpenAPI contract. It uses the existing disposable
 TimescaleDB fixtures and no mocks or dependency overrides.
+
+## GET /api/v1/detections/{id}/flows
+
+Public endpoint returning stored flows whose `trace_id` matches an entry in the
+detection's `trace_ids`. The detector stores an evidence sample (currently up to
+20 trace IDs in the port-scan processor). Returned flows therefore represent the
+retained sample, and `total` counts matching stored rows. Expired or missing flows
+are omitted. Repeated trace IDs in the sample do not duplicate response items.
+
+| Query parameter | Contract |
+| --- | --- |
+| `page` | Page number starting at 1; default 1. |
+| `page_size` | 1–500 items; default 50. |
+| `sort_order` | `asc` or `desc` (default), by `ts_start` then `flow_id` in the same direction. |
+
+Response: `{"items": [...], "total": 8, "page": 1, "page_size": 50}`.
+Items contain `flow_id`, `ts_start`, `trace_id`, `ingested_at`, `duration_ms`,
+source/destination IPs and ports, `protocol`, `packets`, `bytes`, `tcp_flags`,
+`source` and `label`. Optional values remain `null`; timestamps use ISO 8601 with
+timezones. A flow's identity is the composite `(flow_id, ts_start)`: matching rows
+with the same UUID and different start times remain separate items.
+
+The controller validates the UUID and pagination, then calls
+`GetDetectionFlowsHandler`. One SQL statement uses parent/matching-flow/page/count
+CTEs, `trace_id = ANY(trace_ids)` and an outer join to share one snapshot while
+distinguishing a missing detection from an empty page. The existing
+`network_flows_trace_idx` supports trace lookup. Reads do not change stored rows.
+
+`200` includes an empty page when the detection has no trace IDs, no retained
+matches, or the requested page exceeds the result set; the matching total is
+preserved. A missing detection returns `404` with `Detection not found`. Invalid
+UUIDs, pagination or sorting return `422`; unavailable storage returns `503`.
+
+![Detection flows sequence](diagrams/get_detection_flows_sequence.svg)
+
+[PlantUML source](diagrams/get_detection_flows_sequence.puml)
+
+Tests: `services/api/tests/integration/test_get_detection_flows.py` covers exact
+trace association, repeated trace IDs, incomplete retention, composite keys,
+stable pages in both directions, empty pages, nullable evidence, `404`/`422`/`503`,
+read-only behavior and OpenAPI using real HTTP and TimescaleDB.
