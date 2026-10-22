@@ -19,6 +19,9 @@ We do not mock SQLAlchemy sessions to test handler queries.
 the default start relative to the end and UTC normalization, both exact query
 limits, the limit including partial buckets, and rejection of naive timestamps.
 
+`unit/test_list_flows_request.py` covers optional flow filters, port and pagination
+bounds, valid IP addresses and timezone-aware range comparisons.
+
 ## Integration
 
 Test the full path through `client`: HTTP -> controller -> handler -> real
@@ -58,6 +61,11 @@ Test registration of subsequent users through the HTTP endpoint.
 Isolation does not rely on rollback: HTTP requests commit through separate connections.
 New files receive the `unit` or `integration` marker automatically based on their directory.
 Each test prepares its own data and does not depend on execution order.
+
+`integration/test_flows.py` covers flow listing and details: time, IPv4/IPv6,
+port and protocol filters, combined filters, stable sorting and pagination, empty
+pages, the UUID + timestamp composite key, nullable fields, validation,
+authentication for both roles and OpenAPI documentation.
 
 ## Running tests
 

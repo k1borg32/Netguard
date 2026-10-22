@@ -1,0 +1,40 @@
+@startuml
+title List network flows - filters and pagination
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "List flows controller" as API
+control "Authentication dependency" as Auth
+control ListFlowsHandler as Handler
+database TimescaleDB as DB
+
+Client -> API : GET /api/v1/flows\nBearer token, optional filters and pagination
+API -> Auth : Verify access token
+opt Valid access token
+    Auth -> DB : SELECT current user's role
+    DB --> Auth : user / admin, or no user
+end
+alt Missing / invalid token or deleted user
+    Auth --> API : AuthenticationFailed
+    API --> Client : 401 + WWW-Authenticate: Bearer
+else Authenticated user / admin
+    Auth --> API : Access granted
+    API -> API : Validate query parameters
+    alt Invalid filters, range or pagination
+        API --> Client : 422 {detail: validation errors}
+    else Valid query
+        API -> Handler : handle(ListFlowsQuery)
+        Handler -> DB : One SELECT: filtered flows + page + total\nORDER BY ts_start, flow_id; LIMIT / OFFSET
+        DB --> Handler : Page rows and total\ncount retained even for an empty page
+        Handler --> API : ListFlowsResponse
+        API --> Client : 200 {items, total, page, page_size}
+    end
+end
+note over Auth,DB : A database failure returns 503 through the shared exception handler.
+note over Handler,DB : Time range applies to ts_start: [start_time, end_time).\nItems and total share one snapshot; no rows are modified.
+@enduml

@@ -1,0 +1,46 @@
+@startuml
+title Get network flow - composite identity
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Get flow controller" as API
+control "Authentication dependency" as Auth
+control GetFlowHandler as Handler
+database TimescaleDB as DB
+
+Client -> API : GET /api/v1/flows/{flowId}?tsStart={timestamp}\nBearer access token
+API -> Auth : Verify access token
+opt Valid access token
+    Auth -> DB : SELECT current user's role
+    DB --> Auth : user / admin, or no user
+end
+alt Missing / invalid token or deleted user
+    Auth --> API : AuthenticationFailed
+    API --> Client : 401 + WWW-Authenticate: Bearer
+else Authenticated user / admin
+    Auth --> API : Access granted
+    API -> API : Validate UUID and required timezone-aware tsStart
+    alt Invalid UUID or missing / invalid tsStart
+        API --> Client : 422 {detail: validation errors}
+    else Valid identity
+        API -> Handler : handle(GetFlowQuery)
+        Handler -> DB : SELECT network_flows\nWHERE flow_id = :flow_id AND ts_start = :ts_start
+        alt Matching composite key
+            DB --> Handler : NetworkFlow
+            Handler --> API : FlowResponse
+            API --> Client : 200 flow object
+        else No matching composite key
+            DB --> Handler : No row
+            Handler --> API : FlowNotFoundError
+            API --> Client : 404 {detail: "Flow not found"}
+        end
+    end
+end
+note over Auth,DB : A database failure returns 503 through the shared exception handler.
+note over Handler,DB : The same UUID can have different start times.\nBoth key parts must match; no rows are modified.
+@enduml
