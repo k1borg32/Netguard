@@ -75,6 +75,17 @@ required. Existing `401` authentication and `503` database errors apply.
 
 See the [dashboard contract](../../Docs/BackendAndDataStorage/dashboard/README.md) for both endpoints.
 
+## Network flows
+
+`GET /api/v1/flows` lists flows with optional time, IP address, port and protocol
+filters. Use `sort_order=asc|desc`, `page` (default 1) and `page_size` (default 50,
+maximum 100). Responses include `items`, `total`, `page` and `page_size`.
+
+`GET /api/v1/flows/{flowId}?tsStart={timestamp}` retrieves a flow by its composite
+key. `tsStart` is required and must include a timezone. Both routes require a
+Bearer access token. See the [endpoint plan](../../Docs/BackendAndDataStorage/endpoints.md#network-flows)
+for the complete contract.
+
 ## First administrator
 
 ```powershell

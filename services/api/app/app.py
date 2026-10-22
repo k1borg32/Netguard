@@ -14,6 +14,7 @@ from app.features.auth.router import router as auth_router
 from app.features.common.app_exception import AppException
 from app.features.dashboard.router import router as dashboard_router
 from app.features.detections.router import router as detections_router
+from app.features.flows.router import router as flows_router
 from app.features.health.check.controller import router as health_router
 from app.features.health.ping.controller import router as ping_router
 from app.infrastructure.config import Settings
@@ -47,6 +48,7 @@ def create_app() -> FastAPI:
     application.include_router(dashboard_router)
     application.include_router(alerts_router)
     application.include_router(detections_router)
+    application.include_router(flows_router)
     application.include_router(health_router)
     application.include_router(ping_router)
     return application
