@@ -25,7 +25,7 @@ component "Message\nBroker" as MQ
 component "Flow\nProcessor" as FP
 component "Detection\nEngine" as DE
 component "Database" as DB
-component "Backend\nApplication" as BE
+component "Management\nAPI" as BE
 component "Monitoring\nDashboard" as UI
 
 ' ============================

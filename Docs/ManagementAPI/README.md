@@ -1,4 +1,6 @@
-# API documentation
+# Data Access and Management API
+
+The **Data Access and Management API** (**Management API**) exposes network monitoring data and handles authentication, user sessions, alert acknowledgement and detection configuration management.
 
 - [API endpoint plan](endpoints.md) — implemented and planned operations.
 - [Architecture](architecture/README.md) — structure, dependencies and request flow.

@@ -1,1 +1,1 @@
-"""NetGuard backend application."""
+"""NetGuard Management API application."""

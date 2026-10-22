@@ -20,9 +20,9 @@ package "Traffic Analysis" {
     component "Detection Engine" as Detection
 }
 
-package "Backend & Storage" {
+package "Management API & Storage" {
     database "Database" as DB
-    component "REST API" as API
+    component "Management API" as API
 }
 
 package "Presentation" {

@@ -138,13 +138,13 @@ construct handlers directly; dependencies provide authentication and the
 request-scoped database session. Existing schema and imperative ORM mappings
 are reused without migrations. OpenAPI is available at `/docs`.
 
-[Integration tests](../../../../services/api/tests/integration/test_flows.py)
+[Integration tests](../../../services/api/tests/integration/test_flows.py)
 cover both roles, authentication failures, individual and combined filters,
 IPv6 normalization, time boundaries, deterministic pages, repeated UUIDs,
 empty pages and totals, complete and nullable fields, composite lookup,
 validation and OpenAPI using real HTTP and disposable TimescaleDB.
-[Unit tests](../../../../services/api/tests/unit/test_list_flows_request.py)
+[Unit tests](../../../services/api/tests/unit/test_list_flows_request.py)
 cover optional filters, port and pagination bounds, invalid IP addresses and
 timezone-aware range comparisons. No mocks or dependency overrides are used.
 
-[Endpoint plan](../endpoints.md) · [Test setup](../../../../services/api/tests/README.md)
+[Endpoint plan](../endpoints.md) · [Test setup](../../../services/api/tests/README.md)

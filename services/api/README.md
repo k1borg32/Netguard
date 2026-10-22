@@ -1,10 +1,10 @@
-# NetGuard API
+# NetGuard Management API
 
-- [API endpoint plan](../../Docs/BackendAndDataStorage/endpoints.md)
-- [Architecture](../../Docs/BackendAndDataStorage/architecture/README.md)
-- [Authentication](../../Docs/BackendAndDataStorage/auth/README.md)
-- [Dashboard](../../Docs/BackendAndDataStorage/dashboard/README.md)
-- [Detections](../../Docs/BackendAndDataStorage/detections/README.md)
+- [API endpoint plan](../../Docs/ManagementAPI/endpoints.md)
+- [Architecture](../../Docs/ManagementAPI/architecture/README.md)
+- [Authentication](../../Docs/ManagementAPI/auth/README.md)
+- [Dashboard](../../Docs/ManagementAPI/dashboard/README.md)
+- [Detections](../../Docs/ManagementAPI/detections/README.md)
 
 ## Run
 
@@ -73,7 +73,7 @@ uses TimescaleDB `time_bucket()`, independent aggregates, `generate_series()` an
 left joins. No schema changes, repository layer or additional dependencies are
 required. Existing `401` authentication and `503` database errors apply.
 
-See the [dashboard contract](../../Docs/BackendAndDataStorage/dashboard/README.md) for both endpoints.
+See the [dashboard contract](../../Docs/ManagementAPI/dashboard/README.md) for both endpoints.
 
 ## Network flows
 
@@ -83,7 +83,7 @@ maximum 100). Responses include `items`, `total`, `page` and `page_size`.
 
 `GET /api/v1/flows/{flowId}?tsStart={timestamp}` retrieves a flow by its composite
 key. `tsStart` is required and must include a timezone. Both routes require a
-Bearer access token. See the [endpoint plan](../../Docs/BackendAndDataStorage/endpoints.md#network-flows)
+Bearer access token. See the [endpoint plan](../../Docs/ManagementAPI/endpoints.md#network-flows)
 for the complete contract.
 
 ## First administrator

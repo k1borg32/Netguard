@@ -1,6 +1,6 @@
 # API endpoint plan
 
-This list was restored from the [integration plan](../Architecture/Backend_Data_Storage/integration.md)
+This list was restored from the [integration plan](../Architecture/ManagementAPI/integration.md)
 introduced in commit `12c9058` and updated to reflect the current implementation.
 Checked items are implemented; unchecked items are planned.
 

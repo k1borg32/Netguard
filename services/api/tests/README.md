@@ -28,13 +28,13 @@ Test the full path through `client`: HTTP -> controller -> handler -> real
 SQLAlchemy, Argon2 and JWT -> local TimescaleDB -> HTTP response.
 Dashboard tests also cover range boundaries, timezones, invalid parameters,
 access without a valid token, adjacent ranges and passing filters in the URL.
-[Dashboard documentation](../../../Docs/BackendAndDataStorage/dashboard/README.md).
+[Dashboard documentation](../../../Docs/ManagementAPI/dashboard/README.md).
 
 `integration/test_dashboard_timeseries.py` contains 13 essential cases:
 aggregation of both datasets for four intervals, empty and partial buckets,
 ordering, `[from, to)` boundaries, the default 24-hour range, invalid parameters,
 excessive ranges and missing authentication.
-[Time-series contract](../../../Docs/BackendAndDataStorage/dashboard/README.md#time-series).
+[Time-series contract](../../../Docs/ManagementAPI/dashboard/README.md#time-series).
 
 - A separate Docker Compose project starts once per session on a random local port.
 - The schema comes from the production `db/init/*.sql` scripts.
