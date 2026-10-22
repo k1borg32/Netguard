@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.exception_handlers import app_exception_handler, database_exception_handler, validation_exception_handler
@@ -13,14 +14,23 @@ from app.features.auth.router import router as auth_router
 from app.features.common.app_exception import AppException
 from app.features.dashboard.router import router as dashboard_router
 from app.features.detections.router import router as detections_router
+from app.features.flows.router import router as flows_router
 from app.features.health.check.controller import router as health_router
 from app.features.health.ping.controller import router as ping_router
+from app.infrastructure.config import Settings
 from app.infrastructure.database import dispose_engine
 from app.infrastructure.persistence.mappings import configure_mappings
 
 
 @asynccontextmanager
 async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    try:
+        Settings()
+    except ValidationError as exc:
+        fields = ", ".join(sorted({str(error["loc"][0]).upper() for error in exc.errors()}))
+        raise RuntimeError(
+            f"Missing or invalid API settings: {fields}. Set environment variables or run python run.py."
+        ) from None
     configure_mappings()
     try:
         yield
@@ -38,6 +48,7 @@ def create_app() -> FastAPI:
     application.include_router(dashboard_router)
     application.include_router(alerts_router)
     application.include_router(detections_router)
+    application.include_router(flows_router)
     application.include_router(health_router)
     application.include_router(ping_router)
     return application

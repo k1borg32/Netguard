@@ -1,0 +1,3 @@
+interface:
+  display_name: "Implement Feature (Netguard)"
+  short_description: "Netguard features with staged implementation approvals"

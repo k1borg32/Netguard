@@ -41,6 +41,19 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 [Dashboard documentation and tests](dashboard/README.md).
 
+- [x] `GET /api/v1/dashboard/timeseries` - retrieve shared UTC buckets containing flow and detection counts.
+
+Requires the same Bearer access token as summary. Optional query parameters:
+`from` (inclusive), `to` (exclusive), and `interval` (`5m`, `15m`, `1h`, `1d`).
+Defaults to the last 24 hours and `1h`. Empty buckets contain zeros; results are
+chronological. Counts use `network_flows.ts_start` and `detections.created_at`.
+Bounds are ISO 8601 timestamps with timezones and responses use UTC. Queries may
+span at most 366 days and intersect at most 2000 buckets; invalid input returns 422.
+
+Example: `GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T03:00:00Z&interval=1h`
+
+[Time-series contract](dashboard/README.md#time-series).
+
 ## Alerts
 
 - [ ] `GET /api/v1/alerts` - list alerts with filtering, sorting and pagination.
@@ -51,13 +64,42 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 - [x] `GET /api/v1/detections` - latest detections, newest first (`limit` 1-500). No pagination yet;
   no token needed until the dashboard has a login.
-- [ ] `GET /api/v1/detections/{id}` - retrieve detection details: type, method, confidence and explanation.
-- [ ] `GET /api/v1/detections/{id}/flows` - retrieve flows associated with a detection.
+- [x] `GET /api/v1/detections/{id}` - retrieve detection details: type, method, confidence and explanation.
+- [x] `GET /api/v1/detections/{id}/flows` - retrieve flows associated with a detection.
 
 ## Network flows
 
-- [ ] `GET /api/v1/flows` - list flows with filtering, sorting and pagination.
-- [ ] `GET /api/v1/flows/{flowId}?tsStart={timestamp}` - retrieve a flow by its identifier and start time.
+- [x] `GET /api/v1/flows` - list flows with filtering, sorting and pagination.
+- [x] `GET /api/v1/flows/{flowId}?tsStart={timestamp}` - retrieve a flow by its identifier and start time.
+
+Both endpoints require a Bearer access token belonging to an existing user (user or admin).
+
+The list accepts optional `start_time` (inclusive) and `end_time` (exclusive) filters on
+`ts_start`, as ISO 8601 timestamps with a timezone. When both are present,
+`start_time` must precede `end_time`. Other optional filters are `src_ip`, `dst_ip`
+(IPv4 or IPv6 addresses), `src_port`, `dst_port` (0-65535), and `protocol`
+(an exact, case-sensitive match). Filters are combined with AND.
+
+`sort_order=asc|desc` defaults to `desc` and orders by `ts_start`, then `flow_id`
+in the same direction for deterministic pagination. `page` starts at 1 (default 1);
+`page_size` is 1-100 (default 50). The response contains `items`, `total`, `page`
+and `page_size`. `total` counts all matching flows, including on empty or
+out-of-range pages; items and total use one database snapshot.
+
+Example: `GET /api/v1/flows?start_time=2026-01-01T00:00:00Z&end_time=2026-01-02T00:00:00Z&protocol=TCP&sort_order=desc&page=1&page_size=50`
+
+The detail endpoint requires both a UUID `flowId` and a timezone-aware `tsStart`
+query parameter because flows have a composite primary key. Equivalent timezone
+offsets identify the same instant. If no flow matches the pair, the endpoint returns 404; malformed UUIDs,
+missing/invalid timestamps, invalid list filters or pagination return 422.
+Missing or invalid authentication returns 401; database failures return 503.
+
+Example: `GET /api/v1/flows/00000000-0000-0000-0000-000000000001?tsStart=2026-01-01T00:00:00Z`
+
+Both endpoints return the same flow fields: `flow_id`, `ts_start`, `trace_id`,
+`ingested_at`, `duration_ms`, `src_ip`, `dst_ip`, `src_port`, `dst_port`, `protocol`,
+`packets`, `bytes`, `tcp_flags`, `source` and `label`. All fields except the composite
+key can be `null`. Timestamps use ISO 8601 with a timezone; IP addresses are strings.
 
 ## Detection configurations
 
