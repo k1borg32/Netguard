@@ -27,7 +27,7 @@ log = get_logger("importer")
 
 VALID_PROTOCOLS = {"TCP", "UDP", "ICMP", "OTHER"}
 PROTOCOL_BY_NUMBER = {"1": "ICMP", "6": "TCP", "17": "UDP"}
-VALID_LABELS = {"normal", "port_scan", "dos", "brute_force", "abnormal_pattern"}
+VALID_LABELS = {"normal", "port_scan", "dos", "brute_force", "abnormal_traffic"}
 REQUIRED_COLUMNS = (
     "ts_start",
     "duration_ms",

@@ -1,0 +1,1 @@
+# importer uses only netguard_common (installed in the image) + the Python stdlib
