@@ -1,15 +1,18 @@
-"""Flow-file importer (owner: Member 1).
+"""Flow importer (owner: Member 1).
 
-Reads a labelled network-flow CSV, normalises each row into a flow.v1 message,
-validates it, and publishes it to flows.raw (keyed by src_ip). It is the first
-component to touch the data, so it creates the trace_id (F15) and sets
-ingested_at (NFR02). Malformed rows are rejected with their reason, sent to the
-dead-letter topic, and never published (F01, SEC-02); a summary is printed at
+Reads network-flow data and publishes normalised flow.v1 messages to flows.raw
+(keyed by src_ip). Input format is picked by file extension:
+  * .csv          -> labelled flow records   (source="flowfile")
+  * .pcap / .cap  -> raw capture; packets grouped into flows (source="pcap")
+
+First component to touch the data, so it creates trace_id (F15) and sets
+ingested_at (NFR02). Malformed records are rejected with their reason, sent to
+the dead-letter topic, and never published (F01, SEC-02); a summary prints at
 the end.
 
 Run locally (broker must be up):
-    FLOW_FILE=data/flows/sample.csv BROKER_BOOTSTRAP=localhost:19092 \
-        python services/importer/importer.py
+    FLOW_FILE=data/flows/sample.csv  python services/importer/importer.py
+    FLOW_FILE=data/pcap/sample.pcap  python services/importer/importer.py
 """
 
 from __future__ import annotations
@@ -39,6 +42,7 @@ REQUIRED_COLUMNS = (
     "packets",
     "bytes",
 )
+PCAP_EXTENSIONS = (".pcap", ".cap", ".pcapng")
 
 
 def _protocol(raw: str) -> str:
@@ -51,7 +55,7 @@ def _protocol(raw: str) -> str:
 def _ts_start(raw: str) -> float:
     raw = (raw or "").strip()
     try:
-        return float(raw)  # epoch seconds
+        return float(raw)
     except ValueError:
         from datetime import datetime
 
@@ -74,7 +78,7 @@ def _tcp_flags(raw: str) -> str | None:
 
 
 def normalise_row(row: dict[str, str]) -> dict:
-    """Pure: one CSV row -> the flow.v1 payload fields. Raises ValueError on a bad row."""
+    """Pure: one CSV row -> flow.v1 field dict. Raises ValueError on a bad row."""
     missing = [c for c in REQUIRED_COLUMNS if not (row.get(c) or "").strip()]
     if missing:
         raise ValueError(f"missing/empty columns: {', '.join(missing)}")
@@ -93,17 +97,39 @@ def normalise_row(row: dict[str, str]) -> dict:
     }
 
 
-def build_flow(row: dict, source_file: str, index: int, ingested_at: float, trace_id: str) -> dict:
-    """Full flow.v1 message for one row. Does not validate (caller does, to handle rejects)."""
-    flow = normalise_row(row)
-    flow.update(
-        schema_version=1,
-        flow_id=flow_id_for(source_file, index),
-        trace_id=trace_id,
-        ingested_at=ingested_at,
-        source="flowfile",
-    )
-    return flow
+def finalise_flow(fields, source_file, index, ingested_at, trace_id, source) -> dict:
+    """Add the flow.v1 envelope (schema_version, flow_id, trace_id, ingested_at, source)."""
+    return {
+        **fields,
+        "schema_version": 1,
+        "flow_id": flow_id_for(source_file, index),
+        "trace_id": trace_id,
+        "ingested_at": ingested_at,
+        "source": source,
+    }
+
+
+def build_flow(row, source_file, index, ingested_at, trace_id) -> dict:
+    """CSV row -> full flow.v1 message (source='flowfile'). Does not validate."""
+    return finalise_flow(normalise_row(row), source_file, index, ingested_at, trace_id, "flowfile")
+
+
+def _raw_records(flow_file: str):
+    """Yield (kind, record, source) for each input item.
+
+    kind 'row'    -> record is a raw CSV row, normalised later (may be rejected).
+    kind 'fields' -> record is an already-structured PCAP flow.
+    """
+    ext = os.path.splitext(flow_file)[1].lower()
+    if ext in PCAP_EXTENSIONS:
+        from pcap_reader import extract_flows, iter_packets
+
+        for fields in extract_flows(iter_packets(flow_file)):
+            yield "fields", fields, "pcap"
+    else:
+        with open(flow_file, newline="") as f:
+            for row in csv.DictReader(f):
+                yield "row", row, "flowfile"
 
 
 def main() -> None:
@@ -122,33 +148,30 @@ def main() -> None:
     producer = make_producer()
     log.info("importer started", extra={"flow_file": flow_file})
 
-    accepted = 0
-    rejected = 0
+    accepted = rejected = 0
     reasons: dict[str, int] = defaultdict(int)
 
-    try:
-        with open(flow_file, newline="") as f:
-            for i, row in enumerate(csv.DictReader(f)):
-                trace_id = uuid.uuid4().hex
-                ingested_at = time.time()
-                try:
-                    flow = build_flow(row, source_name, i, ingested_at, trace_id)
-                    validate_flow(flow)
-                except (ValueError, SchemaError) as e:
-                    rejected += 1
-                    reasons[str(e)[:80]] += 1
-                    with trace_context(trace_id):
-                        log.error("flow rejected", extra={"row": i, "reason": str(e)})
-                    producer.produce(topics.DEAD_LETTER, value=encode({"row": i, "reason": str(e), "raw": row}))
-                    continue
-                with trace_context(trace_id):
-                    producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
-                accepted += 1
-                if (accepted + rejected) % 1000 == 0:
-                    producer.poll(0)
-    finally:
-        producer.flush(10)
+    for index, (kind, rec, source) in enumerate(_raw_records(flow_file)):
+        trace_id = uuid.uuid4().hex
+        ingested_at = time.time()
+        try:
+            fields = normalise_row(rec) if kind == "row" else rec
+            flow = finalise_flow(fields, source_name, index, ingested_at, trace_id, source)
+            validate_flow(flow)
+        except (ValueError, SchemaError) as e:
+            rejected += 1
+            reasons[str(e)[:80]] += 1
+            with trace_context(trace_id):
+                log.error("flow rejected", extra={"row": index, "reason": str(e)})
+            producer.produce(topics.DEAD_LETTER, value=encode({"row": index, "reason": str(e)}))
+            continue
+        with trace_context(trace_id):
+            producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
+        accepted += 1
+        if (index + 1) % 1000 == 0:
+            producer.poll(0)
 
+    producer.flush(10)
     log.info("importer finished", extra={"accepted": accepted, "rejected": rejected, "reasons": dict(reasons)})
     print(f"[importer] accepted={accepted} rejected={rejected} reasons={dict(reasons)}")
 
