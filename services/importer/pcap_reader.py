@@ -1,15 +1,23 @@
 """PCAP -> flows (owner: Member 1).
 
-iter_packets() reads a classic .pcap with dpkt and yields one Packet per IP
-datagram. extract_flows() groups those packets into unidirectional 5-tuple
-flows and returns flow.v1 field dicts (no envelope; the importer adds
+check_pcap() validates the file header and walks the record headers WITHOUT
+reading packet data, so a wrong file type or a truncated capture is detected up
+front. iter_packets() reads a classic Ethernet .pcap with dpkt and yields one
+Packet per IP datagram. extract_flows() groups packets into unidirectional
+5-tuple flows and returns flow.v1 field dicts (no envelope; the importer adds
 flow_id/trace_id/ingested_at and validates).
 
-extract_flows is kept pure so it is unit-testable without dpkt or a real
-capture file; only iter_packets needs dpkt, and it imports it lazily.
+check_pcap and extract_flows are pure Python, so they are unit-testable without
+dpkt; only iter_packets needs dpkt, and it imports it lazily.
+
+Limit: extract_flows keeps every flow of the capture in memory. Use the PCAP
+path for small captures only; big datasets (e.g. CIC-IDS2017) go in as flow CSV.
 """
 
 from __future__ import annotations
+
+import os
+import struct
 
 PROTO_NAME = {6: "TCP", 17: "UDP", 1: "ICMP", 58: "ICMP"}
 # TCP flag bit -> schema letter (flow.v1 pattern ^[FSRPAUEC]*$), fixed order.
@@ -23,6 +31,22 @@ TCP_FLAG_BITS = [
     (0x40, "E"),
     (0x80, "C"),
 ]
+
+PCAPNG_MAGIC = b"\x0a\x0d\x0d\x0a"
+# First 4 bytes of a classic pcap -> byte order of the rest (micro/nanosecond variants).
+_MAGIC_ENDIAN = {
+    b"\xd4\xc3\xb2\xa1": "<",
+    b"\xa1\xb2\xc3\xd4": ">",
+    b"\x4d\x3c\xb2\xa1": "<",
+    b"\xa1\xb2\x3c\x4d": ">",
+}
+_GLOBAL_HEADER_LEN = 24
+_RECORD_HEADER_LEN = 16
+LINKTYPE_ETHERNET = 1
+
+
+class PcapFormatError(ValueError):
+    """The file is not a classic Ethernet pcap that this reader can handle."""
 
 
 class Packet:
@@ -43,6 +67,47 @@ class Packet:
 
 def flags_to_str(bits: int) -> str:
     return "".join(letter for bit, letter in TCP_FLAG_BITS if bits & bit)
+
+
+def check_pcap(path: str) -> tuple[int, bool]:
+    """Validate a classic pcap and return (complete_records, truncated).
+
+    Raises PcapFormatError for files that are not a classic Ethernet pcap
+    (wrong magic, pcapng, non-Ethernet link type, too short). Does not read
+    packet payloads: it only follows the record headers.
+    """
+    size = os.path.getsize(path)
+    with open(path, "rb") as f:
+        head = f.read(_GLOBAL_HEADER_LEN)
+        if len(head) < _GLOBAL_HEADER_LEN:
+            raise PcapFormatError("file is too short to be a pcap capture")
+        magic = head[:4]
+        if magic == PCAPNG_MAGIC:
+            raise PcapFormatError(
+                "pcapng is not supported, only classic .pcap (convert with: editcap -F pcap in.pcapng out.pcap)"
+            )
+        endian = _MAGIC_ENDIAN.get(magic)
+        if endian is None:
+            raise PcapFormatError("not a pcap file (bad magic number)")
+        linktype = struct.unpack(endian + "I", head[20:24])[0]
+        if linktype != LINKTYPE_ETHERNET:
+            raise PcapFormatError(f"unsupported link type {linktype} (only Ethernet is supported)")
+
+        records = 0
+        truncated = False
+        pos = _GLOBAL_HEADER_LEN
+        while pos < size:
+            if size - pos < _RECORD_HEADER_LEN:
+                truncated = True
+                break
+            f.seek(pos)
+            incl_len = struct.unpack(endian + "IIII", f.read(_RECORD_HEADER_LEN))[2]
+            if pos + _RECORD_HEADER_LEN + incl_len > size:
+                truncated = True
+                break
+            pos += _RECORD_HEADER_LEN + incl_len
+            records += 1
+    return records, truncated
 
 
 def extract_flows(packets) -> list[dict]:
@@ -90,14 +155,20 @@ def extract_flows(packets) -> list[dict]:
     return out
 
 
-def iter_packets(path: str):
-    """Yield Packet objects from a classic .pcap file. Requires dpkt."""
+def iter_packets(path: str, max_records: int | None = None):
+    """Yield Packet objects from a classic .pcap file. Requires dpkt.
+
+    max_records limits how many records are read (use the complete-record count
+    from check_pcap so a cut-off tail record is never parsed).
+    """
     import socket
 
     import dpkt
 
     with open(path, "rb") as fh:
-        for ts, buf in dpkt.pcap.Reader(fh):
+        for n, (ts, buf) in enumerate(dpkt.pcap.Reader(fh)):
+            if max_records is not None and n >= max_records:
+                break
             pkt = _parse(ts, buf, socket, dpkt)
             if pkt is not None:
                 yield pkt
