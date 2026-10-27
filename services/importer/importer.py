@@ -2,13 +2,15 @@
 
 Reads network-flow data and publishes normalised flow.v1 messages to flows.raw
 (keyed by src_ip). Input format is picked by file extension:
-  * .csv          -> labelled flow records   (source="flowfile")
-  * .pcap / .cap  -> raw capture; packets grouped into flows (source="pcap")
+  * .csv          -> labelled flow records   (source="flowfile"), streamed row by row
+  * .pcap / .cap  -> classic Ethernet capture; packets grouped into flows (source="pcap")
+Anything else (including .pcapng) is rejected with a clear error.
 
 First component to touch the data, so it creates trace_id (F15) and sets
 ingested_at (NFR02). Malformed records are rejected with their reason, sent to
-the dead-letter topic, and never published (F01, SEC-02); a summary prints at
-the end.
+the dead-letter topic, and never published (F01, SEC-02). Whatever happens,
+including an unreadable or truncated input file, a summary is printed at the
+end; the exit code is 1 only if the file as a whole could not be imported.
 
 Run locally (broker must be up):
     FLOW_FILE=data/flows/sample.csv  python services/importer/importer.py
@@ -18,19 +20,32 @@ Run locally (broker must be up):
 from __future__ import annotations
 
 import csv
+import json
 import os
 import time
 import uuid
 from collections import defaultdict
+from importlib import resources
 
 from netguard_common import get_logger, setup_logging, trace_context
 from netguard_common.messages import SchemaError, flow_id_for, validate_flow
 
 log = get_logger("importer")
 
+
+class InputError(Exception):
+    """The input file as a whole cannot be imported (wrong type, unreadable, ...)."""
+
+
+def _schema_labels() -> set[str]:
+    """Allowed labels come from flow.v1.json so the importer can never drift from the schema."""
+    raw = resources.files("netguard_common").joinpath("schemas/flow.v1.json").read_text()
+    return {label for label in json.loads(raw)["properties"]["label"]["enum"] if label}
+
+
 VALID_PROTOCOLS = {"TCP", "UDP", "ICMP", "OTHER"}
 PROTOCOL_BY_NUMBER = {"1": "ICMP", "6": "TCP", "17": "UDP"}
-VALID_LABELS = {"normal", "port_scan", "dos", "brute_force", "abnormal_traffic"}
+VALID_LABELS = _schema_labels()
 REQUIRED_COLUMNS = (
     "ts_start",
     "duration_ms",
@@ -42,7 +57,10 @@ REQUIRED_COLUMNS = (
     "packets",
     "bytes",
 )
-PCAP_EXTENSIONS = (".pcap", ".cap", ".pcapng")
+CSV_EXTENSIONS = (".csv",)
+PCAP_EXTENSIONS = (".pcap", ".cap")
+# The PCAP path keeps all flows in memory; big captures must be converted to flow CSV first.
+MAX_PCAP_MB = int(os.getenv("MAX_PCAP_MB", "200"))
 
 
 def _protocol(raw: str) -> str:
@@ -114,22 +132,55 @@ def build_flow(row, source_file, index, ingested_at, trace_id) -> dict:
     return finalise_flow(normalise_row(row), source_file, index, ingested_at, trace_id, "flowfile")
 
 
-def _raw_records(flow_file: str):
+def _csv_records(flow_file: str):
+    """Stream CSV rows. A file that is not a readable CSV with the needed header is an InputError."""
+    try:
+        with open(flow_file, newline="", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            missing = [c for c in REQUIRED_COLUMNS if c not in (reader.fieldnames or [])]
+            if missing:
+                raise InputError(f"CSV header is missing columns: {', '.join(missing)}")
+            for row in reader:
+                yield "row", row, "flowfile"
+    except (UnicodeDecodeError, csv.Error) as e:
+        raise InputError(f"not a readable CSV text file: {e}") from e
+
+
+def _pcap_records(flow_file: str, warnings: list[str]):
+    from pcap_reader import PcapFormatError, check_pcap, extract_flows, iter_packets
+
+    size_mb = os.path.getsize(flow_file) / 1_000_000
+    if size_mb > MAX_PCAP_MB:
+        raise InputError(
+            f"capture is {size_mb:.0f} MB (limit {MAX_PCAP_MB} MB): the PCAP path keeps all flows "
+            "in memory, convert it to a flow CSV first"
+        )
+    try:
+        records, truncated = check_pcap(flow_file)
+    except PcapFormatError as e:
+        raise InputError(str(e)) from e
+    if truncated:
+        warnings.append(f"capture is truncated: only the first {records} complete packet records were imported")
+    for fields in extract_flows(iter_packets(flow_file, max_records=records)):
+        yield "fields", fields, "pcap"
+
+
+def _raw_records(flow_file: str, warnings: list[str]):
     """Yield (kind, record, source) for each input item.
 
     kind 'row'    -> record is a raw CSV row, normalised later (may be rejected).
     kind 'fields' -> record is an already-structured PCAP flow.
+    Raises InputError when the file as a whole cannot be imported.
     """
     ext = os.path.splitext(flow_file)[1].lower()
+    if ext == ".pcapng":
+        raise InputError("pcapng is not supported, only classic .pcap (convert: editcap -F pcap in.pcapng out.pcap)")
     if ext in PCAP_EXTENSIONS:
-        from pcap_reader import extract_flows, iter_packets
-
-        for fields in extract_flows(iter_packets(flow_file)):
-            yield "fields", fields, "pcap"
+        yield from _pcap_records(flow_file, warnings)
+    elif ext in CSV_EXTENSIONS:
+        yield from _csv_records(flow_file)
     else:
-        with open(flow_file, newline="") as f:
-            for row in csv.DictReader(f):
-                yield "row", row, "flowfile"
+        raise InputError(f"unsupported file type '{ext or '(none)'}': use .csv or .pcap")
 
 
 def main() -> None:
@@ -140,40 +191,64 @@ def main() -> None:
     flow_file = os.getenv("FLOW_FILE", "/app/data/flows/sample.csv")
     source_name = os.path.basename(flow_file)
 
-    if not os.path.exists(flow_file):
-        log.error("flow file not found", extra={"flow_file": flow_file})
-        raise SystemExit(1)
-
-    ensure_topics()
-    producer = make_producer()
-    log.info("importer started", extra={"flow_file": flow_file})
-
     accepted = rejected = 0
     reasons: dict[str, int] = defaultdict(int)
+    warnings: list[str] = []
+    fatal: str | None = None
+    producer = None
 
-    for index, (kind, rec, source) in enumerate(_raw_records(flow_file)):
-        trace_id = uuid.uuid4().hex
-        ingested_at = time.time()
-        try:
-            fields = normalise_row(rec) if kind == "row" else rec
-            flow = finalise_flow(fields, source_name, index, ingested_at, trace_id, source)
-            validate_flow(flow)
-        except (ValueError, SchemaError) as e:
-            rejected += 1
-            reasons[str(e)[:80]] += 1
+    try:
+        if not os.path.exists(flow_file):
+            raise InputError(f"file not found: {flow_file}")
+        ensure_topics()
+        producer = make_producer()
+        log.info("importer started", extra={"flow_file": flow_file})
+
+        for index, (kind, rec, source) in enumerate(_raw_records(flow_file, warnings)):
+            trace_id = uuid.uuid4().hex
+            ingested_at = time.time()
+            try:
+                fields = normalise_row(rec) if kind == "row" else rec
+                flow = finalise_flow(fields, source_name, index, ingested_at, trace_id, source)
+                validate_flow(flow)
+            except (ValueError, SchemaError) as e:
+                rejected += 1
+                reasons[str(e)[:80]] += 1
+                with trace_context(trace_id):
+                    log.error("flow rejected", extra={"row": index, "reason": str(e)})
+                producer.produce(topics.DEAD_LETTER, value=encode({"row": index, "reason": str(e)}))
+                continue
             with trace_context(trace_id):
-                log.error("flow rejected", extra={"row": index, "reason": str(e)})
-            producer.produce(topics.DEAD_LETTER, value=encode({"row": index, "reason": str(e)}))
-            continue
-        with trace_context(trace_id):
-            producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
-        accepted += 1
-        if (index + 1) % 1000 == 0:
-            producer.poll(0)
+                producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
+            accepted += 1
+            if (index + 1) % 1000 == 0:
+                producer.poll(0)
+    except InputError as e:
+        fatal = str(e)
+    except Exception as e:  # last resort: the summary must always be printed
+        fatal = f"{type(e).__name__}: {e}"
+    finally:
+        if producer is not None:
+            producer.flush(10)
 
-    producer.flush(10)
-    log.info("importer finished", extra={"accepted": accepted, "rejected": rejected, "reasons": dict(reasons)})
-    print(f"[importer] accepted={accepted} rejected={rejected} reasons={dict(reasons)}")
+    if fatal is None and accepted + rejected == 0:
+        warnings.append("input contained no records")
+
+    extra = {
+        "accepted": accepted,
+        "rejected": rejected,
+        "reasons": dict(reasons),
+        "warnings": warnings,
+        "error": fatal,
+    }
+    if fatal:
+        log.error("importer failed", extra=extra)
+    else:
+        log.info("importer finished", extra=extra)
+    print(
+        f"[importer] accepted={accepted} rejected={rejected} reasons={dict(reasons)} warnings={warnings} error={fatal}"
+    )
+    raise SystemExit(1 if fatal else 0)
 
 
 if __name__ == "__main__":
