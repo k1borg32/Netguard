@@ -1,14 +1,14 @@
-"""Broker-free tests: simulator output -> processor windows -> detection that passes the schema."""
+"""Broker-free tests: load generator output -> processor windows -> detection that passes the schema."""
 
+from loadgen import generate, normal_flow, port_scan_flow
 from processor import WindowState, port_scan_rule
-from simulator import generate, normal_flow, port_scan_flow
 
 from netguard_common import validate_detection, validate_flow
 
 T0 = 1_760_000_000.0  # aligned to a 10 s boundary
 
 
-def test_simulator_flows_match_schema():
+def test_generated_flows_match_schema():
     """UT-05"""
     for f in generate(["normal", "port_scan"], 500, T0):
         validate_flow(f)

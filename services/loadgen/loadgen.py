@@ -1,15 +1,14 @@
-"""Traffic simulator - SKELETON (owner: Member 1; load mode owned by Member 5).
+"""Load generator for the performance tests and the CI pipeline test (owner: M5).
 
-Generates synthetic flows (no real packets, no real network) and publishes
-them to flows.raw. Every flow carries a ground-truth `label` for detection metrics.
-
-Implemented now: normal traffic + port_scan (enough for the week-3 thin pipeline).
-TODO week 4: dos, brute_force, abnormal_traffic, suspicious_pattern scenarios.
+Test tooling, not part of the product: the traffic simulator was removed from the
+requirements in week 3 (Vision v1.2). What stays is a source of synthetic flows at a
+set rate, because the performance tests (NFR01, NFR02) need a load we can control and
+the CI pipeline test needs a quick, known attack. No real packets, no real network.
 
 Env:
-  SIM_RATE        flows per second (default 200; perf test uses 5000+)
-  SIM_DURATION_S  stop after N seconds (0 = forever)
-  SIM_SCENARIOS   comma list, e.g. "normal,port_scan"
+  LOAD_RATE        flows per second (default 200; the performance tests use 5000+)
+  LOAD_DURATION_S  stop after N seconds (0 = forever)
+  LOAD_SCENARIOS   comma list, e.g. "normal,port_scan"
 """
 
 from __future__ import annotations
@@ -21,7 +20,7 @@ import uuid
 
 from netguard_common import get_logger, new_trace_id, setup_logging, topics, validate_flow
 
-log = get_logger("simulator")
+log = get_logger("loadgen")
 
 CLIENTS = [f"10.0.{i // 250}.{i % 250 + 1}" for i in range(200)]
 SERVERS = [f"10.1.0.{i}" for i in range(1, 21)]
@@ -60,7 +59,7 @@ def _flow(now: float, src: str, dst: str, dport: int, packets: int, flags: str, 
         "packets": packets,
         "bytes": packets * random.randint(60, 1400),
         "tcp_flags": flags,
-        "source": "simulator",
+        "source": "simulator",  # the flow contract's value for synthetic flows
         "label": label,
     }
 
@@ -78,13 +77,13 @@ def generate(scenarios: list[str], n: int, now: float) -> list[dict]:
 def main() -> None:
     from netguard_common.broker import encode, ensure_topics, make_producer
 
-    setup_logging("simulator")
-    rate = int(os.getenv("SIM_RATE", "200"))
-    duration = float(os.getenv("SIM_DURATION_S", "0"))
-    scenarios = os.getenv("SIM_SCENARIOS", "normal,port_scan").split(",")
+    setup_logging("loadgen")
+    rate = int(os.getenv("LOAD_RATE", "200"))
+    duration = float(os.getenv("LOAD_DURATION_S", "0"))
+    scenarios = os.getenv("LOAD_SCENARIOS", "normal,port_scan").split(",")
     ensure_topics()
     producer = make_producer()
-    log.info("simulator started", extra={"rate": rate, "scenarios": scenarios})
+    log.info("load generator started", extra={"rate": rate, "scenarios": scenarios})
 
     start = time.time()
     sent = 0
@@ -100,7 +99,7 @@ def main() -> None:
         if sent % (rate * 10) < rate * tick:
             log.info("progress", extra={"sent": sent, "elapsed_s": round(time.time() - start, 1)})
     producer.flush(10)
-    log.info("simulator finished", extra={"sent": sent})
+    log.info("load generator finished", extra={"sent": sent})
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 # Default detection parameters (project spec 4.4: thresholds and parameters must be configurable).
-# Owner: Member 2. Values below are placeholders - tune them with the simulator in week 5
+# Owner: Member 2. Values below are placeholders - tune them on the labelled dataset in week 5
 # (threshold sweep, test case DQ-04 in Docs/TestPlan).
 
 windows_s: [1, 10, 60]

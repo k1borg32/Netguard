@@ -58,11 +58,11 @@ services:
       timeout: 5s
       retries: 20
 
-  simulator:
+  loadgen:
     <<: *py
-    build: { context: ., dockerfile: services/python.Dockerfile, args: { SERVICE: simulator } }
-    command: ["python", "simulator.py"]
-    profiles: [sim]                   # started on demand: make sim / make perf
+    build: { context: ., dockerfile: services/python.Dockerfile, args: { SERVICE: loadgen } }
+    command: ["python", "loadgen.py"]
+    profiles: [perf]                  # test tooling, not part of the product: make load / make perf
 
   importer:
     <<: *py
