@@ -16,6 +16,5 @@ target decomposition. For the running topic-based pipeline and persister, see th
 - **Flow Processor** – Converts packets into network flows, forwards them to the Detection Engine, and persists them in TimescaleDB.
 - **Detection Engine** – Analyzes network flows, detects anomalies, and persists detections and alerts directly in TimescaleDB. Reads its configuration from the database.
 - **Database** – Stores flows, detections, alerts, configurations, and user data.
-- **Management API** - Exposes monitoring data and handles authentication, user sessions, alert acknowledgement, and detection configuration management.
 - **Monitoring Dashboard** – Allows operators to monitor network activity, inspect alerts, and manage detection settings through the REST API.
 

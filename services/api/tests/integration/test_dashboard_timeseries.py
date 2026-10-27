@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 URL = "/api/v1/dashboard/timeseries"
 START = datetime(2026, 1, 1, tzinfo=UTC)
 END = START + timedelta(hours=3)
-PARAMS = {"start_time": START.isoformat(), "end_time": END.isoformat(), "interval_s": 3600}
+PARAMS = {"from": START.isoformat(), "to": END.isoformat(), "interval": "1h"}
 MICROSECOND = timedelta(microseconds=1)
 
 
@@ -22,28 +22,26 @@ def headers(client: TestClient, create_user) -> dict[str, str]:
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
 
 
-def insert_flow(db: psycopg.Connection, timestamp: datetime, packets: int | None = 2, size: int | None = 100) -> None:
+def insert_flow(db: psycopg.Connection, timestamp: datetime) -> None:
     db.execute(
-        "INSERT INTO network_flows (flow_id, ts_start, ingested_at, packets, bytes) VALUES (%s, %s, %s, %s, %s)",
-        (uuid4(), timestamp, START - timedelta(days=1), packets, size),
+        "INSERT INTO network_flows (flow_id, ts_start, ingested_at) VALUES (%s, %s, %s)",
+        (uuid4(), timestamp, START - timedelta(days=1)),
     )
 
 
-def insert_detection(db: psycopg.Connection, timestamp: datetime, severity: str = "HIGH") -> None:
+def insert_detection(db: psycopg.Connection, timestamp: datetime) -> None:
     db.execute(
         "INSERT INTO detections (detection_id, created_at, first_ingested_at, type, method, severity) "
-        "VALUES (%s, %s, %s, 'port_scan', 'threshold', %s)",
-        (uuid4(), timestamp, START - timedelta(days=1), severity),
+        "VALUES (%s, %s, %s, 'port_scan', 'threshold', 'HIGH')",
+        (uuid4(), timestamp, START - timedelta(days=1)),
     )
 
 
 def point(timestamp: datetime, flows: int = 0, detections: int = 0) -> dict:
     return {
-        "ts": timestamp.isoformat().replace("+00:00", "Z"),
-        "flows": flows,
-        "packets": flows * 2,
-        "bytes": flows * 100,
-        "detections": {"LOW": 0, "MEDIUM": 0, "HIGH": detections, "CRITICAL": 0},
+        "timestamp": timestamp.isoformat().replace("+00:00", "Z"),
+        "flows_count": flows,
+        "detections_count": detections,
     }
 
 
@@ -52,25 +50,24 @@ def test_empty_range_returns_zero_counts(client: TestClient, headers: dict[str, 
 
     assert response.status_code == 200, response.text
     assert response.json() == {
-        "interval_s": 3600,
-        "points": [point(START + timedelta(hours=hour)) for hour in range(3)],
+        "from": "2026-01-01T00:00:00Z",
+        "to": "2026-01-01T03:00:00Z",
+        "interval": "1h",
+        "data": [point(START + timedelta(hours=hour)) for hour in range(3)],
     }
 
 
 @pytest.mark.parametrize(
-    ("interval_s", "step"),
+    ("interval", "step"),
     [
-        (5, timedelta(seconds=5)),
-        (15, timedelta(seconds=15)),
-        (60, timedelta(minutes=1)),
-        (300, timedelta(minutes=5)),
-        (900, timedelta(minutes=15)),
-        (3600, timedelta(hours=1)),
-        (86400, timedelta(days=1)),
+        ("5m", timedelta(minutes=5)),
+        ("15m", timedelta(minutes=15)),
+        ("1h", timedelta(hours=1)),
+        ("1d", timedelta(days=1)),
     ],
 )
 def test_aggregates_both_datasets_with_gaps_and_chronological_order(
-    client: TestClient, db: psycopg.Connection, headers: dict[str, str], interval_s: int, step: timedelta
+    client: TestClient, db: psycopg.Connection, headers: dict[str, str], interval: str, step: timedelta
 ) -> None:
     # Out-of-order inserts and unequal counts detect sorting and join-multiplication bugs.
     insert_flow(db, START + step * 2)
@@ -82,13 +79,13 @@ def test_aggregates_both_datasets_with_gaps_and_chronological_order(
 
     response = client.get(
         URL,
-        params={"start_time": START.isoformat(), "end_time": (START + step * 3).isoformat(), "interval_s": interval_s},
+        params={"from": START.isoformat(), "to": (START + step * 3).isoformat(), "interval": interval},
         headers=headers,
     )
 
     assert response.status_code == 200, response.text
-    assert response.json()["interval_s"] == interval_s
-    assert response.json()["points"] == [point(START, 2, 3), point(START + step), point(START + step * 2, 1, 1)]
+    assert response.json()["interval"] == interval
+    assert response.json()["data"] == [point(START, 2, 3), point(START + step), point(START + step * 2, 1, 1)]
 
 
 def test_partial_buckets_respect_half_open_range_and_bucket_boundaries(
@@ -107,12 +104,12 @@ def test_partial_buckets_respect_half_open_range_and_bucket_boundaries(
         insert_flow(db, timestamp)
         insert_detection(db, timestamp)
 
-    response = client.get(
-        URL, params={**PARAMS, "start_time": start.isoformat(), "end_time": end.isoformat()}, headers=headers
-    )
+    response = client.get(URL, params={**PARAMS, "from": start.isoformat(), "to": end.isoformat()}, headers=headers)
 
     assert response.status_code == 200, response.text
-    assert response.json()["points"] == [
+    assert response.json()["from"] == "2026-01-01T00:17:00Z"
+    assert response.json()["to"] == "2026-01-01T02:08:00Z"
+    assert response.json()["data"] == [
         point(START, 2, 2),
         point(START + timedelta(hours=1), 1, 1),
         point(START + timedelta(hours=2), 1, 1),
@@ -126,37 +123,25 @@ def test_defaults_are_last_24_hours(client: TestClient, headers: dict[str, str])
 
     assert response.status_code == 200, response.text
     body = response.json()
-    first = datetime.fromisoformat(body["points"][0]["ts"])
-    last = datetime.fromisoformat(body["points"][-1]["ts"])
-    assert before - timedelta(days=1, hours=1) < first <= after - timedelta(days=1)
-    assert before - timedelta(hours=1) < last <= after
-    assert body["interval_s"] == 3600
-    assert len(body["points"]) in {24, 25}
-    assert all(item == point(datetime.fromisoformat(item["ts"])) for item in body["points"])
+    start = datetime.fromisoformat(body["from"])
+    end = datetime.fromisoformat(body["to"])
+    assert before <= end <= after
+    assert end - start == timedelta(days=1)
+    assert body["interval"] == "1h"
+    assert len(body["data"]) in {24, 25}
+    assert all(item["flows_count"] == item["detections_count"] == 0 for item in body["data"])
 
 
 @pytest.mark.parametrize(
     "params",
     [
-        {**PARAMS, "start_time": END.isoformat()},
-        {**PARAMS, "end_time": (START - MICROSECOND).isoformat()},
-        {**PARAMS, "start_time": "bad-date"},
-        {**PARAMS, "interval_s": 0},
-        {**PARAMS, "interval_s": "1h"},
-        {**PARAMS, "interval_s": 86401},
-        {**PARAMS, "interval_s": 5},
-        {**PARAMS, "end_time": (START + timedelta(days=367)).isoformat(), "interval_s": 86400},
+        {**PARAMS, "from": END.isoformat()},
+        {**PARAMS, "to": (START - MICROSECOND).isoformat()},
+        {**PARAMS, "from": "bad-date"},
+        {**PARAMS, "interval": "10m"},
+        {**PARAMS, "to": (START + timedelta(days=367)).isoformat(), "interval": "1d"},
     ],
-    ids=[
-        "equal-bounds",
-        "reversed-bounds",
-        "invalid-timestamp",
-        "zero-interval",
-        "text-interval",
-        "interval-too-large",
-        "too-many-points",
-        "range-too-large",
-    ],
+    ids=["equal-bounds", "reversed-bounds", "invalid-timestamp", "unsupported-interval", "range-too-large"],
 )
 def test_invalid_queries_return_422(client: TestClient, headers: dict[str, str], params: dict[str, str]) -> None:
     response = client.get(URL, params=params, headers=headers)
@@ -171,60 +156,3 @@ def test_missing_token_returns_401(client: TestClient) -> None:
 
     assert response.status_code == 401, response.text
     assert response.headers["www-authenticate"] == "Bearer"
-
-
-def test_severity_counts_and_nullable_flow_totals(
-    client: TestClient, db: psycopg.Connection, headers: dict[str, str]
-) -> None:
-    insert_flow(db, START, packets=None, size=None)
-    insert_flow(db, START, packets=7, size=4096)
-    for severity in ["LOW", "MEDIUM", "HIGH", "HIGH", "CRITICAL"]:
-        insert_detection(db, START, severity)
-    response = client.get(URL, params={**PARAMS, "end_time": (START + timedelta(hours=1)).isoformat()}, headers=headers)
-    assert response.status_code == 200, response.text
-    assert response.json() == {
-        "interval_s": 3600,
-        "points": [
-            {
-                "ts": "2026-01-01T00:00:00Z",
-                "flows": 2,
-                "packets": 7,
-                "bytes": 4096,
-                "detections": {"LOW": 1, "MEDIUM": 1, "HIGH": 2, "CRITICAL": 1},
-            }
-        ],
-    }
-
-
-def test_custom_second_interval_uses_same_origin_for_all_aggregates(
-    client: TestClient, db: psycopg.Connection, headers: dict[str, str]
-) -> None:
-    origin = datetime(1970, 1, 1, tzinfo=UTC)
-    aligned = START - (START - origin) % timedelta(seconds=7)
-    insert_flow(db, START)
-    insert_detection(db, START)
-    response = client.get(
-        URL,
-        params={
-            "start_time": START.isoformat(),
-            "end_time": (aligned + timedelta(seconds=14)).isoformat(),
-            "interval_s": 7,
-        },
-        headers=headers,
-    )
-    assert response.status_code == 200, response.text
-    assert response.json() == {"interval_s": 7, "points": [point(aligned, 1, 1), point(aligned + timedelta(seconds=7))]}
-
-
-def test_openapi_matches_dashboard_contract(client: TestClient) -> None:
-    schema = client.get("/openapi.json").json()
-    parameters = schema["paths"][URL]["get"]["parameters"]
-    assert {p["name"] for p in parameters} == {"start_time", "end_time", "interval_s"}
-    assert set(schema["components"]["schemas"]["DashboardTimeseriesResponse"]["properties"]) == {"interval_s", "points"}
-    assert set(schema["components"]["schemas"]["DashboardTimeseriesPoint"]["properties"]) == {
-        "ts",
-        "flows",
-        "packets",
-        "bytes",
-        "detections",
-    }

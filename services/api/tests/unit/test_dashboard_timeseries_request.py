@@ -10,7 +10,7 @@ START = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 def test_missing_start_is_relative_to_explicit_end_normalized_to_utc() -> None:
-    request = DashboardTimeseriesRequest.model_validate({"end_time": "2026-01-02T02:00:00+02:00"})
+    request = DashboardTimeseriesRequest.model_validate({"to": "2026-01-02T02:00:00+02:00"})
 
     assert request.start_time == START
     assert request.end_time == START + timedelta(days=1)
@@ -18,33 +18,29 @@ def test_missing_start_is_relative_to_explicit_end_normalized_to_utc() -> None:
 
 
 @pytest.mark.parametrize(
-    ("end", "interval_s"),
-    [(START + timedelta(days=366), 86400), (START + timedelta(minutes=5 * 500), 300)],
+    ("end", "interval"),
+    [(START + timedelta(days=366), "1d"), (START + timedelta(minutes=5 * 2000), "5m")],
     ids=["maximum-range", "maximum-buckets"],
 )
-def test_accepts_exact_query_limits(end: datetime, interval_s: int) -> None:
-    request = DashboardTimeseriesRequest.model_validate(
-        {"start_time": START, "end_time": end, "interval_s": interval_s}
-    )
+def test_accepts_exact_query_limits(end: datetime, interval: str) -> None:
+    request = DashboardTimeseriesRequest.model_validate({"from": START, "to": end, "interval": interval})
 
     assert request.start_time == START
     assert request.end_time == end
 
 
 def test_bucket_limit_includes_partial_buckets() -> None:
-    # Shorter than 500 intervals, but intersects 501 aligned buckets.
-    with pytest.raises(ValidationError, match="must not exceed 500 buckets"):
+    # Shorter than 2000 intervals, but intersects 2001 aligned buckets.
+    with pytest.raises(ValidationError, match="must not exceed 2000 buckets"):
         DashboardTimeseriesRequest.model_validate(
             {
-                "start_time": START + timedelta(minutes=1),
-                "end_time": START + timedelta(minutes=5 * 500, microseconds=1),
-                "interval_s": 300,
+                "from": START + timedelta(minutes=1),
+                "to": START + timedelta(minutes=5 * 2000, microseconds=1),
+                "interval": "5m",
             }
         )
 
 
 def test_rejects_timestamp_without_timezone() -> None:
     with pytest.raises(ValidationError):
-        DashboardTimeseriesRequest.model_validate(
-            {"start_time": "2026-01-01T00:00:00", "end_time": START + timedelta(hours=1)}
-        )
+        DashboardTimeseriesRequest.model_validate({"from": "2026-01-01T00:00:00", "to": START + timedelta(hours=1)})

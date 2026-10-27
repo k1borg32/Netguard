@@ -12,13 +12,13 @@ boundary "Time-series controller" as API
 control GetDashboardTimeseriesHandler as Handler
 database TimescaleDB as DB
 
-Client -> API : GET /api/v1/dashboard/timeseries\nstart_time, end_time, interval_s + Bearer token
+Client -> API : GET /api/v1/dashboard/timeseries\nfrom, to, interval + Bearer token
 ref over API,DB : Existing JWT and user/admin role checks
 API -> API : Resolve defaults and normalize UTC\nValidate range, interval and query limits
 note over API,Handler : Controller creates handler with request-scoped AsyncSession
 API -> Handler : handle(GetDashboardTimeseriesQuery)
-Handler -> DB : One SELECT: time_bucket() for both datasets\ngenerate_series() + LEFT JOIN + COALESCE(0)\n[start_time, end_time), ORDER BY timestamp
-DB --> Handler : Ordered buckets: flows, packets, bytes\nand detections by severity
-Handler --> API : DashboardTimeseriesResponse\ninterval_s + points (ts, flows, packets, bytes, detections)
+Handler -> DB : One SELECT: time_bucket() for both datasets\ngenerate_series() + LEFT JOIN + COALESCE(0)\n[from, to), ORDER BY timestamp
+DB --> Handler : Ordered buckets with flow and detection counts
+Handler --> API : DashboardTimeseriesResponse\nUTC timestamps and resolved bounds
 API --> Client : 200 + JSON time series
 @enduml

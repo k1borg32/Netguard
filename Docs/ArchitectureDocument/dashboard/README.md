@@ -20,7 +20,7 @@ Wireframes are in [`wireframes/`](wireframes/). They are low fidelity: layout an
 | # | Screen | Shows | Requirements | API it uses |
 |---|---|---|---|---|
 | 1 | Login | username + password form | NFR06 | `POST /auth/login` |
-| 2 | Overview | stat cards (flows, flows/s, detections, open alerts), traffic trend, detections over time by severity, detections by type, latest alerts | F12, UC-06 | `GET /dashboard/summary`, time-series (implemented, see 6.1), `GET /alerts` |
+| 2 | Overview | stat cards (flows, flows/s, detections, open alerts), traffic trend, detections over time by severity, detections by type, latest alerts | F12, UC-06 | `GET /dashboard/summary`, time-series (missing, see 6.1), `GET /alerts` |
 | 3 | Alerts | alert list with filters (time, status, severity, type, source/destination IP, protocol), paging, acknowledge | F13, F17, UC-02, UC-05, UC-09 | `GET /alerts`, `PATCH /alerts/{id}/acknowledge` |
 | 4 | Alert details | type, severity, status, confidence, window, explanation, feature values, contributing flows, trace IDs | F09, F15, UC-03 | `GET /alerts/{id}`, `GET /detections/{id}/flows` |
 | 5 | History | all stored detections (also the ones without an alert), filters, detections-per-hour chart | F13, UC-04 | `GET /detections` with filters (missing, see 6.1) |
@@ -181,18 +181,18 @@ in section 2.
 |---|---|---|
 | Login, user menu | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | Yes. |
 | Overview, cards | `GET /dashboard/summary` | Mostly. Missing: open alerts (status NEW) and counts by type and severity (6.1, G2). |
-| Overview, charts | `GET /dashboard/timeseries` | Yes for the API contract in G1; connecting the current chart is frontend work. |
+| Overview, charts | none | **No.** Trend charts need a time-series endpoint (6.1, G1). |
 | Alerts list | `GET /alerts` | Filters and paging are good. Items lack the detection fields shown in the table (G3). |
 | Alert details | `GET /alerts/{id}`, `PATCH /alerts/{id}/acknowledge` | Yes for the summary and explanation. Evidence flows need `GET /detections/{id}/flows` (G6). |
 | History | `GET /detections` | **No.** Only `limit`, no filters, no paging (G5). |
 | Flows | `GET /flows`, `GET /flows/{flowId}` (planned) | Yes if filters match section 2 (G7). |
-| Settings, thresholds | `/api/v1/detection-configurations` (implemented) | Yes, details on the form in G8. |
+| Settings, thresholds | `/detection-configurations` (planned) | Yes, details on the form in G8. |
 | Settings, simulator | none | **No.** Simulator control is required by F11/F14 and API-06 (G9). |
 | Top bar | `GET /health` | Yes. Simulator status needs G9. |
 
 ### 6.1 Gaps and proposals
 
-**G1 - Time-series endpoint for the trend charts (implemented for F12, ST-05).**
+**G1 - Time-series endpoint for the trend charts (needed for F12, ST-05).**
 
 ```http
 GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-10-20T12:15:00Z&interval_s=60
@@ -214,11 +214,8 @@ GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-1
 ```
 
 - Buckets with TimescaleDB `time_bucket` on `network_flows.ts_start` and `detections.created_at`.
-- Empty buckets returned as zeros (`time_bucket_gapfill`), otherwise the line chart draws a straight line across gaps. The implementation uses
-  `generate_series` and left joins for equivalent gap filling, even for empty datasets.
-- At most 500 points, including partial buckets; return 422 if `interval_s` is too small for the range.
-  `interval_s` accepts whole seconds from 1 to 86400 (default 3600). Bounds default to the last 24 hours;
-  ranges must be positive and no longer than 366 days. See the [implemented contract](../../ManagementAPI/dashboard/README.md#time-series).
+- Empty buckets returned as zeros (`time_bucket_gapfill`), otherwise the line chart draws a straight line across gaps.
+- Limit the number of points (for example at most 500) and return 422 if `interval_s` is too small for the range.
   The UI picks the interval: 5 s for 5 min, 15 s for 15 min, 1 min for 1 h, 15 min for 24 h.
 - Flows per second for the "Flows/s" card = `flows / interval_s` of the last full bucket, so no extra endpoint.
 

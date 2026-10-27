@@ -32,42 +32,41 @@ Send a Bearer access token and required `start_time` / `end_time` query paramete
 as ISO 8601 timestamps with timezones. The start is inclusive, the end exclusive;
 the start must precede the end. See the endpoint plan for a request example.
 
-`GET /api/v1/dashboard/timeseries` matches the dashboard contract: query parameters
-`start_time`, `end_time` (timezone-aware ISO 8601) and `interval_s` (whole seconds,
-1-86400). The default end is now in UTC; the default start is 24 hours before the
-resolved end, and the default interval is 3600 seconds. The start is inclusive
-and the end exclusive. Ranges must be positive, at most 366 days, and intersect
-at most 500 buckets, including partial buckets. Invalid queries return `422`.
+`GET /api/v1/dashboard/timeseries` returns unified flow and detection counts in
+UTC-aligned time buckets. It requires the same Bearer access token as summary.
+Optional query parameters are `from`, `to` (ISO 8601 timestamps with timezones)
+and `interval` (`5m`, `15m`, `1h`, `1d`; default `1h`). Offsets are normalized to UTC.
+`to` defaults to now; `from` defaults to 24 hours before the resolved `to`.
+With only `from`, the range ends now. Equal/reversed bounds, invalid timestamps,
+unsupported intervals, ranges over 366 days and results over 2000 buckets return
+`422`. The bucket limit includes partial buckets.
 
 ```http
-GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-10-20T12:15:00Z&interval_s=60
+GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T03:00:00Z&interval=1h
 Authorization: Bearer <access_token>
 ```
 
-Response shape (one example point shown):
+Example response for an empty range:
 
 ```json
 {
-  "interval_s": 60,
-  "points": [
-    {
-      "ts": "2026-10-20T12:00:00Z",
-      "flows": 12034,
-      "packets": 401223,
-      "bytes": 88123456,
-      "detections": {"LOW": 1, "MEDIUM": 0, "HIGH": 2, "CRITICAL": 0}
-    }
+  "from": "2026-10-20T00:00:00Z",
+  "to": "2026-10-20T03:00:00Z",
+  "interval": "1h",
+  "data": [
+    {"timestamp": "2026-10-20T00:00:00Z", "flows_count": 0, "detections_count": 0},
+    {"timestamp": "2026-10-20T01:00:00Z", "flows_count": 0, "detections_count": 0},
+    {"timestamp": "2026-10-20T02:00:00Z", "flows_count": 0, "detections_count": 0}
   ]
 }
 ```
 
-Points are ordered by `ts`, aligned to Unix epoch in UTC, with empty buckets
-filled with zeros. The first bucket may begin before `start_time`; partial
-buckets only count records inside `[start_time, end_time)`. Flow counts and
-packet/byte sums use `network_flows.ts_start`; detection counts use
-`detections.created_at` and include all four severity levels. Missing packet
-or byte values contribute zero. Timestamps are serialized with `Z`.
-The UI can use 5, 15, 60 and 900 seconds for its 5 min, 15 min, 1 h and 24 h views.
+The range is `[from, to)`, filtering flows by `ts_start` and detections by
+`created_at`. Buckets are ordered, empty buckets contain zeros, and partial
+buckets only count records inside the requested range. A bucket timestamp marks
+its UTC-aligned start, which may precede `from`; a rolling 24-hour range can
+therefore intersect 25 hourly buckets. Response bounds preserve the exact range
+and all timestamps are serialized in UTC with `Z`.
 
 Like other features, the controller constructs its handler directly; the handler
 uses the injected request-scoped `AsyncSession`. One parameterized SQL statement

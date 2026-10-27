@@ -1,4 +1,4 @@
-# Management API Integration
+# Backend Integration
 
 This is the original target integration plan. The
 [current endpoint plan](../../ManagementAPI/endpoints.md) records implemented paths
@@ -7,9 +7,9 @@ at `/health`, and the pipeline-compatible `/api/v1/detections` list.
 The [current data flow](../README.md#current-data-flow) uses normalized flows on
 `flows.raw` and a separate persister; the packet-based flow below is a design reference.
 
-## 1. Provided Interfaces (Management API → Frontend)
+## 1. Provided Interfaces (Backend → Frontend)
 
-The Management API exposes a REST API for accessing and managing network monitoring data stored in TimescaleDB.
+The backend exposes a REST API for accessing and managing network monitoring data stored in TimescaleDB.
 
 All endpoints use the `/api` prefix and exchange data in JSON format.
 
@@ -72,9 +72,9 @@ All endpoints use the `/api` prefix and exchange data in JSON format.
 - **Error handling:** Standard HTTP status codes and consistent error responses.
 - **Documentation:** API contracts will be documented using OpenAPI.
 
-## 2. Required Interfaces (Management API → Database)
+## 2. Required Interfaces (Backend → Database)
 
-The Management API requires direct access to TimescaleDB. It does not communicate directly with the Flow Processor or Detection Engine.
+The backend requires direct access to TimescaleDB. It does not communicate directly with the Flow Processor or Detection Engine.
 
 ### 2.1 Database Access
 
@@ -89,7 +89,7 @@ The Management API requires direct access to TimescaleDB. It does not communicat
 
 ### 2.2 Data Dependencies
 
-The Management API relies on data persisted by other components:
+The backend relies on data persisted by other components:
 
 - **Flow Processor** - Writes network flows directly to TimescaleDB.
 - **Detection Engine** - Writes detections and alerts directly to TimescaleDB and reads active detection configurations.
@@ -107,20 +107,20 @@ All components must follow the agreed database schema and data types.
 
 ### 3.2 Monitoring
 
-1. Frontend sends HTTP requests to the Management API.
-2. Management API retrieves the requested data from TimescaleDB.
-3. Management API returns JSON responses to the frontend.
+1. Frontend sends HTTP requests to the Backend API.
+2. Backend retrieves the requested data from TimescaleDB.
+3. Backend returns JSON responses to the frontend.
 
 ### 3.3 Configuration Management
 
 1. Operator modifies detection settings through the frontend.
-2. Management API validates and stores the configuration in TimescaleDB.
+2. Backend validates and stores the configuration in TimescaleDB.
 3. Detection Engine reads the active configuration directly from TimescaleDB.
 
 ## 4. Integration Constraints
 
-- The Management API must remain independent of traffic processing and anomaly detection.
-- Management API unavailability must not interrupt flow processing or detection persistence.
+- The backend must remain independent of traffic processing and anomaly detection.
+- Backend unavailability must not interrupt flow processing or detection persistence.
 - Components must use a consistent database schema.
 - Detection-to-flow correlation must be supported by an agreed data contract.
 - Only authorized users can modify alerts and detection configurations.

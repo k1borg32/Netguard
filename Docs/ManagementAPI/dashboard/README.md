@@ -22,42 +22,35 @@ Authorization: Bearer <access_token>
 
 ## Time series
 
-`GET /api/v1/dashboard/timeseries` matches the dashboard contract: query parameters
-`start_time`, `end_time` (timezone-aware ISO 8601) and `interval_s` (whole seconds,
-1-86400). The default end is now in UTC; the default start is 24 hours before the
-resolved end, and the default interval is 3600 seconds. The start is inclusive
-and the end exclusive. Ranges must be positive, at most 366 days, and intersect
-at most 500 buckets, including partial buckets. Invalid queries return `422`.
+`GET /api/v1/dashboard/timeseries`
+
+| Parameter | Default | Meaning |
+| --- | --- | --- |
+| `from` | Resolved `to` minus 24 hours | Inclusive start, ISO 8601 |
+| `to` | Now in UTC | Exclusive end, ISO 8601 |
+| `interval` | `1h` | `5m`, `15m`, `1h` or `1d` |
+
+Requires `from < to`; maximum 366 days and 2000 buckets, including partial buckets.
+Returns UTC-aligned buckets in chronological order with zeros for missing data.
+Partial buckets count only records in `[from, to)`; the first timestamp may precede
+`from`. Response timestamps use UTC (`Z`).
 
 ```http
-GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-10-20T12:15:00Z&interval_s=60
+GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T02:00:00Z&interval=1h
 Authorization: Bearer <access_token>
 ```
 
-Response shape (one example point shown):
-
 ```json
 {
-  "interval_s": 60,
-  "points": [
-    {
-      "ts": "2026-10-20T12:00:00Z",
-      "flows": 12034,
-      "packets": 401223,
-      "bytes": 88123456,
-      "detections": {"LOW": 1, "MEDIUM": 0, "HIGH": 2, "CRITICAL": 0}
-    }
+  "from": "2026-10-20T00:00:00Z",
+  "to": "2026-10-20T02:00:00Z",
+  "interval": "1h",
+  "data": [
+    {"timestamp": "2026-10-20T00:00:00Z", "flows_count": 1200, "detections_count": 15},
+    {"timestamp": "2026-10-20T01:00:00Z", "flows_count": 0, "detections_count": 0}
   ]
 }
 ```
-
-Points are ordered by `ts`, aligned to Unix epoch in UTC, with empty buckets
-filled with zeros. The first bucket may begin before `start_time`; partial
-buckets only count records inside `[start_time, end_time)`. Flow counts and
-packet/byte sums use `network_flows.ts_start`; detection counts use
-`detections.created_at` and include all four severity levels. Missing packet
-or byte values contribute zero. Timestamps are serialized with `Z`.
-The UI can use 5, 15, 60 and 900 seconds for its 5 min, 15 min, 1 h and 24 h views.
 
 ## Implementation and errors
 

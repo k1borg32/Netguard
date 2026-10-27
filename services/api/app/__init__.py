@@ -1,1 +1,1 @@
-"""NetGuard Management API application."""
+"""NetGuard Data Access and Management API application."""
