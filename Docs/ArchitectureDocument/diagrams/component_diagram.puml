@@ -1,77 +1,61 @@
 
 @startuml
+!pragma layout smetana
 title NetGuard - Component Architecture
-
-left to right direction
 
 skinparam componentStyle uml2
 skinparam monochrome true
 skinparam shadowing false
 skinparam backgroundColor white
-skinparam linetype polyline
 skinparam defaultFontName Arial
 skinparam defaultFontSize 13
-skinparam nodesep 85
-skinparam ranksep 110
-skinparam Padding 12
 
 ' ============================
 ' Components
 ' ============================
 
-component "PCAP\nImporter" as PCAP
-component "Traffic\nSimulator" as SIM
-component "Message\nBroker" as MQ
-component "Flow\nProcessor" as FP
-component "Detection\nEngine" as DE
+component "PCAP Importer" as PCAP
+component "Message Broker" as MQ
+component "Flow Processor" as FP
+component "Detection Engine" as DE
+component "Persister" as PER
 component "Database" as DB
-component "Management\nAPI" as BE
-component "Monitoring\nDashboard" as UI
+component "Management API" as BE
+component "Monitoring Dashboard" as UI
+
+' Provided interface: ball on a solid line. Required interface: dashed <<use>> arrow to the ball.
+interface "Window features" as WF
+interface "REST API\nHTTP / JSON" as REST
+
+FP -right- WF
+BE -right- REST
 
 ' ============================
-' Packet publishing
+' Flow publishing
 ' ============================
 
-PCAP ..> MQ : publish packets
-SIM ..> MQ : publish synthetic traffic
+PCAP .down.> MQ : publish flows\n(flows.raw)
 
 ' ============================
-' Traffic processing
+' Stream processing
 ' ============================
 
-FP ..> MQ : consume packet events
-
-' Provided + Required Interface
-FP -ri0)- DE : Network Flows
+FP .up.> MQ : consume flows\n(flows.raw)
+DE .left.> WF : <<use>>
+DE .up.> MQ : publish detections\n(detections)
 
 ' ============================
 ' Database communication
 ' ============================
 
-FP ..> DB : WRITE flows
-
-DE ..> DB : WRITE detections / alerts\nREAD configurations
-
-BE ..> DB : READ monitoring data\nWRITE user actions
+PER .up.> MQ : consume flows\nand detections
+PER .down.> DB : WRITE flows /\ndetections
+BE .up.> DB : READ monitoring data\nWRITE user actions
 
 ' ============================
 ' Frontend integration
 ' ============================
 
-BE -ri0)- UI : REST API\nHTTP / JSON
-
-' ============================
-' Layout
-' ============================
-
-PCAP -[hidden]down- SIM
-
-MQ -[hidden]right- FP
-FP -[hidden]right- DE
-
-DE -[hidden]down- DB
-
-DB -[hidden]right- BE
-BE -[hidden]right- UI
+UI .left.> REST : <<use>>
 
 @enduml
