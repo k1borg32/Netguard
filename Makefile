@@ -34,6 +34,9 @@ ps:
 sim:             ## Run simulator at normal rate (Ctrl+C to stop)
 	docker compose --profile sim run --rm simulator
 
+import: ## import the sample flow file into the broker
+	docker compose --profile import run --rm importer
+
 perf:            ## NFR01 load: 5000 flows/s for 5 min
 	docker compose --profile sim run --rm -e SIM_RATE=5000 -e SIM_DURATION_S=300 simulator
 
