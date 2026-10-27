@@ -53,10 +53,11 @@ def run_importer():
     if build.returncode != 0:
         pytest.fail(f"importer image did not build:\n{build.stdout}\n{build.stderr}")
 
-    def run(file: Path) -> subprocess.CompletedProcess:
-        flow_file = "/app/" + file.relative_to(ROOT).as_posix()
+    def run(file: Path, **env: str) -> subprocess.CompletedProcess:
+        settings = {"FLOW_FILE": "/app/" + file.relative_to(ROOT).as_posix(), **env}
+        env_args = [arg for key, value in settings.items() for arg in ("-e", f"{key}={value}")]
         return subprocess.run(
-            [*COMPOSE, "run", "--rm", "--no-deps", "-T", "-e", f"FLOW_FILE={flow_file}", "importer"],
+            [*COMPOSE, "run", "--rm", "--no-deps", "-T", *env_args, "importer"],
             cwd=ROOT,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,

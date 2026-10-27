@@ -19,7 +19,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.stack]
 DATA = Path(__file__).resolve().parents[2] / "data"
 SUMMARY = re.compile(r"accepted=(\d+) rejected=(\d+)")
 SAMPLE_PCAP = (DATA / "pcap/sample.pcap").read_bytes()
-NOT_REJECTED_YET = pytest.mark.xfail(strict=True, reason="the importer doesn't reject broken captures yet (#51)")
+PCAPNG_MAGIC = b"\x0a\x0d\x0d\x0a"
 
 
 def summary(result) -> tuple[int, int]:
@@ -83,24 +83,49 @@ def test_same_file_imported_twice_is_stored_once(run_importer, import_dir, stack
         time.sleep(1)
 
 
+def assert_rejected(result) -> None:
+    """The whole file is rejected: exit code 1, nothing imported, the reason in the summary and no crash."""
+    assert "Traceback" not in result.stdout, result.stdout
+    assert result.returncode == 1, result.stdout
+    assert summary(result) == (0, 0)
+    assert "error=None" not in result.stdout, result.stdout
+
+
 @pytest.mark.parametrize(
     "name,content",
     [
-        pytest.param("not-a-capture.pcap", b"this is not a capture\n", marks=NOT_REJECTED_YET, id="not-a-capture"),
-        pytest.param("empty.pcap", b"", marks=NOT_REJECTED_YET, id="empty"),
-        pytest.param("truncated.pcap", SAMPLE_PCAP[:300], marks=NOT_REJECTED_YET, id="truncated"),
+        pytest.param("not-a-capture.pcap", b"this is not a capture\n", id="not-a-capture"),
+        pytest.param("empty.pcap", b"", id="empty"),
+        pytest.param("capture.pcapng", PCAPNG_MAGIC + bytes(28), id="pcapng"),
+        pytest.param("flows.txt", b"just some text\n", id="unsupported-type"),
     ],
 )
-def test_broken_capture_is_rejected(name, content, run_importer, import_dir):
-    """SEC-02: a capture that can't be read completely is rejected with the reason, without a crash."""
+def test_unreadable_file_is_rejected(name, content, run_importer, import_dir):
+    """SEC-02: a file that can't be imported is rejected with the reason, without a crash."""
     file = import_dir / name
     file.write_bytes(content)
+
+    assert_rejected(run_importer(file))
+
+
+def test_oversized_capture_is_rejected(run_importer, import_dir):
+    """SEC-02: a capture over the size limit is rejected before it is read (the PCAP path keeps flows in memory)."""
+    file = copy_sample("pcap/sample.pcap", import_dir)
+
+    assert_rejected(run_importer(file, MAX_PCAP_MB="0"))
+
+
+def test_truncated_capture_is_imported_with_a_warning(run_importer, import_dir):
+    """SEC-02: the complete packets of a truncated capture are imported and the summary says it was truncated."""
+    file = import_dir / "truncated.pcap"
+    file.write_bytes(SAMPLE_PCAP[:300])
 
     result = run_importer(file)
 
     assert "Traceback" not in result.stdout, result.stdout
-    assert result.returncode != 0, result.stdout
-    assert re.search("reject", result.stdout, re.IGNORECASE), result.stdout
+    assert result.returncode == 0, result.stdout
+    assert summary(result)[0] > 0
+    assert "truncated" in result.stdout
 
 
 def test_invalid_rows_are_rejected_and_the_rest_is_imported(run_importer, import_dir):
