@@ -23,11 +23,10 @@ import csv
 import json
 import os
 import time
-import uuid
 from collections import defaultdict
 from importlib import resources
 
-from netguard_common import get_logger, setup_logging, trace_context
+from netguard_common import get_logger, new_trace_id, setup_logging, trace_context
 from netguard_common.messages import SchemaError, flow_id_for, validate_flow
 
 log = get_logger("importer")
@@ -205,7 +204,7 @@ def main() -> None:
         log.info("importer started", extra={"flow_file": flow_file})
 
         for index, (kind, rec, source) in enumerate(_raw_records(flow_file, warnings)):
-            trace_id = uuid.uuid4().hex
+            trace_id = new_trace_id()
             ingested_at = time.time()
             try:
                 fields = normalise_row(rec) if kind == "row" else rec
