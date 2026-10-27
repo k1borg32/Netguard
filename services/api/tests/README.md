@@ -1,5 +1,12 @@
 # API tests
 
+Configuration endpoint coverage is documented in
+[Detection configurations](../../../Docs/ManagementAPI/detection-configurations/README.md).
+Run the real HTTP/database tests with
+`python -m pytest tests/integration/test_detection_configurations.py -q`, and
+request validation with
+`python -m pytest tests/unit/test_detection_configuration_requests.py -q`.
+
 Tests are split into `unit/` and `integration/`. We do not use mocks, repository
 stubs, handler replacements or `app.dependency_overrides`.
 
@@ -30,10 +37,11 @@ Dashboard tests also cover range boundaries, timezones, invalid parameters,
 access without a valid token, adjacent ranges and passing filters in the URL.
 [Dashboard documentation](../../../Docs/ManagementAPI/dashboard/README.md).
 
-`integration/test_dashboard_timeseries.py` contains 13 essential cases:
-aggregation of both datasets for four intervals, empty and partial buckets,
-ordering, `[from, to)` boundaries, the default 24-hour range, invalid parameters,
-excessive ranges and missing authentication.
+`integration/test_dashboard_timeseries.py` covers the frontend time-series contract:
+aggregation for frontend intervals (5, 15, 60 and 900 seconds) and longer intervals,
+packet/byte sums with nullable values, all four severity counts, empty and partial buckets,
+ordering, `[start_time, end_time)` boundaries, the default 24-hour range, invalid
+parameters, the 500-point limit, custom bucket alignment, OpenAPI and authentication.
 [Time-series contract](../../../Docs/ManagementAPI/dashboard/README.md#time-series).
 
 - A separate Docker Compose project starts once per session on a random local port.

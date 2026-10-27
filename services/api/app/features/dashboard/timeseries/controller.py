@@ -20,10 +20,10 @@ router = APIRouter()
     dependencies=[Depends(require_roles(UserRole.USER, UserRole.ADMIN))],
     summary="Count network flows and detections over time",
     description=(
-        "Counts flows by ts_start and detections by created_at in [from, to). "
-        "Defaults to the last 24 hours and 1h buckets. UTC-aligned buckets include "
-        "empty and partial buckets; the first timestamp may precede from. "
-        "Maximum range: 366 days and 2000 buckets."
+        "Aggregates flows, packets, bytes and detections by severity in [start_time, end_time). "
+        "Defaults to the last 24 hours and interval_s=3600. UTC-aligned buckets include "
+        "empty and partial buckets; the first timestamp may precede start_time. "
+        "Maximum range: 366 days and 500 buckets."
     ),
     responses={
         401: {"description": "Authentication required"},
@@ -38,4 +38,4 @@ async def timeseries(
     # Request validation resolves the optional start before application dispatch.
     assert request.start_time is not None
     handler = GetDashboardTimeseriesHandler(session)
-    return await handler.handle(GetDashboardTimeseriesQuery(request.start_time, request.end_time, request.interval))
+    return await handler.handle(GetDashboardTimeseriesQuery(request.start_time, request.end_time, request.interval_s))

@@ -119,13 +119,13 @@ handler and response. List query validation lives in its request model. Controll
 construct handlers directly; dependencies provide authentication and the database.
 The existing schema is used without migrations. OpenAPI is available at `/docs`.
 
-[Integration tests](../../../../services/api/tests/integration/test_alerts.py) cover
+[Integration tests](../../../services/api/tests/integration/test_alerts.py) cover
 both roles, authentication failures on all routes, individual and combined filters,
 IPv6 normalization, half-open time boundaries, optional bounds, stable sorting,
 pagination, empty pages, complete and nullable detection details, persisted and
 concurrent acknowledgement, unchanged unrelated rows, validation and OpenAPI.
-[Unit tests](../../../../services/api/tests/unit/test_list_alerts_request.py) cover
+[Unit tests](../../../services/api/tests/unit/test_list_alerts_request.py) cover
 optional bounds and timezone-aware range validation. Integration tests use the
 existing disposable TimescaleDB setup without mocks or dependency overrides.
 
-[Endpoint plan](../endpoints.md) · [Test setup](../../../../services/api/tests/README.md)
+[Endpoint plan](../endpoints.md) · [Test setup](../../../services/api/tests/README.md)

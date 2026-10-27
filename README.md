@@ -119,7 +119,7 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
 - Architecture Document: [data ingestion and the flow model](Docs/ArchitectureDocument/README.md),
   [dashboard](Docs/ArchitectureDocument/dashboard/README.md),
   [deployment, CI/CD and testing](Docs/ArchitectureDocument/deployment/README.md)
-- [Domain Data Model](Docs/DomainDataModel/README.md) and [Database Schema](Docs/DatabaseSchema/README.md)
+- [Domain Data Model](Docs/ArchitectureDocument/DomainDataModel/README.md) and [Database Schema](Docs/ArchitectureDocument/DatabaseSchema/README.md)
 - [Data Access and Management API](Docs/ManagementAPI/README.md) - API, authentication, endpoints
 - [Test Plan](Docs/TestPlan/README.md)
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

@@ -8,5 +8,6 @@ The **Data Access and Management API** (**Management API**) exposes network moni
 - [Dashboard](dashboard/README.md) — summary contract, time ranges, count rules and tests.
 - [Alerts](alerts/README.md) — filtering, pagination, detection details and acknowledgement.
 - [Network flows](flows/README.md) — filtering, pagination and composite-key lookup.
-- [Database schema](../DatabaseSchema/README.md).
-- [Running the API](../../../services/api/README.md).
+- [Detection configurations](detection-configurations/README.md) — authenticated reads, admin writes, JSON parameters and activation.
+- [Database schema](../ArchitectureDocument/DatabaseSchema/README.md).
+- [Running the API](../../services/api/README.md).

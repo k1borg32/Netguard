@@ -1,6 +1,6 @@
 # API endpoint plan
 
-This list was restored from the [integration plan](../Architecture/ManagementAPI/integration.md)
+This list was restored from the [integration plan](../ArchitectureDocument/ManagementAPI/integration.md)
 introduced in commit `12c9058` and updated to reflect the current implementation.
 Checked items are implemented; unchecked items are planned.
 
@@ -41,16 +41,19 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 [Dashboard documentation and tests](dashboard/README.md).
 
-- [x] `GET /api/v1/dashboard/timeseries` - retrieve shared UTC buckets containing flow and detection counts.
+- [x] `GET /api/v1/dashboard/timeseries` - retrieve UTC buckets of flow, packet,
+  byte and detection counts by severity, using the dashboard's documented format.
 
-Requires the same Bearer access token as summary. Optional query parameters:
-`from` (inclusive), `to` (exclusive), and `interval` (`5m`, `15m`, `1h`, `1d`).
-Defaults to the last 24 hours and `1h`. Empty buckets contain zeros; results are
-chronological. Counts use `network_flows.ts_start` and `detections.created_at`.
-Bounds are ISO 8601 timestamps with timezones and responses use UTC. Queries may
-span at most 366 days and intersect at most 2000 buckets; invalid input returns 422.
+Requires the same Bearer access token as summary. Optional parameters:
+`start_time` (inclusive), `end_time` (exclusive), and `interval_s` (integer seconds,
+1-86400). Defaults to the last 24 hours and 3600-second buckets. Returns
+`{interval_s, points}`, with `{ts, flows, packets, bytes, detections}` per point;
+`detections` contains `LOW`, `MEDIUM`, `HIGH` and `CRITICAL` counts.
+Empty buckets contain zeros; results are chronological. Bounds require timezones.
+Queries may span at most 366 days and intersect at most 500 buckets;
+invalid input returns 422.
 
-Example: `GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T03:00:00Z&interval=1h`
+Example: `GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-10-20T12:15:00Z&interval_s=60`
 
 [Time-series contract](dashboard/README.md#time-series).
 
@@ -103,11 +106,14 @@ key can be `null`. Timestamps use ISO 8601 with a timezone; IP addresses are str
 
 ## Detection configurations
 
-- [ ] `GET /api/v1/detection-configurations` - list detection configurations.
-- [ ] `GET /api/v1/detection-configurations/{id}` - retrieve configuration details.
-- [ ] `POST /api/v1/detection-configurations` - create a configuration.
-- [ ] `PATCH /api/v1/detection-configurations/{id}` - update a configuration.
-- [ ] `PUT /api/v1/detection-configurations/{id}/activate` - set a configuration as active.
+- [x] `GET /api/v1/detection-configurations` - list detection configurations.
+- [x] `GET /api/v1/detection-configurations/{id}` - retrieve configuration details.
+- [x] `POST /api/v1/detection-configurations` - create a configuration.
+- [x] `PATCH /api/v1/detection-configurations/{id}` - update a configuration.
+- [x] `PUT /api/v1/detection-configurations/{id}/activate` - set a configuration as active.
+
+See [Detection configurations](detection-configurations/README.md) for authentication,
+pagination, JSON replacement semantics, activation and the processor integration limitation.
 
 ## Common requirements
 

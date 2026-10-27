@@ -2,17 +2,22 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from .query import TimeseriesInterval
+
+class DashboardDetectionsBySeverity(BaseModel):
+    LOW: int = Field(ge=0)
+    MEDIUM: int = Field(ge=0)
+    HIGH: int = Field(ge=0)
+    CRITICAL: int = Field(ge=0)
 
 
 class DashboardTimeseriesPoint(BaseModel):
-    timestamp: datetime
-    flows_count: int = Field(ge=0)
-    detections_count: int = Field(ge=0)
+    ts: datetime
+    flows: int = Field(ge=0)
+    packets: int = Field(ge=0)
+    bytes: int = Field(ge=0)
+    detections: DashboardDetectionsBySeverity
 
 
 class DashboardTimeseriesResponse(BaseModel):
-    start_time: datetime = Field(serialization_alias="from")
-    end_time: datetime = Field(serialization_alias="to")
-    interval: TimeseriesInterval
-    data: list[DashboardTimeseriesPoint]
+    interval_s: int
+    points: list[DashboardTimeseriesPoint]
