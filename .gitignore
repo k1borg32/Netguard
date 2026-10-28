@@ -25,4 +25,7 @@ results/
 
 .idea/
 .vscode/
+.agents/
+.codex/
+AGENTS.md
 .DS_Store

@@ -42,6 +42,11 @@ FLOW_COLS = (
     "label",
 )
 
+_FLOW_PLACEHOLDERS = ["to_timestamp(%s)" if c in ("ingested_at", "ts_start") else "%s" for c in FLOW_COLS]
+FLOW_INSERT_SQL = (
+    f"INSERT INTO network_flows ({','.join(FLOW_COLS)}) VALUES ({','.join(_FLOW_PLACEHOLDERS)}) ON CONFLICT DO NOTHING"
+)
+
 
 def flow_row(f: dict) -> tuple:
     return tuple(f.get(c) for c in FLOW_COLS)
@@ -100,10 +105,6 @@ def main() -> None:
     conn = psycopg.connect(os.environ["DATABASE_URL"], autocommit=False)
     log.info("persister started")
 
-    placeholders = ["to_timestamp(%s)" if c in ("ingested_at", "ts_start") else "%s" for c in FLOW_COLS]
-    flow_sql = (
-        f"INSERT INTO network_flows ({','.join(FLOW_COLS)}) VALUES ({','.join(placeholders)}) ON CONFLICT DO NOTHING"
-    )
     while True:
         flows, dets = [], []
         deadline = time.time() + 0.5
@@ -114,7 +115,7 @@ def main() -> None:
             continue
         with conn.cursor() as cur:
             if flows:
-                cur.executemany(flow_sql, [flow_row(f) for f in flows])
+                cur.executemany(FLOW_INSERT_SQL, [flow_row(f) for f in flows])
             if dets:
                 cur.executemany(DET_SQL, [detection_row(d) for d in dets])
             alerts = [alert_row(d) for d in dets if d.get("alert")]

@@ -110,7 +110,7 @@ Why not WebSockets or Server-Sent Events now:
   would need a new source (Postgres `LISTEN/NOTIFY` or a consumer of the `detections` topic inside the API).
 - It needs authentication on a long-lived connection, nginx upgrade settings and reconnect logic.
 - A 5 s delay is fine for a human operator. Detection itself (NFR02) is measured in the pipeline, not in the UI.
-- The backend integration plan already lists real-time updates as out of MVP scope.
+- The Management API integration plan already lists real-time updates as out of MVP scope.
 
 If there is time after week 7, an SSE endpoint `GET /stream/alerts` can replace the 5 s polling of the alert list;
 the screens would not change.
@@ -126,7 +126,7 @@ Times are shown in the browser's local time zone.
 
 ## 5. Login and tokens
 
-Authentication is Jakub's JWT module (`/auth/*`, see [Authentication](../../BackendAndDataStorage/auth/README.md)):
+Authentication is Jakub's JWT module (`/auth/*`, see [Authentication](../../ManagementAPI/auth/README.md)):
 access token valid for 15 min, refresh token for 7 days, refresh rotates the pair, tokens are sent in the
 `Authorization: Bearer` header.
 
@@ -173,8 +173,8 @@ token would be safer but needs API changes; we can revisit it in week 8.
 
 ## 6. API review from the UI side
 
-I checked the [backend integration plan](../../Architecture/Backend_Data_Storage/integration.md), the
-[endpoint list](../../BackendAndDataStorage/endpoints.md) and the current code in `services/api` against the screens
+I checked the [Management API integration plan](../ManagementAPI/integration.md), the
+[endpoint list](../../ManagementAPI/endpoints.md) and the current code in `services/api` against the screens
 in section 2.
 
 | Screen | Endpoints | Enough? |
@@ -250,9 +250,13 @@ first. Please confirm which way you want it.
 `src_ip`, `dst_ip`, `protocol`, `dst_port`, `source`, `page_size`. A `total` count over millions of flows is expensive;
 `has_more` (or a cursor on `ts_start`) is enough for the UI.
 
-**G8 - Detection configuration form.** `parameters` is free JSONB, so the UI shows one input per key with its current
-value (numbers as number fields). Please document the `PATCH` body (whole `parameters` object or one key?) and return
-422 with the field name for invalid values, so the form can show the error next to the field. Writes admin only.
+**G8 - Detection configuration form.** The [configuration API](../../ManagementAPI/detection-configurations/README.md)
+is implemented. `parameters` is free JSONB, so the UI shows one input per key with its current value
+(numbers as number fields). `PATCH` replaces the whole supplied `parameters` object; omitted fields are unchanged.
+Send all parameter keys to retain them. Invalid values return 422 with field locations. Writes are admin only;
+reads require an access token. New definitions are inactive, and `PUT /api/v1/detection-configurations/{id}/activate`
+enables the target without disabling other definitions. The current processor still reads YAML at startup;
+persisting or activating a database definition does not reload it.
 
 **G9 - Simulator control (F11, F14, UC-10 to UC-13, API-06).** Not in the endpoint plan. Proposal:
 

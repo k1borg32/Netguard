@@ -1,0 +1,50 @@
+@startuml
+title Update detection configuration
+hide footbox
+autonumber
+skinparam maxMessageSize 220
+actor Client
+participant "Controller / validation" as API
+participant "Authentication / roles" as Auth
+participant Handler
+database TimescaleDB as DB
+Client -> API: PATCH /api/v1/detection-configurations/{id}\nBearer access token
+API -> Auth: Verify token and require ADMIN
+Auth -> DB: Read current user role if token is valid
+DB --> Auth: User and role
+alt missing / invalid token or deleted user
+Auth --> API: Authentication failure
+API --> Client: 401 + WWW-Authenticate: Bearer
+else authenticated user is not an administrator
+Auth --> API: Forbidden
+API --> Client: 403
+else authorized
+Auth --> API: Authorized
+alt invalid UUID, query or body
+API --> Client: 422 validation errors
+else valid request
+API -> Handler: UpdateConfigurationCommand(id, supplied fields)
+group Request transaction
+Handler -> DB: UPDATE supplied columns only\nRETURNING configuration
+DB --> Handler: Stored row(s) and result
+alt no matching configuration
+Handler --> API: DetectionConfigurationNotFoundError
+API --> Client: 404
+else matching configuration
+Handler -> DB: COMMIT
+DB --> Handler: Committed
+Handler --> API: Response model
+API --> Client: 200 complete configuration
+end
+end
+end
+end
+note over API, DB
+Storage failures return 503 without SQL details.
+Failed request sessions roll back when closed.
+end note
+note over Handler, DB
+parameters replaces the entire JSON object.
+Omitted fields and active status are preserved.
+end note
+@enduml

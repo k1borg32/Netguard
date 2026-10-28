@@ -1,0 +1,61 @@
+
+@startuml
+!pragma layout smetana
+title NetGuard - Component Architecture
+
+skinparam componentStyle uml2
+skinparam monochrome true
+skinparam shadowing false
+skinparam backgroundColor white
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+
+' ============================
+' Components
+' ============================
+
+component "PCAP Importer" as PCAP
+component "Message Broker" as MQ
+component "Flow Processor" as FP
+component "Detection Engine" as DE
+component "Persister" as PER
+component "Database" as DB
+component "Management API" as BE
+component "Monitoring Dashboard" as UI
+
+' Provided interface: ball on a solid line. Required interface: dashed <<use>> arrow to the ball.
+interface "Window features" as WF
+interface "REST API\nHTTP / JSON" as REST
+
+FP -right- WF
+BE -right- REST
+
+' ============================
+' Flow publishing
+' ============================
+
+PCAP .down.> MQ : publish flows\n(flows.raw)
+
+' ============================
+' Stream processing
+' ============================
+
+FP .up.> MQ : consume flows\n(flows.raw)
+DE .left.> WF : <<use>>
+DE .up.> MQ : publish detections\n(detections)
+
+' ============================
+' Database communication
+' ============================
+
+PER .up.> MQ : consume flows\nand detections
+PER .down.> DB : WRITE flows /\ndetections
+BE .up.> DB : READ monitoring data\nWRITE user actions
+
+' ============================
+' Frontend integration
+' ============================
+
+UI .left.> REST : <<use>>
+
+@enduml

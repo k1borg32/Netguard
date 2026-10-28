@@ -275,7 +275,7 @@ generator did not reach the requested rate or something else was running on the 
 | Everyone | unit tests for their own code, runs the tests before opening a PR, reviews tests in PRs, takes part in the week 9 campaign (spec 9) |
 | M1 - Valeriia (Network Data & Flow Processing) | importer tests, PCAP test files, preparing the labelled dataset and its ground-truth manifests |
 | M2 - Kuzma (Anomaly Detection & Algorithms) | unit tests for windows, rules and statistics; detection quality evaluation together with M5; threshold sweeps |
-| M3 - Jakub (Backend & Data Storage) | API and persistence tests; API security tests (auth, rate limiting) together with M5 |
+| M3 - Jakub (Data Access and Management API) | API and persistence tests; API security tests (auth, rate limiting) together with M5 |
 | M4 - Daniyar (Frontend & Visualization) | dashboard component tests; Playwright end-to-end tests together with M5 |
 | M5 - Vlad (Infrastructure, Testing & DevOps) | test plan and report, CI, test environment, load generator, automation of integration/system/performance/resilience/security tests, coordination |
 

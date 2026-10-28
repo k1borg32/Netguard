@@ -33,26 +33,26 @@ def create_initial_admin(connection: psycopg.Connection, username: str, password
 
 def main() -> int:
     try:
-        username = input("Login administratora: ")
-        password = getpass.getpass("Hasło (minimum 12 znaków): ")
-        if password != getpass.getpass("Powtórz hasło: "):
-            print("Hasła są różne.", file=sys.stderr)
+        username = input("Administrator username: ")
+        password = getpass.getpass("Password (minimum 12 characters): ")
+        if password != getpass.getpass("Repeat password: "):
+            print("Passwords do not match.", file=sys.stderr)
             return 1
         if not 12 <= len(password) <= 1024:
-            raise ValueError("Hasło musi mieć 12-1024 znaków")
+            raise ValueError("Password must contain 12-1024 characters")
         password_hash = Argon2PasswordHasher().hash(password)
         with psycopg.connect(database_dsn(), autocommit=True, connect_timeout=5) as connection:
             create_initial_admin(connection, username, password_hash)
     except ValidationError:
-        print("Nieprawidłowa konfiguracja środowiska.", file=sys.stderr)
+        print("Invalid environment configuration.", file=sys.stderr)
         return 1
     except ValueError as exc:
         print(str(exc), file=sys.stderr)
         return 1
     except psycopg.Error:
-        print("Nie można utworzyć administratora. Sprawdź bazę i konfigurację.", file=sys.stderr)
+        print("Unable to create administrator. Check the database and configuration.", file=sys.stderr)
         return 1
-    print("Utworzono administratora.")
+    print("Administrator created.")
     return 0
 
 
