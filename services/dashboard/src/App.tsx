@@ -46,7 +46,7 @@ export function App() {
           path="settings"
           element={
             <PlannedPage title="Settings" week={7}>
-              Detection thresholds (admin only) and traffic simulator start/stop.
+              Detection thresholds (admin only).
             </PlannedPage>
           }
         />

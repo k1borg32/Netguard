@@ -1,6 +1,6 @@
 # Windows: install make once (winget install ezwinports.make) and run it from Git Bash,
 # or copy the command under a target and run it directly.
-.PHONY: help setup up down reset logs ps sim perf scale kill-one test test-unit test-int test-stack coverage lint format trace
+.PHONY: help setup up down reset logs ps import load perf scale kill-one test test-unit test-int test-stack coverage lint format trace
 
 ifeq ($(OS),Windows_NT)
 VENV_BIN := .venv/Scripts
@@ -20,10 +20,10 @@ up:              ## Start the whole platform
 	docker compose up -d --build
 
 down:            ## Stop everything (keeps DB data)
-	docker compose --profile sim --profile debug down
+	docker compose --profile import --profile perf --profile debug down
 
 reset:           ## Stop and wipe DB + broker data
-	docker compose --profile sim --profile debug down -v
+	docker compose --profile import --profile perf --profile debug down -v
 
 logs:            ## Follow logs of all services
 	docker compose logs -f --tail=50
@@ -31,14 +31,14 @@ logs:            ## Follow logs of all services
 ps:
 	docker compose ps
 
-sim:             ## Run simulator at normal rate (Ctrl+C to stop)
-	docker compose --profile sim run --rm simulator
+load:            ## Steady synthetic load for scaling and failover demos (test tool, Ctrl+C to stop)
+	docker compose --profile perf run --rm loadgen
 
-import: ## import the sample flow file into the broker
-	docker compose --profile import run --rm importer
+import:          ## Import a PCAP or flow file, e.g. make import FILE=data/pcap/sample.pcap (default: data/flows/sample.csv)
+	docker compose --profile import run --rm $(if $(FILE),-e FLOW_FILE=/app/$(FILE)) importer
 
 perf:            ## NFR01 load: 5000 flows/s for 5 min
-	docker compose --profile sim run --rm -e SIM_RATE=5000 -e SIM_DURATION_S=300 simulator
+	docker compose --profile perf run --rm -e LOAD_RATE=5000 -e LOAD_DURATION_S=300 loadgen
 
 scale:           ## NFR03: three processor instances (--no-deps: don't touch DB/broker)
 	docker compose up -d --no-deps --scale processor=3 processor

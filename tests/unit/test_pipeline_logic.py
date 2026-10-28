@@ -1,9 +1,9 @@
-"""Broker-free tests: simulator output -> detection engine windows -> detection that passes the schema."""
+"""Broker-free tests: load generator output -> detection engine windows -> detection that passes the schema."""
 
 from pathlib import Path
 
 from detection_engine import DetectionEngine, load_config
-from simulator import generate, normal_flow, port_scan_flow
+from loadgen import generate, normal_flow, port_scan_flow
 
 from netguard_common import validate_detection, validate_flow
 
@@ -22,7 +22,7 @@ def scan(e: DetectionEngine, ports: int, ts: float = T0 + 1, wall: float = T0 + 
         e.add(f, wall)
 
 
-def test_simulator_flows_match_schema():
+def test_generated_flows_match_schema():
     """UT-05"""
     for f in generate(["normal", "port_scan"], 500, T0):
         validate_flow(f)

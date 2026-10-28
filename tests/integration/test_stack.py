@@ -22,8 +22,8 @@ def test_api_healthy():
 
 
 def test_port_scan_reaches_api():
-    """IT-02: simulator -> broker -> processor -> broker -> persister -> DB -> API."""
-    from simulator import port_scan_flow
+    """IT-02: flows -> broker -> processor -> broker -> persister -> DB -> API."""
+    from loadgen import port_scan_flow
 
     from netguard_common import topics
     from netguard_common.broker import encode, make_producer

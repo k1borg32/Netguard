@@ -12,7 +12,6 @@ skinparam backgroundColor white
 ' Required interface: usage dependency, a dashed arrow from the user to the interface.
 
 component "PCAP Importer" as Importer
-component "Traffic Simulator" as Simulator
 interface "flows.raw" as FlowsTopic
 component "Processor" as Processor
 component "Redpanda" <<broker>> as Broker
@@ -30,7 +29,6 @@ DB -down- Sql
 API -down- Rest
 
 Importer .down.> FlowsTopic : <<use>>\npublish
-Simulator .down.> FlowsTopic : <<use>>\npublish
 Processor .up.> FlowsTopic : <<use>>\nsubscribe
 Processor .down.> DetectionsTopic : <<use>>\npublish
 Persister .up.> FlowsTopic : <<use>>\nsubscribe
@@ -43,7 +41,6 @@ Dashboard .left.> Rest : <<use>>
 Processor -[hidden]right- Broker
 Broker -[hidden]right- Persister
 
-note left of Importer : planned, week 3
 note left of Processor : 1..N instances\n(NFR03)
 
 @enduml

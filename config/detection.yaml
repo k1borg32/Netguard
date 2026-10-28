@@ -1,5 +1,5 @@
 # Default detection parameters (project spec 4.4: thresholds and parameters must be configurable).
-# Owner: Member 2. Values below are first estimates - tune them with the simulator in week 5
+# Owner: Member 2. Values below are first estimates - tune them on the labelled dataset in week 5
 # (threshold sweep, test case DQ-04 in Docs/TestPlan).
 # The processor checks this file at start-up and refuses to start on a missing or invalid value (UT-17).
 # Design: Docs/ArchitectureDocument/detection/README.md

@@ -77,7 +77,7 @@ export function OverviewPage() {
         <section className="card">
           <h2>Latest detections</h2>
           {detections.isError && <p className="error">Could not load detections: {detections.error.message}</p>}
-          {detections.data?.length === 0 && <p className="muted">No detections yet. Start the simulator: make sim</p>}
+          {detections.data?.length === 0 && <p className="muted">No detections yet. Import a capture: make import FILE=data/pcap/sample.pcap</p>}
           {!!detections.data?.length && (
             <div className="table-wrap">
               <table className="table">
