@@ -1,11 +1,12 @@
-# NetGuard - Vision Document v1.1
+# NetGuard - Vision Document v1.2
 
 ## 1. Introduction and Document Purpose
 
 NetGuard is a network traffic analysis platform designed to detect, classify, and report anomalous network behavior.
 
 This document defines the project scope, system requirements, use cases, constraints, and validation criteria.
-Version 1.1 aligns the requirements with the project specification; the changes are listed in section 10.
+Version 1.2 removes the traffic simulator from the requirements after the decision of the supervisors in week 3;
+the changes of every version are listed in section 10.
 
 ## 2. Problem and Context
 
@@ -57,23 +58,20 @@ Problem-context diagram
 | UC-07 | Configure detection thresholds | End User (administrator) |
 | UC-08 | View network flow details | End User |
 | UC-09 | Acknowledge an alert | End User |
-| UC-10 | Generate synthetic network traffic | Developer |
-| UC-11 | Configure traffic simulation parameters | Developer |
-| UC-12 | Start traffic simulation | Developer |
-| UC-13 | Stop traffic simulation | Developer |
 
+UC-10 to UC-13 (generate, configure, start and stop traffic simulation) were removed in v1.2 together with the
+traffic simulator.
 
 ## 6. Product Function Overview
 
 **Processing pipeline:**
 
-`PCAP / Simulator → Flow Processing → Detection Engine → Storage / API → Dashboard`
+`PCAP / flow files -> Flow Processing -> Detection Engine -> Storage / API -> Dashboard`
 ![Netguard sequence diagram](./diagrams/network_processing_sequence_diagram.svg)
 
 **Core components:**
 
 - PCAP Importer
-- Traffic Simulator
 - Flow Processor
 - Detection Engine
 - Alert Management
@@ -99,10 +97,10 @@ Problem-context diagram
 | F08 | Classification | Classify each detection as Port Scan, DoS/DDoS-like Traffic, Brute Force, Abnormal Traffic, Suspicious Connection Pattern, or Unknown Anomaly, and store type, severity, confidence, timestamp, source, destination, and detection ID. |
 | F09 | Explainability | Provide evidence and feature values explaining the alert. |
 | F10 | Database | Persist flows, detections, configuration, and historical data. |
-| F11 | REST API | Expose flows, current data, history, statistics, alerts, system metrics, and configuration and control of the traffic simulator. |
+| F11 | REST API | Expose flows, current data, history, statistics, alerts, system metrics, and the detection configuration. |
 | F12 | Dashboard | Provide traffic monitoring, alerts, statistics, trend charts, and detection details. |
 | F13 | Filtering | Filter history by at least time, type, severity, and source. |
-| F14 | Simulator | Generate normal traffic and the five anomalous scenarios from section 2, with a configurable number of hosts, event rate, share of anomalous traffic, and load profiles. |
+| F14 | Simulator (removed) | Removed in v1.2: the traffic simulator is no longer a project requirement. Normal and anomalous traffic comes from prepared PCAP and flow files (section 9). The ID is kept so the other IDs don't change. |
 | F15 | Traceability | Allow an event to be traced from input to the generated detection. |
 | F16 | Detection configuration | Thresholds and parameters of the detection methods are configurable; changing them at runtime is an administrative operation. |
 | F17 | Alert management | Generate alerts from detections and allow the operator to acknowledge an alert; the alert status is stored. |
@@ -111,7 +109,7 @@ Problem-context diagram
 
 | ID | Category | Requirement |
 |---|---|---|
-| NFR01 | Performance | Process at least 5,000 flows/s for a minimum of 5 minutes. Throughput is also measured at other load levels (100, 1,000, 10,000 flows/s and higher, up to 50,000 flows/s or the saturation point). |
+| NFR01 | Performance | Process at least 5,000 flows/s for a minimum of 5 minutes. Throughput is also measured at other load levels (100, 1,000, 10,000 flows/s and higher, up to 50,000 flows/s or the saturation point). The load is produced by a load generator that belongs to the test tooling, not to the product. |
 | NFR02 | Latency | At 5,000 flows/s, p95 detection latency must not exceed 3 s in the nominal failure-free scenario. Latency is measured from the moment the data needed for the detection is in the system (ingestion of the last flow that contributed to it) to the creation of the detection. |
 | NFR03 | Scalability | At least one processing component must support more than one instance. |
 | NFR04 | Resilience | Restart/failure of one processing instance must not stop the entire platform. |
@@ -127,7 +125,8 @@ Problem-context diagram
 
 **Assumptions:**
 
-- Input consists of prepared PCAP datasets and synthetic traffic.
+- Input consists of prepared PCAP and flow datasets: a public labelled dataset (e.g. CIC-IDS2017) and small captures
+  prepared by the team.
 - Detection methods operate on network flow features.
 - Test datasets contain identifiable normal and anomalous traffic.
 
@@ -155,11 +154,11 @@ Problem-context diagram
 - Brute-force patterns.
 - Abnormal traffic rates.
 - Suspicious connection patterns.
-- Synthetic load-testing datasets.
+- Load-testing data from a load generator (test tooling).
 
 **Demonstration:**
 
-- Import a prepared PCAP file or start traffic simulation.
+- Import a prepared PCAP or flow file.
 - Process network flows and execute anomaly detection.
 - Store generated alerts.
 - Display alerts, evidence, and traffic statistics.
@@ -173,3 +172,4 @@ Problem-context diagram
 |---|---|---|---|
 | 1.0 | 2026-10-12 | Jakub | Initial version. |
 | 1.1 | 2026-10-14 | Vlad, agreed with Jakub | Requirements aligned with the project specification: six anomaly classes (F06-F08), input error reporting (F01), API for metrics and simulator control (F11), trend charts (F12), five simulator scenarios and simulator parameters (F14), detection configuration (F16), alert management (F17), throughput load levels (NFR01), latency definition (NFR02), detection quality (NFR11). |
+| 1.2 | 2026-10-27 | Vlad, agreed in the team | Traffic simulator removed after the decision of the supervisors: F14 and the simulator control in F11 removed, UC-10 to UC-13 removed, test data and demonstration based on prepared PCAP and flow files (sections 6, 8 and 9), the load for NFR01 comes from test tooling. Diagrams updated. |

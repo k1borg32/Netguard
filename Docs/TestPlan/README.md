@@ -1,7 +1,13 @@
-# NetGuard - Test Plan v0.3
+# NetGuard - Test Plan v0.4
 
-Version 0.3, week 2 (2026-10-20), updated after the architecture document. Owner: Vlad (M5, Infrastructure, Testing &
-DevOps). Next update: week 5 (after the first version of the detection engine).
+Version 0.4, week 3 (2026-10-27), updated after the supervisors removed the traffic simulator from the requirements
+(Vision v1.2). Owner: Vlad (M5, Infrastructure, Testing & DevOps). Next update: week 5 (after the first version of the
+detection engine).
+
+Changes in v0.4: the simulator is no longer part of the product. Test data comes from prepared PCAP and flow files and
+a public labelled dataset (3.6, 5); the load for the performance tests comes from a load generator that is only test
+tooling (3.7); simulator test cases removed or moved to the dataset (12); state of the components after week 3 (2.1);
+new risks R12 and R13.
 
 Changes in v0.3: state of the components after week 2 (2.1), how the test groups are run (3.1), ground-truth manifest
 format (3.6), latency from `last_ingested_at` (3.7, R2), dashboard job in CI (4), first API tests passing (12). How the
@@ -12,7 +18,7 @@ system is deployed and how CI works is described in the
 
 This plan describes what we test in NetGuard, how, where, when and who does it, and when a part counts as done.
 It follows section 14 of the project specification and covers the requirements from the
-[Vision Document](../VisionDoccument/README.md) (v1.1: F01-F17, NFR01-NFR11).
+[Vision Document](../VisionDoccument/README.md) (v1.2: F01-F17 without F14, NFR01-NFR11).
 
 Testing is part of development, not a phase at the end. Every feature comes with its tests (definition of done in
 [CONVENTIONS](../CONVENTIONS.md)), CI runs them on every pull request, and results go into the test report during the
@@ -22,7 +28,8 @@ References:
 
 - Project specification "Network Anomaly Detection Platform - NetGuard" v1.0, mainly sections 4 (functions),
   5 (scenarios), 14 (tests) and 15 (non-functional requirements)
-- Vision Document v1.0
+- Vision Document v1.2
+- Decision of the supervisors in week 3: the traffic simulator is no longer a requirement
 - Team conventions: message contracts, trace IDs, latency, delivery semantics
 - Message schemas: `libs/common/src/netguard_common/schemas/`
 
@@ -30,26 +37,29 @@ References:
 
 ### 2.1 Test items
 
-| Component | Code | Owner | State in week 2 |
+| Component | Code | Owner | State in week 3 |
 |---|---|---|---|
-| Traffic simulator | `services/simulator` | M1 (load mode M5) | normal traffic + port scan |
-| PCAP importer | `services/importer` | M1 | planned, week 3 |
+| Load generator (test tooling, not part of the product) | `services/simulator` for now | M5 | normal traffic + port scan, used by CI and the performance tests |
+| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import in review (PR #51) |
 | Broker + message contracts | Redpanda, `libs/common` | M5 | working |
 | Flow processor / detection engine | `services/processor` | M2 | placeholder port scan rule |
 | Persister + database | `services/persister`, `db/` | M3 | working, schema by M3 (flows hypertable, detections, alerts, users) |
-| REST API | `services/api` | M3 | login (JWT), detections, alerts, dashboard summary |
+| REST API | `services/api` | M3 | login (JWT), detections, alerts, dashboard summary; flows, detection details and time series in review (PR #50) |
 | Dashboard | `services/dashboard` | M4 | React app skeleton in the nginx container, screens from week 4 |
 | Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working, dashboard job and build cache added in week 2 |
 
 ### 2.2 In scope
 
-All functional requirements F01-F17 and non-functional requirements NFR01-NFR11 from Vision v1.1. Section 11 maps
+All functional requirements F01-F17 (except F14, removed in Vision v1.2) and non-functional requirements
+NFR01-NFR11 from Vision v1.2. Section 11 maps
 every requirement to test cases.
 
 ### 2.3 Out of scope
 
 - live capture from real networks and any traffic leaving the lab machine (spec 16, NFR09)
-- attack tools: anomalous traffic only comes from the simulator and prepared files
+- attack tools: anomalous traffic only comes from prepared files (a public labelled dataset and captures made
+  offline)
+- the traffic simulator, removed from the requirements in week 3. Its code is only kept as a load generator for tests
 - high availability of the broker and the database (one node each). We test failure of processing instances and
   recovery after a broker/DB restart, not clustering
 - full SIEM/IDS functionality and real-world detection rates
@@ -67,7 +77,7 @@ every requirement to test cases.
 | API | endpoints, contract, errors, authorization | pytest, Schemathesis (week 9) | CI on every PR | M3 + M5 |
 | System (end to end) | input -> detection -> dashboard | pytest, Playwright | CI smoke + before demos | M5 + M4 |
 | Detection quality | precision, recall, F1, false positives/negatives | evaluation script, labelled datasets | from week 5, final in week 9 | M2 + M5 |
-| Performance | throughput, latency, resource usage | simulator load mode, measurement script, docker stats, k6 | baseline week 4, campaign week 8 | M5 |
+| Performance | throughput, latency, resource usage | load generator (test tooling), measurement script, docker stats, k6 | baseline week 4, campaign week 8 | M5 |
 | Resilience | failure and restart of components, recovery | pytest + docker CLI | CI smoke + campaign week 8-9 | M5 |
 | Security | input validation, auth, rate limiting, secrets, dependencies | pytest, gitleaks, pip-audit, Trivy, OWASP ZAP | CI + campaign week 9 | M5 + M3 |
 
@@ -90,7 +100,7 @@ is written.
 - every test uses its own fresh source IPs and only checks detections it caused itself. The stack is shared, so the
   order of tests must not matter
 - waiting is done by polling with a deadline, never with a fixed sleep
-- main chain from spec 14: importer/simulator -> broker -> processor -> detector -> database -> API
+- main chain from spec 14: importer -> broker -> processor -> detector -> database -> API
 - contracts: messages are checked against the JSON schemas in `libs/common`. A schema change is a PR with a test
   (CONVENTIONS, section 2)
 
@@ -103,8 +113,8 @@ requests from the OpenAPI schema and checks that the API never answers with 500.
 
 ### 3.5 System tests
 
-Complete scenarios: start the stack with the documented procedure, feed a known input (simulator scenario with a fixed
-seed or a prepared PCAP) and check the alert and its evidence in the API and on the dashboard. The dashboard is
+Complete scenarios: start the stack with the documented procedure, feed a known input (a prepared PCAP or flow file
+with a known attack) and check the alert and its evidence in the API and on the dashboard. The dashboard is
 checked with Playwright (headless Chromium) from week 7. Before the mid-term and the final presentation we go through
 the demo checklist by hand on a clean clone of the repository.
 
@@ -112,15 +122,16 @@ the demo checklist by hand on a clean clone of the repository.
 
 NFR11 asks for precision, recall and F1 per class on a common labelled test set.
 
-**Ground truth.** Every simulated flow has a `label`. On top of that the simulator writes a manifest of attack
-episodes: class, attacker IP(s), target IP(s), start and end time. For PCAP datasets we write the manifest by hand from
-the dataset description and a second person checks it. Detectors never see the labels: DQ-07 runs the detection with
+**Ground truth.** Every flow of a labelled dataset has a `label`. On top of that every data file comes with a manifest
+of attack episodes: class, attacker IP(s), target IP(s), start and end time. For the public dataset the manifest is
+generated from its labels by a script and checked by hand on samples; for the small captures we make ourselves it is
+written by hand and a second person checks it. Detectors never see the labels: DQ-07 runs the detection with
 labels removed and expects exactly the same result.
 
 **Manifest format** (agreed in week 2, issue #6): `libs/common/src/netguard_common/schemas/manifest.v1.json`, checked
-by `validate_manifest()` (UT-19). One episode has an ID, the class (one of the five scenarios), attacker and target IPs
-or CIDR networks, start and end in flow time (`ts_start`) and optional generation parameters. The simulator writes it
-to `data/runs/<dataset>-<seed>/manifest.json`; PCAP manifests are written by hand next to the file. Example and rules:
+by `validate_manifest()` (UT-19). One episode has an ID, the class (one of the five attack classes), attacker and
+target IPs or CIDR networks, start and end in flow time (`ts_start`) and optional parameters that describe it. The
+manifest is stored next to its data file as `<file>.manifest.json`. Example and rules:
 [architecture document, section 8](../ArchitectureDocument/deployment/README.md#8-test-data-and-ground-truth-6).
 
 **Matching detections to episodes.**
@@ -145,10 +156,11 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 
 **Targets** (NFR11, reviewed in week 5 after the first measurement):
 
-- port scan, DoS, brute force (rule based): precision >= 0.90 and recall >= 0.90 on the synthetic set
-- macro F1 >= 0.80 over all five attack classes on the synthetic set
-- 30 min of normal traffic: no HIGH/CRITICAL alert and at most 2 alerts per 10 minutes
-- PCAP set: no fixed target, results reported together with the error analysis
+- port scan, DoS, brute force (rule based): precision >= 0.90 and recall >= 0.90 on the labelled test set
+- macro F1 >= 0.80 over all five attack classes on the labelled test set
+- at least 30 min of normal-only traffic: no HIGH/CRITICAL alert and at most 2 alerts per 10 minutes
+- small hand-made captures and the held-out part of the dataset: no fixed target, results reported together with
+  the error analysis
 
 ### 3.7 Performance tests
 
@@ -168,7 +180,9 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 system saturates; we report how far one machine gets. Every level gets 1 min of warm-up (not measured)
 and 5 min of measurement. About 2 % attack traffic is mixed in, so detections (and therefore latency values) exist
 during the run. The generator has to reach the requested rate, otherwise the run is invalid. For high rates we run
-several simulator instances.
+several generator instances. The load comes from a load generator that is only test tooling: the former simulator
+code, kept for this and for the CI pipeline test (M5). Replaying the public dataset at a fixed rate is the alternative
+once the importer can replay at a set rate with the timestamps moved to the present (R12).
 
 **Pass criteria:**
 
@@ -177,7 +191,7 @@ several simulator instances.
 - NFR03: saturation point measured with 1 and with 3 processor instances
 
 **Conditions recorded with every result** (spec 14): CPU, cores, RAM, OS, resources given to Docker, git commit,
-configuration (`detection.yaml`, number of instances and partitions), simulator settings and date. The official
+configuration (`detection.yaml`, number of instances and partitions), load generator settings and date. The official
 campaign runs on one fixed machine (chosen in week 8). We do not compare numbers from different machines.
 
 **API load:** k6 with 50 virtual users that poll the alert list every 2 s, like the dashboard does. We report the p95
@@ -223,15 +237,14 @@ and an OWASP ZAP baseline scan are added in week 9.
 | ID | Content | Source | Used by | Ready |
 |---|---|---|---|---|
 | FX | small flow and detection fixtures | written in the tests | unit tests | week 1 (exists) |
-| SIM-NORMAL | normal traffic only, 30 min at 1,000 flows/s, fixed seed | simulator | false alarms, DQ | week 4 |
-| SIM-SCEN | each of the 5 scenarios several times, including weak variants near the thresholds, with normal background and a manifest | simulator | DQ, integration | week 4-5 |
-| SIM-LOAD | load profiles from 100 flows/s to saturation, about 2 % attacks | simulator load mode | performance | week 4 (baseline), week 8 |
-| PCAP-SMALL | small hand-made PCAPs, also broken ones | written offline with Scapy (packets go straight into a file, nothing is sent) | importer unit tests, security | week 3 |
-| PCAP-SET | labelled PCAPs from the course, or a subset of a public labelled dataset (e.g. CIC-IDS2017) if none is provided | offline files | DQ on data we didn't generate | week 3 |
+| NORMAL | normal traffic only, at least 30 min | benign part of the public labelled dataset (CIC-IDS2017 proposed, issue #52) | false alarms (DQ-02) | week 4 |
+| LABELLED | the five attack classes with normal background, a manifest per file; one part for tuning the thresholds, one part held out | public labelled dataset, its attack labels mapped to our five classes | DQ, integration (IT-04) | week 4-5 |
+| LOAD | load profiles from 100 flows/s to saturation, about 2 % attacks | load generator (test tooling) | performance | week 4 (baseline), week 8 |
+| PCAP-SMALL | small hand-made PCAPs and flow files, also broken ones | written offline (packets go straight into a file, nothing is sent); `data/pcap/sample.pcap` and `data/flows/sample.csv` from PR #51 | importer tests, security, CI | week 3 |
 | BAD-INPUT | schema-invalid flows, broken and oversized files, injection strings | written in the tests | security, resilience | week 3 / 9 |
 
-Big files stay outside git (`data/pcap` is git-ignored) with a checksum list in the repository. Simulator datasets
-are not stored; they are reproduced from configuration + seed.
+Big files stay outside git (`data/pcap` and the dataset folder are git-ignored) with a checksum list and the download
+link in the repository. Load profiles are not stored; they are reproduced from the generator settings.
 
 ## 6. Entry and exit criteria
 
@@ -260,11 +273,11 @@ generator did not reach the requested rate or something else was running on the 
 | Who | Testing responsibilities |
 |---|---|
 | Everyone | unit tests for their own code, runs the tests before opening a PR, reviews tests in PRs, takes part in the week 9 campaign (spec 9) |
-| M1 - Valeriia (Network Data & Flow Processing) | importer and simulator tests, PCAP test files, ground-truth manifests |
+| M1 - Valeriia (Network Data & Flow Processing) | importer tests, PCAP test files, preparing the labelled dataset and its ground-truth manifests |
 | M2 - Kuzma (Anomaly Detection & Algorithms) | unit tests for windows, rules and statistics; detection quality evaluation together with M5; threshold sweeps |
 | M3 - Jakub (Data Access and Management API) | API and persistence tests; API security tests (auth, rate limiting) together with M5 |
 | M4 - Daniyar (Frontend & Visualization) | dashboard component tests; Playwright end-to-end tests together with M5 |
-| M5 - Vlad (Infrastructure, Testing & DevOps) | test plan and report, CI, test environment, automation of integration/system/performance/resilience/security tests, coordination |
+| M5 - Vlad (Infrastructure, Testing & DevOps) | test plan and report, CI, test environment, load generator, automation of integration/system/performance/resilience/security tests, coordination |
 
 ## 9. Schedule
 
@@ -273,7 +286,7 @@ generator did not reach the requested rate or something else was running on the 
 | 1 | test plan v0.1, v0.2 for Vision v1.1; CI with lint, formatting, unit tests + coverage, gitleaks, integration tests; check of the dev environment (section 10) |
 | 2 | plan updated with the architecture; detection contract updated to Vision v1.1: `last_ingested_at` and the six classes (R2, R7); ground-truth manifest format with M1 and M2 |
 | 3 | importer: unit tests, broken PCAPs (SEC-02), PCAP -> flow integration tests (IT-03, IT-05) |
-| 4 | simulator scenario tests; SIM-* datasets; first performance baseline at 100 / 1,000 / 5,000 flows/s (PT-01, PT-02), shown at the mid-term presentation |
+| 4 | labelled dataset ready with M1 (subset, mapping to our classes, manifests); first performance baseline at 100 / 1,000 / 5,000 flows/s with the load generator (PT-01, PT-02), shown at the mid-term presentation |
 | 5 | detection unit tests; evaluation script; first precision/recall/F1 (DQ-01 to DQ-08); targets revisited |
 | 6 | API tests including filters, auth and rate limiting (API-01 to API-09, SEC-03 to SEC-07); persistence tests |
 | 7 | dashboard end-to-end smoke tests with Playwright (ST-02 to ST-05, SEC-08) |
@@ -291,17 +304,19 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 
 | ID | Risk / finding | Impact | What we do |
 |---|---|---|---|
-| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | performance baseline already in week 4; validate everything at the edge (importer, simulator) instead of again in every consumer; batch DB writes; scale the processor |
+| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | performance baseline already in week 4; validate everything at the edge (importer, load generator) instead of again in every consumer; batch DB writes; scale the processor |
 | R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: `last_ingested_at` in the detection contract, DB column and `detection_latency` view (PR #44). Still open: a rule that fires only when its window closes adds up to one window to the latency, so M2 fires rules as soon as the threshold is crossed |
-| R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and simulator validate everything they send; consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
+| R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and load generator validate everything they send (the importer puts rejected records on `flows.deadletter`, PR #51); consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
 | R4 | Slow failover: after killing one of two processors its partitions waited 44 s (librdkafka default session timeout is 45 s). A crashed persister also blocked its own restart for about 45 s. The CI step "kill one processor" waits only 40 s, so it would fail about half of the time. | NFR04, flaky CI | session timeout lowered to 10 s in `libs/common` (week 1), to be re-measured with RT-01; the persister should close its consumer when it exits (M3) |
 | R5 | The persister crashes when the DB connection drops and does not reconnect (seen when the DB container was recreated). | data not stored until the restart | the restart policy covers it for now; reconnect with backoff in week 6 (M3); RT-04 |
 | R6 | Windows: compose recreated the DB container when started from `d:\netguard` instead of `D:\netguard` (bind-mount paths are part of the configuration). | unexpected restarts during a demo | documented in the README; `make scale` only touches the processor; later the init files can be built into the image |
 | R7 | The message contract still has the old four detection types, Vision v1.1 has the six classes from the spec (Abnormal Traffic and Suspicious Connection Pattern split, Unknown Anomaly added). | per-class quality for the six classes not possible yet | six classes in the contract in week 2 (PR #44), the dashboard already shows both old and new names |
 | R8 | Performance numbers depend on the laptop. | results not comparable | one fixed machine, conditions recorded |
 | R9 | Flaky integration tests (timing, shared stack). | people start ignoring CI | polling with deadlines, unique data per test, logs uploaded when CI fails |
-| R10 | Ground truth for PCAP datasets may be wrong. | wrong precision/recall | start with synthetic data; manifests checked by two people |
+| R10 | Ground truth for PCAP datasets may be wrong. | wrong precision/recall | manifests generated from the dataset labels and checked by hand on samples; hand-written manifests checked by a second person |
 | R11 | Windows/Linux differences (line endings, make, paths). | "works on my machine" | `.gitattributes` (LF), everything runs in Docker, CI on Linux, Windows steps in the README |
+| R12 | Replaying a dataset with old timestamps: the processor closes windows by the wall clock, so with a big file every window is closed after each batch and an attack is split into parts below the threshold (found in the week 3 review of the importer). | wrong detection results on the dataset (DQ) | week 4, with M1 and M2: windows by event time in the processor, or the importer moves the timestamps to the present when it replays |
+| R13 | The traffic simulator was removed from the requirements in week 3. The controllable load for the performance tests and the input of the CI pipeline test came from it. | NFR01/NFR02 can't be measured without a load source | its code stays only as a load generator in the test tooling (M5), not as a product component |
 
 Also fixed in week 1: the DB, broker, API and dashboard were published on all network interfaces with a default
 password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the whole repository including `.venv` and
@@ -321,14 +336,14 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 | F08 Classification | UT-02, UT-16, IT-07, DQ-03, DQ-07 |
 | F09 Explainability | UT-07, IT-07, DQ-08, ST-02 |
 | F10 Database | UT-03, IT-02, IT-05, IT-07, RT-03, RT-07 |
-| F11 REST API | IT-01, IT-02, API-01 to API-06, PT-05 |
+| F11 REST API | IT-01, IT-02, API-01 to API-05, PT-05 |
 | F12 Dashboard | ST-02, ST-03, ST-05 |
 | F13 Filtering | API-03, ST-04 |
-| F14 Simulator | UT-05, UT-18, IT-04, API-06 |
+| F14 Simulator | removed in Vision v1.2 |
 | F15 Traceability | UT-04, IT-06 |
 | F16 Detection configuration | UT-17, API-07, DQ-04 |
 | F17 Alert management | IT-08, API-08 |
-| NFR01 Performance | PT-01, PT-02, PT-06 |
+| NFR01 Performance | UT-05, PT-01, PT-02, PT-06 |
 | NFR02 Latency | PT-03 |
 | NFR03 Scalability | PT-04, RT-01 |
 | NFR04 Resilience | UT-03, UT-09, UT-10, RT-01 to RT-07 |
@@ -342,7 +357,7 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 
 ## 12. Test cases
 
-Status: **pass** = automated and passing in week 2, **fails** = reproduced problem (see risks), otherwise the week in
+Status: **pass** = automated and passing in week 3, **fails** = reproduced problem (see risks), otherwise the week in
 which the test is planned. Automated tests carry their ID in the docstring.
 
 ### Unit tests (UT)
@@ -350,10 +365,10 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Where | Status |
 |---|---|---|---|---|---|
 | UT-01 | Flow schema: valid flow accepted; wrong types, bad IP, port out of range, unknown or missing field rejected | F01, F02, NFR06 | invalid flows raise `SchemaError` naming the field | `tests/unit/test_messages.py` | pass |
-| UT-02 | Detection schema rejects unknown severity and confidence outside 0-1 | F08 | `SchemaError` | `tests/unit/test_messages.py` | pass |
+| UT-02 | Detection schema: unknown severity, confidence outside 0-1 and missing `last_ingested_at` rejected; the six classes accepted | F08, NFR02 | `SchemaError` for the invalid ones | `tests/unit/test_messages.py` | pass |
 | UT-03 | Deterministic flow and detection IDs | F10, NFR04 | same input -> same ID, so re-imports and redelivery don't duplicate rows | `tests/unit/test_messages.py` | pass |
 | UT-04 | Log lines are JSON with service name and trace_id | F15, NFR08 | trace_id set inside `trace_context`, null outside | `tests/unit/test_logging.py` | pass |
-| UT-05 | Simulator output matches the flow schema | F14 | 500 generated flows are valid | `tests/unit/test_pipeline_logic.py` | pass |
+| UT-05 | Load generator output matches the flow schema | NFR01 | 500 generated flows are valid | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-06 | A window closes only after its size + grace period | F05 | not closed at 10.5 s, closed at 11 s | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-07 | Port scan above the threshold | F06, F09 | valid detection with unique ports, threshold and window as evidence | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-08 | Normal traffic | F06 | no port scan detection | `tests/unit/test_pipeline_logic.py` | pass |
@@ -366,7 +381,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-15 | Statistical method | F07 | baseline built, abnormal traffic detected as a deviation from it, other anomalies reported as `unknown`, no result before the minimum number of baseline windows | | week 5 |
 | UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | | week 5 |
 | UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | | week 5 |
-| UT-18 | Simulator parameters | F14 | number of hosts, rate and anomaly ratio respected; same seed -> same output | | week 4 |
+| UT-18 | Removed in v0.4 (simulator parameters, F14) | - | - | | - |
 | UT-19 | Ground-truth manifest: valid manifest accepted; unknown class, empty attackers, end before start, duplicate episode IDs rejected | NFR11 | `SchemaError` naming the problem | `tests/unit/test_manifest.py` | pass |
 
 ### Integration tests (IT)
@@ -376,7 +391,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | IT-01 | API health | F11 | `status: ok`, DB reachable | `tests/integration/test_stack.py` | pass |
 | IT-02 | Port scan flows sent to the broker | F04, F06, F10, F11 | detection visible in the API within 40 s | `tests/integration/test_stack.py` | pass |
 | IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | | week 3 |
-| IT-04 | Every simulator scenario | F06, F14 | the expected detection type end to end | | week 5 |
+| IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | | week 5 |
 | IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | | week 3 |
 | IT-06 | Follow one trace_id | F15, NFR08 | found in the logs of every service and in the detection | | week 3 |
 | IT-07 | Stored detection | F08, F09 | type, severity, confidence, time, source, destination, ID, features and window present | | week 6 |
@@ -391,7 +406,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | API-03 | Filters by time, type, severity and source | F13 | only matching rows | week 6 |
 | API-04 | Flow list and flow details | F11, UC-08 | correct data, 404 for unknown ID | week 6 |
 | API-05 | Statistics and metrics endpoints | F11 | numbers match the database | week 6 |
-| API-06 | Simulator control: configure, start, stop | F11, F14, UC-10 to UC-13 | simulator follows the commands | week 6 |
+| API-06 | Removed in v0.4 (simulator control, F14) | - | - | - |
 | API-07 | Change a threshold (admin) | F16 | new value used by the detection engine | week 6 |
 | API-08 | Acknowledge an alert | F17 | status changes and is stored | week 6 |
 | API-09 | Schemathesis on the OpenAPI schema | NFR06 | no 500 responses | week 9 |
@@ -401,7 +416,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | ST-01 | Deployment from a clean clone with the documented command | NFR05, NFR09 | all services healthy within 5 min, integration tests pass | automated in CI (first run after push) |
-| ST-02 | Simulator scenario -> dashboard | F09, F12 | alert shown with its evidence | week 7 |
+| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | week 7 |
 | ST-03 | PCAP import -> dashboard | F01, F12, UC-01 | alerts from the file shown | week 7 |
 | ST-04 | History and filters on the dashboard | F13, UC-04, UC-05 | correct rows for each filter | week 7 |
 | ST-05 | Live statistics and trend charts | F12, UC-06 | values update while traffic runs | week 7 |
@@ -411,11 +426,11 @@ which the test is planned. Automated tests carry their ID in the docstring.
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| DQ-01 | Precision, recall, F1 per class on SIM-SCEN | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | weeks 5 and 9 |
-| DQ-02 | False alarms on SIM-NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | weeks 5 and 9 |
+| DQ-01 | Precision, recall, F1 per class on LABELLED | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | weeks 5 and 9 |
+| DQ-02 | False alarms on NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | weeks 5 and 9 |
 | DQ-03 | Confusion matrix including `unknown` | F08, NFR11 | reported, errors analysed | weeks 5 and 9 |
 | DQ-04 | Threshold sweep for every rule | F06, F16 | default thresholds justified by the curves | week 5 |
-| DQ-05 | Metrics on PCAP-SET | F01, F06, NFR11 | reported with error analysis | week 9 |
+| DQ-05 | Metrics on the held-out part of the dataset (not used for tuning) and on PCAP-SMALL | F01, F06, NFR11 | reported with error analysis | week 9 |
 | DQ-06 | Hard cases: scan split across two windows, slow scan just below the threshold, attack hidden in heavy normal traffic | F05, F06 | behaviour documented, misses explained | week 5 |
 | DQ-07 | Detection with the labels removed | F08 | exactly the same detections | week 5 |
 | DQ-08 | Content of every detection | F09 | key features, threshold or deviation, window, source/destination, severity and confidence present | week 5 |
@@ -450,7 +465,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | SEC-01 | Schema-invalid flows sent into the pipeline | NFR06 | rejected at the edge, never crash a consumer | fails (R3), re-test week 3 |
 | SEC-02 | Broken, oversized and non-PCAP files imported | F01, NFR06 | rejected with an error report, importer keeps running | week 3 |
 | SEC-03 | Request without a token | NFR06 | 401 | week 6 |
-| SEC-04 | Non-admin token on administrative operations (thresholds, simulator control) | NFR06 | 403 | week 6 |
+| SEC-04 | Non-admin token on administrative operations (thresholds) | NFR06 | 403 | week 6 |
 | SEC-05 | Tampered or expired JWT | NFR06 | 401 | week 6 |
 | SEC-06 | Injection strings in query parameters | NFR06 | 422 or empty result, no 500, no SQL error in the response | week 6 |
 | SEC-07 | Too many requests from one client | NFR06 | 429 after the limit | week 6 |
