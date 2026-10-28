@@ -117,18 +117,19 @@ Unit tests need no Docker. API tests don't share data with the running stack, so
 
 ## 8. Test data and ground truth (#6)
 
-Every simulated flow has a `label` (normal or one of the five scenarios). Detectors never read it; it exists only for
-the metrics. To compute precision and recall per class (NFR11, test plan 3.6) we also need to know which attacks were
-in the data, so every labelled dataset comes with a **ground-truth manifest**: a list of attack episodes.
+Every flow of a labelled dataset has a `label` (normal or one of the five attack classes). Detectors never read it; it
+exists only for the metrics. To compute precision and recall per class (NFR11, test plan 3.6) we also need to know
+which attacks were in the data, so every labelled data file comes with a **ground-truth manifest**: a list of attack
+episodes.
 
 Format: `libs/common/src/netguard_common/schemas/manifest.v1.json`, checked with `validate_manifest()`.
 
 ```json
 {
   "schema_version": 1,
-  "dataset": "SIM-SCEN",
-  "source": "simulator",
-  "seed": 42,
+  "dataset": "LABELLED/friday-portscan",
+  "source": "flowfile",
+  "seed": null,
   "created_at": 1760000600.0,
   "episodes": [
     {
@@ -150,11 +151,11 @@ Format: `libs/common/src/netguard_common/schemas/manifest.v1.json`, checked with
   PCAPs keep their original timestamps.
 - `attackers` and `targets` can be CIDR networks, for DDoS-like traffic with many sources.
 - `params` describes how the episode was made (for example a weak variant just above the threshold), for the error
-  analysis.
-- The simulator writes the manifest at the end of a scenario run to `data/runs/<dataset>-<seed>/manifest.json`
-  (M1, week 4, together with SIM-SCEN). For PCAP files the manifest is written by hand as
-  `data/pcap/<file>.manifest.json` and checked by a second person (risk R10). PCAPs stay out of git, manifests are
-  committed.
+  analysis. `seed` is only used when the data was generated, for files it is `null`.
+- The manifest is stored next to its data file as `<file>.manifest.json`. For the public labelled dataset it is
+  generated from the dataset labels by a script and checked by hand on samples (M1, week 4, issue #52); for small
+  captures it is written by hand and checked by a second person (risk R10). Big data files stay out of git, manifests
+  are committed.
 - The evaluation script (week 5, issue #12) reads the manifest and the detections and matches them with the rules in
   test plan 3.6.
 

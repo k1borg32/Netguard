@@ -65,7 +65,7 @@ Stop: `make down`. Wipe all data: `make reset` (`docker compose down -v`).
 | File | What |
 |---|---|
 | `.env` | Credentials, log level, load generator rate. Never committed. |
-| `config/detection.yaml` | Windows (1/10/60 s), rule thresholds, statistical method parameters |
+| `config/detection.yaml` | Windows (1/10/60 s), rule thresholds, statistical method parameters, which detections become alerts ([design](Docs/ArchitectureDocument/detection/README.md)) |
 | `libs/common/.../schemas/*.json` | Message contracts |
 
 ## Tests
@@ -120,8 +120,10 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
 - [Vision Document](Docs/VisionDoccument/README.md) - requirements F01-F17, NFR01-NFR11
 - Architecture Document: [data ingestion and the flow model](Docs/ArchitectureDocument/README.md),
   [dashboard](Docs/ArchitectureDocument/dashboard/README.md),
+  [detection engine and alerts](Docs/ArchitectureDocument/detection/README.md),
   [deployment, CI/CD and testing](Docs/ArchitectureDocument/deployment/README.md)
 - [Domain Data Model](Docs/DomainDataModel/README.md) and [Database Schema](Docs/DatabaseSchema/README.md)
 - [Backend and Data Storage](Docs/BackendAndDataStorage/README.md) - API, authentication, endpoints
 - [Test Plan](Docs/TestPlan/README.md)
+- [Work Schedule](Docs/WorkSchedule/README.md) - plan per week and team member
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

@@ -1,11 +1,25 @@
-"""Broker-free tests: load generator output -> processor windows -> detection that passes the schema."""
+"""Broker-free tests: load generator output -> detection engine windows -> detection that passes the schema."""
 
+from pathlib import Path
+
+from detection_engine import DetectionEngine, load_config
 from loadgen import generate, normal_flow, port_scan_flow
-from processor import WindowState, port_scan_rule
 
 from netguard_common import validate_detection, validate_flow
 
-T0 = 1_760_000_000.0  # aligned to a 10 s boundary
+T0 = 1_760_000_040.0  # aligned to a 60 s (and so 10 s and 1 s) boundary
+CONFIG = Path(__file__).resolve().parents[2] / "config" / "detection.yaml"
+
+
+def engine() -> DetectionEngine:
+    return DetectionEngine(load_config(str(CONFIG)))
+
+
+def scan(e: DetectionEngine, ports: int, ts: float = T0 + 1, wall: float = T0 + 1) -> None:
+    for p in range(1, ports + 1):
+        f = port_scan_flow(ts, "10.66.6.6", "10.1.0.1")
+        f["dst_port"] = p
+        e.add(f, wall)
 
 
 def test_generated_flows_match_schema():
@@ -15,60 +29,59 @@ def test_generated_flows_match_schema():
 
 
 def test_port_scan_detected_and_valid():
-    """UT-07"""
-    ws = WindowState(size_s=10)
-    for _ in range(300):
-        ws.add(port_scan_flow(T0 + 1, "10.66.6.6", "10.1.0.1"))
-    closed = ws.pop_closed(now=T0 + 12)
-    assert len(closed) == 1
-    src, start, w = closed[0]
-    det = port_scan_rule(src, start, w, 10, threshold=100, now=T0 + 12)
-    assert det is not None
+    """UT-07: port scan above the threshold, with its evidence (F09)."""
+    e = engine()
+    scan(e, 300)
+    dets = [d for d in e.evaluate(T0 + 12) if d["type"] == "port_scan"]
+    assert len(dets) == 1
+    det = dets[0]
     validate_detection(det)
     assert det["src_ip"] == "10.66.6.6"
-    assert det["features"]["unique_dst_ports"] > 100
-    assert det["severity"] in {"MEDIUM", "HIGH", "CRITICAL", "LOW"}
+    assert det["dst_ip"] == "10.1.0.1"
+    assert det["features"]["unique_dst_ports"] == 300
+    assert det["features"]["threshold"] == 100
+    assert det["window"] == {"size_s": 10, "start": T0, "end": T0 + 10}
+    assert det["severity"] == "HIGH"  # 300 / 100 = 3.0
+    assert "300 distinct destination ports" in det["explanation"]
 
 
 def test_first_and_last_ingested_at():
     """UT-07: NFR02 latency is measured from last_ingested_at, time to detect from first_ingested_at."""
-    ws = WindowState(size_s=10)
-    for port, ingested_at in [(1, T0 + 1), (2, T0 + 5), (3, T0 + 3)]:
+    e = engine()
+    for port in range(1, 101):
         flow = port_scan_flow(T0 + 1, "10.66.6.6", "10.1.0.1")
-        flow.update(dst_port=port, ingested_at=ingested_at)
-        ws.add(flow)
-    ((src, start, w),) = ws.pop_closed(T0 + 12)
-    det = port_scan_rule(src, start, w, 10, threshold=3, now=T0 + 12)
+        flow.update(dst_port=port, ingested_at=T0 + 1 + (4 if port == 50 else 0))
+        e.add(flow, T0 + 1)
+    (det,) = e.evaluate(T0 + 12)
     assert (det["first_ingested_at"], det["last_ingested_at"]) == (T0 + 1, T0 + 5)
 
 
 def test_normal_traffic_no_detection():
     """UT-08"""
-    ws = WindowState(size_s=10)
+    e = engine()
     for _ in range(2000):
-        ws.add(normal_flow(T0 + 1))
-    dets = [port_scan_rule(s, st, w, 10, 100, T0 + 12) for s, st, w in ws.pop_closed(T0 + 12)]
-    assert not any(dets)
+        e.add(normal_flow(T0 + 1), T0 + 1)
+    assert e.evaluate(T0 + 1) == []
+    assert e.evaluate(T0 + 62) == []
 
 
 def test_open_window_not_closed_early():
-    """UT-06"""
-    ws = WindowState(size_s=10, grace_s=1)
-    ws.add(port_scan_flow(T0 + 5, "10.66.6.6", "10.1.0.1"))
-    assert ws.pop_closed(now=T0 + 10.5) == []
-    assert len(ws.pop_closed(now=T0 + 11)) == 1
+    """UT-06: closes after size + grace of flow time, not before."""
+    e = engine()
+    e.add(port_scan_flow(T0 + 5, "10.66.6.6", "10.1.0.1"), T0 + 5)
+    ten = e.sources[10]
+    e.evaluate(T0 + 10.5)
+    assert len(ten.windows) == 1
+    e.evaluate(T0 + 11)
+    assert len(ten.windows) == 0
 
 
 def test_duplicate_flows_give_same_detection_id():
     """UT-09"""
 
     def run():
-        ws = WindowState(size_s=10)
-        for p in range(150):
-            f = port_scan_flow(T0 + 1, "10.66.6.6", "10.1.0.1")
-            f["dst_port"] = p + 1
-            ws.add(f)
-        ((s, st, w),) = ws.pop_closed(T0 + 12)
-        return port_scan_rule(s, st, w, 10, 100, T0 + 12)["detection_id"]
+        e = engine()
+        scan(e, 150)
+        return [d["detection_id"] for d in e.evaluate(T0 + 12)]
 
     assert run() == run()

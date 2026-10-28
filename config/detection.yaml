@@ -1,31 +1,47 @@
 # Default detection parameters (project spec 4.4: thresholds and parameters must be configurable).
-# Owner: Member 2. Values below are placeholders - tune them on the labelled dataset in week 5
+# Owner: Member 2. Values below are first estimates - tune them on the labelled dataset in week 5
 # (threshold sweep, test case DQ-04 in Docs/TestPlan).
+# The processor checks this file at start-up and refuses to start on a missing or invalid value (UT-17).
+# Design: Docs/ArchitectureDocument/detection/README.md
 
-windows_s: [1, 10, 60]
+windows_s: [1, 10, 60]     # F05; every window_s below must be one of these
+grace_s: 1.0               # a window closes this long (flow time) after its end, to wait for slightly late flows
 
-rules:
-  port_scan:
+rules:                     # F06 / spec 9.1, method "rule"; a rule fires when observed >= threshold in its window
+  port_scan:               # one source -> many different destination ports
     window_s: 10
     unique_dst_ports_threshold: 100
-  dos:
+  dos:                     # many connections or packets directed at one target
     window_s: 1
     connections_to_target_threshold: 500
-  brute_force:
+    packets_to_target_threshold: 20000
+    ddos_min_sources: 10   # the target-level (DDoS-like) check needs at least this many sources
+  brute_force:             # many repeated attempts to the same target/service
     window_s: 60
     attempts_same_service_threshold: 50
     services: [22, 3389, 21, 23]
-  abnormal_traffic:
+  suspicious_pattern:      # spec "Abnormal Connection Pattern": deviation from the source's connection profile
     window_s: 60
-    baseline_window_s: 600
+    new_dst_ips_threshold: 50  # hosts the source has not contacted during the last profile_window_s
+    profile_window_s: 600
 
-statistical:
-  method: zscore           # or isolation_forest
+statistical:               # F07, method "statistical": per-source z-score against the source's own history
+  method: zscore           # only zscore is implemented; isolation_forest is a later option
+  window_s: 60
+  baseline_window_s: 600   # history = the last 600 s of closed windows (10 windows of 60 s)
+  min_baseline_windows: 10 # no statistical detection before this many windows of history
   zscore_threshold: 3.0
-  min_baseline_windows: 10
 
-severity:                  # ratio = observed / threshold
-  LOW: 1.0
+severity:                  # ratio = observed / threshold (z / zscore_threshold for the statistical method)
+  LOW: 1.0                 # the highest level whose value is <= ratio wins
   MEDIUM: 1.5
   HIGH: 3.0
   CRITICAL: 5.0
+
+# Which detections become alerts (F17). Every detection is stored and visible in the history; only the ones
+# below raise an alert the operator has to acknowledge.
+alerts:
+  min_severity: MEDIUM     # LOW = just above the threshold, where most false positives are (DQ-02, DQ-04)
+  min_severity_by_type:    # stricter for the class with the least evidence behind it
+    unknown: HIGH
+  cooldown_s: 300          # one alert per (type, source, destination) per 5 min, unless the severity goes up
