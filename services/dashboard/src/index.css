@@ -29,6 +29,10 @@ body {
   background: var(--bg);
 }
 
+a {
+  color: var(--accent);
+}
+
 h1 {
   margin: 0;
   font-size: 22px;
@@ -357,6 +361,116 @@ select {
 
 .badge-critical {
   background: var(--sev-critical);
+}
+
+/* Alert status */
+.status {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-new {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.status-acknowledged {
+  border-color: var(--ok);
+  background: #ebfbee;
+  color: #1f7a33;
+}
+
+/* Alert list */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.filters label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.filters input {
+  width: 140px;
+}
+
+.btn-small {
+  padding: 3px 10px;
+  font-size: 12px;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.pager-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+/* Alert details */
+.alert-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.section-gap {
+  margin-top: 16px;
+}
+
+.kv {
+  margin: 0;
+}
+
+.kv > div {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 12px;
+  padding: 8px 0;
+  border-top: 1px solid #eceff3;
+}
+
+.kv dt {
+  color: var(--muted);
+}
+
+.kv dd {
+  margin: 0;
+}
+
+.explanation {
+  margin: 0;
+  line-height: 1.5;
+}
+
+.mono {
+  font-family: Consolas, Menlo, monospace;
+  font-size: 12px;
 }
 
 /* Login */

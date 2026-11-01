@@ -2,6 +2,8 @@ import { Navigate, Route, Routes } from 'react-router'
 import { LoginPage } from './auth/LoginPage'
 import { RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
+import { AlertDetailsPage } from './pages/AlertDetailsPage'
+import { AlertsPage } from './pages/AlertsPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { PlannedPage } from './pages/PlannedPage'
 
@@ -17,15 +19,8 @@ export function App() {
         }
       >
         <Route index element={<OverviewPage />} />
-        <Route
-          path="alerts"
-          element={
-            <PlannedPage title="Alerts" week={5}>
-              Alert list with filters by time, status, severity, type and IP, alert details with evidence, and
-              acknowledge.
-            </PlannedPage>
-          }
-        />
+        <Route path="alerts" element={<AlertsPage />} />
+        <Route path="alerts/:id" element={<AlertDetailsPage />} />
         <Route
           path="history"
           element={
