@@ -1,27 +1,35 @@
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts'
+import type { TimeseriesPoint } from '../api/dashboard'
 import { SEVERITIES } from '../api/detections'
-import type { SeverityBucket } from '../lib/buckets'
-import { formatTime } from '../lib/format'
+import { formatAxisNumber, formatClock, formatTime } from '../lib/format'
+import { SEVERITY_COLORS } from '../lib/severity'
+import { BAR_STYLE, CHART_AXIS, CHART_GRID, legendText, TOOLTIP_STYLE } from './chartStyle'
 
-// Same colours as the severity badges in index.css.
-const COLORS = {
-  LOW: '#868e96',
-  MEDIUM: '#e8a400',
-  HIGH: '#e8590c',
-  CRITICAL: '#c92a2a',
-}
-
-export function DetectionsChart({ data }: { data: SeverityBucket[] }) {
+export function DetectionsChart({ data, showSeconds }: { data: TimeseriesPoint[]; showSeconds: boolean }) {
+  const formatTick = showSeconds ? formatTime : formatClock
   return (
     <ResponsiveContainer width="100%" height={240}>
       <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
-        <CartesianGrid strokeDasharray="3 4" vertical={false} stroke="#d0d4da" />
-        <XAxis dataKey="ts" tickFormatter={(ts: number) => formatTime(ts)} minTickGap={40} fontSize={11} />
-        <YAxis allowDecimals={false} fontSize={11} />
-        <Tooltip labelFormatter={(ts) => formatTime(Number(ts))} />
-        <Legend iconType="square" iconSize={10} itemSorter={null} wrapperStyle={{ fontSize: 12 }} />
+        <CartesianGrid vertical={false} stroke={CHART_GRID} />
+        <XAxis dataKey="timestamp" tickFormatter={(ts: string) => formatTick(ts)} minTickGap={40} {...CHART_AXIS} />
+        <YAxis allowDecimals={false} tickFormatter={formatAxisNumber} {...CHART_AXIS} />
+        <Tooltip labelFormatter={(ts) => formatTick(String(ts))} {...TOOLTIP_STYLE} />
+        <Legend
+          iconType="square"
+          iconSize={10}
+          itemSorter={null}
+          formatter={legendText}
+          wrapperStyle={{ fontSize: 12 }}
+        />
         {SEVERITIES.map((s) => (
-          <Bar key={s} dataKey={s} stackId="severity" fill={COLORS[s]} isAnimationActive={false} />
+          <Bar
+            key={s}
+            dataKey={`detections_by_severity.${s}`}
+            name={s}
+            stackId="severity"
+            fill={SEVERITY_COLORS[s]}
+            {...BAR_STYLE}
+          />
         ))}
       </BarChart>
     </ResponsiveContainer>
