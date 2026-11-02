@@ -41,24 +41,32 @@ time. Ranges containing no records return zero counts. The three independent cou
 
 [Dashboard documentation and tests](dashboard/README.md).
 
-- [x] `GET /api/v1/dashboard/timeseries` - retrieve shared UTC buckets containing flow and detection counts.
+- [x] `GET /api/v1/dashboard/timeseries` - retrieve shared UTC buckets containing flow and severity-grouped detection counts.
 
 Requires the same Bearer access token as summary. Optional query parameters:
-`from` (inclusive), `to` (exclusive), and `interval` (`5m`, `15m`, `1h`, `1d`).
-Defaults to the last 24 hours and `1h`. Empty buckets contain zeros; results are
-chronological. Counts use `network_flows.ts_start` and `detections.created_at`.
-Bounds are ISO 8601 timestamps with timezones and responses use UTC. Queries may
-span at most 366 days and intersect at most 2000 buckets; invalid input returns 422.
+`start_time` (inclusive), `end_time` (exclusive), and `interval`
+(`10s`, `30s`, `1m`, `5m`, `15m`, `1h`, `1d`). Bounds default to the last 24 hours
+and interval defaults to `1h`. Empty buckets contain zeros; results are chronological
+and UTC-aligned. Counts use `network_flows.ts_start` and `detections.created_at`;
+each bucket includes counts for `LOW`, `MEDIUM`, `HIGH` and `CRITICAL`, whose sum
+equals `detections_count`. Bounds are ISO 8601 timestamps with timezones and responses
+use UTC. Queries may span at most 366 days and intersect at most 2000 buckets;
+invalid input returns 422.
 
-Example: `GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T03:00:00Z&interval=1h`
+Example: `GET /api/v1/dashboard/timeseries?start_time=2026-10-20T00:00:00Z&end_time=2026-10-20T03:00:00Z&interval=1h`
 
 [Time-series contract](dashboard/README.md#time-series).
 
 ## Alerts
 
-- [ ] `GET /api/v1/alerts` - list alerts with filtering, sorting and pagination.
-- [ ] `GET /api/v1/alerts/{id}` - retrieve an alert and its related detection.
-- [ ] `PATCH /api/v1/alerts/{id}/acknowledge` - mark an alert as acknowledged.
+- [x] `GET /api/v1/alerts` - list alerts with detection summary, filtering, sorting and pagination.
+- [x] `GET /api/v1/alerts/{id}` - retrieve an alert and its related detection.
+- [x] `PATCH /api/v1/alerts/{id}/acknowledge` - mark an alert as acknowledged.
+
+Each alert list item contains its alert fields and a nested `detection` object with
+`type`, `severity`, `confidence`, `src_ip`, `dst_ip` and `protocol`. Nullable detection values
+are returned as `null`; filtering, ordering, pagination and the pre-pagination total
+are preserved.
 
 ## Detections
 

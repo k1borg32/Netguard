@@ -34,15 +34,17 @@ the start must precede the end. See the endpoint plan for a request example.
 
 `GET /api/v1/dashboard/timeseries` returns unified flow and detection counts in
 UTC-aligned time buckets. It requires the same Bearer access token as summary.
-Optional query parameters are `from`, `to` (ISO 8601 timestamps with timezones)
-and `interval` (`5m`, `15m`, `1h`, `1d`; default `1h`). Offsets are normalized to UTC.
-`to` defaults to now; `from` defaults to 24 hours before the resolved `to`.
-With only `from`, the range ends now. Equal/reversed bounds, invalid timestamps,
+Optional query parameters are `start_time`, `end_time` (ISO 8601 timestamps with
+timezones) and `interval` (`10s`, `30s`, `1m`, `5m`, `15m`, `1h`, `1d`; default `1h`).
+Offsets are normalized to UTC. `end_time` defaults to now; `start_time` defaults
+to 24 hours before the resolved `end_time`. Equal/reversed bounds, invalid timestamps,
 unsupported intervals, ranges over 366 days and results over 2000 buckets return
-`422`. The bucket limit includes partial buckets.
+`422`. The bucket limit includes partial buckets. Each bucket reports
+`detections_by_severity` with all four severity keys; their counts sum to
+`detections_count`, including zero-filled buckets.
 
 ```http
-GET /api/v1/dashboard/timeseries?from=2026-10-20T00:00:00Z&to=2026-10-20T03:00:00Z&interval=1h
+GET /api/v1/dashboard/timeseries?start_time=2026-10-20T00:00:00Z&end_time=2026-10-20T03:00:00Z&interval=1h
 Authorization: Bearer <access_token>
 ```
 
@@ -50,23 +52,25 @@ Example response for an empty range:
 
 ```json
 {
-  "from": "2026-10-20T00:00:00Z",
-  "to": "2026-10-20T03:00:00Z",
+  "start_time": "2026-10-20T00:00:00Z",
+  "end_time": "2026-10-20T03:00:00Z",
   "interval": "1h",
   "data": [
-    {"timestamp": "2026-10-20T00:00:00Z", "flows_count": 0, "detections_count": 0},
-    {"timestamp": "2026-10-20T01:00:00Z", "flows_count": 0, "detections_count": 0},
-    {"timestamp": "2026-10-20T02:00:00Z", "flows_count": 0, "detections_count": 0}
+    {"timestamp": "2026-10-20T00:00:00Z", "flows_count": 0, "detections_count": 0, "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}},
+    {"timestamp": "2026-10-20T01:00:00Z", "flows_count": 0, "detections_count": 0, "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}},
+    {"timestamp": "2026-10-20T02:00:00Z", "flows_count": 0, "detections_count": 0, "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0}}
   ]
 }
 ```
 
-The range is `[from, to)`, filtering flows by `ts_start` and detections by
-`created_at`. Buckets are ordered, empty buckets contain zeros, and partial
-buckets only count records inside the requested range. A bucket timestamp marks
-its UTC-aligned start, which may precede `from`; a rolling 24-hour range can
-therefore intersect 25 hourly buckets. Response bounds preserve the exact range
-and all timestamps are serialized in UTC with `Z`.
+The range is `[start_time, end_time)`, filtering flows by `ts_start` and detections
+by `created_at`. Buckets are ordered, empty buckets contain zeros, and partial
+buckets only count records inside the requested range. Each bucket includes
+`detections_by_severity` for `LOW`, `MEDIUM`, `HIGH` and `CRITICAL`; these counts
+sum to `detections_count`. A bucket timestamp marks its UTC-aligned start, which
+may precede `start_time`; a rolling 24-hour range can therefore intersect 25
+hourly buckets. Response bounds preserve the exact range and all timestamps are
+serialized in UTC with `Z`.
 
 Like other features, the controller constructs its handler directly; the handler
 uses the injected request-scoped `AsyncSession`. One parameterized SQL statement

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 from typing import Self
 
-from pydantic import AwareDatetime, BaseModel, Field, field_validator, model_validator
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .query import BUCKET_SIZES, TimeseriesInterval
 
@@ -11,17 +11,17 @@ BUCKET_ORIGIN = datetime(1970, 1, 1, tzinfo=UTC)
 
 
 class DashboardTimeseriesRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     start_time: AwareDatetime | None = Field(
         default=None,
-        alias="from",
-        description="Inclusive start (ISO 8601 with timezone); defaults to to minus 24 hours.",
+        description="Inclusive start (ISO 8601 with timezone); defaults to end_time minus 24 hours.",
     )
     end_time: AwareDatetime = Field(
         default_factory=lambda: datetime.now(UTC),
-        alias="to",
         description="Exclusive end (ISO 8601 with timezone); defaults to now in UTC.",
     )
-    interval: TimeseriesInterval = Field(default="1h", description="UTC bucket size: 5m, 15m, 1h or 1d.")
+    interval: TimeseriesInterval = Field(default="1h", description="UTC bucket size: 10s, 30s, 1m, 5m, 15m, 1h or 1d.")
 
     @field_validator("start_time", "end_time", mode="before")
     @classmethod
@@ -41,7 +41,7 @@ class DashboardTimeseriesRequest(BaseModel):
         except (OverflowError, ValueError) as exc:
             raise ValueError("Time range cannot be represented in UTC") from exc
         if self.start_time >= self.end_time:
-            raise ValueError("from must be before to")
+            raise ValueError("start_time must be before end_time")
         if self.end_time - self.start_time > MAX_RANGE:
             raise ValueError("Time range must not exceed 366 days")
 

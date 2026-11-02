@@ -1,11 +1,10 @@
 from sqlalchemy import func, select, true
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.features.alerts.common.response import AlertResponse
 from app.infrastructure.persistence.tables import alerts, detections
 
 from .query import ListAlertsQuery
-from .response import ListAlertsResponse
+from .response import AlertListItemResponse, ListAlertsResponse
 
 
 class ListAlertsHandler:
@@ -13,7 +12,15 @@ class ListAlertsHandler:
         self._session = session
 
     async def handle(self, query: ListAlertsQuery) -> ListAlertsResponse:
-        statement = select(alerts).select_from(alerts.join(detections))
+        statement = select(
+            alerts,
+            detections.c.type.label("detection_type"),
+            detections.c.severity.label("detection_severity"),
+            detections.c.confidence.label("detection_confidence"),
+            detections.c.src_ip.label("detection_src_ip"),
+            detections.c.dst_ip.label("detection_dst_ip"),
+            detections.c.protocol.label("detection_protocol"),
+        ).select_from(alerts.join(detections))
         if query.start_time is not None:
             statement = statement.where(alerts.c.created_at >= query.start_time)
         if query.end_time is not None:
@@ -52,7 +59,27 @@ class ListAlertsHandler:
         )
         rows = result.mappings().all()
         return ListAlertsResponse(
-            items=[AlertResponse.model_validate(row) for row in rows if row["alert_id"] is not None],
+            items=[
+                AlertListItemResponse.model_validate(
+                    {
+                        "alert_id": row["alert_id"],
+                        "detection_id": row["detection_id"],
+                        "status": row["status"],
+                        "created_at": row["created_at"],
+                        "acknowledged_at": row["acknowledged_at"],
+                        "detection": {
+                            "type": row["detection_type"],
+                            "severity": row["detection_severity"],
+                            "confidence": row["detection_confidence"],
+                            "src_ip": row["detection_src_ip"],
+                            "dst_ip": row["detection_dst_ip"],
+                            "protocol": row["detection_protocol"],
+                        },
+                    }
+                )
+                for row in rows
+                if row["alert_id"] is not None
+            ],
             total=rows[0]["total"],
             page=query.page,
             page_size=query.page_size,

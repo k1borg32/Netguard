@@ -20,9 +20,11 @@ router = APIRouter()
     dependencies=[Depends(require_roles(UserRole.USER, UserRole.ADMIN))],
     summary="Count network flows and detections over time",
     description=(
-        "Counts flows by ts_start and detections by created_at in [from, to). "
+        "Counts flows by ts_start and detections by created_at in [start_time, end_time). "
         "Defaults to the last 24 hours and 1h buckets. UTC-aligned buckets include "
-        "empty and partial buckets; the first timestamp may precede from. "
+        "empty and partial buckets; the first timestamp may precede start_time. "
+        "Each bucket includes detection counts for LOW, MEDIUM, HIGH and CRITICAL. "
+        "Supported intervals: 10s, 30s, 1m, 5m, 15m, 1h and 1d. "
         "Maximum range: 366 days and 2000 buckets."
     ),
     responses={

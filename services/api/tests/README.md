@@ -18,9 +18,10 @@ HTTP contract validation can be checked without starting a server.
 comparisons across timezones, the smallest positive range and an invalid start.
 We do not mock SQLAlchemy sessions to test handler queries.
 
-`unit/test_dashboard_timeseries_request.py` contains 5 essential cases:
-the default start relative to the end and UTC normalization, both exact query
-limits, the limit including partial buckets, and rejection of naive timestamps.
+`unit/test_dashboard_timeseries_request.py` covers the default start relative to
+the end and UTC normalization, exact range and bucket limits, supported intervals,
+the limit including partial buckets, and rejection of naive, malformed, reversed
+or legacy-named time parameters.
 
 `unit/test_list_flows_request.py` covers optional flow filters, port and pagination
 bounds, valid IP addresses and timezone-aware range comparisons.
@@ -33,10 +34,10 @@ Dashboard tests also cover range boundaries, timezones, invalid parameters,
 access without a valid token, adjacent ranges and passing filters in the URL.
 [Dashboard documentation](../../../Docs/ManagementAPI/dashboard/README.md).
 
-`integration/test_dashboard_timeseries.py` contains 13 essential cases:
-aggregation of both datasets for four intervals, empty and partial buckets,
-ordering, `[from, to)` boundaries, the default 24-hour range, invalid parameters,
-excessive ranges and missing authentication.
+`integration/test_dashboard_timeseries.py` covers aggregation of both datasets
+for all seven intervals, severity totals and zero filling, empty and partial
+buckets, ordering, `[start_time, end_time)` boundaries, the default 24-hour range,
+invalid parameters, excessive ranges, OpenAPI and missing authentication.
 [Time-series contract](../../../Docs/ManagementAPI/dashboard/README.md#time-series).
 
 - A separate Docker Compose project starts once per session on a random local port.

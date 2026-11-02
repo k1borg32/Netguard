@@ -35,6 +35,7 @@ def insert_alert(db: psycopg.Connection):
         created_at=START,
         status="NEW",
         severity="HIGH",
+        confidence=None,
         detection_type="port_scan",
         src_ip="192.0.2.1",
         dst_ip="2001:db8::1",
@@ -44,9 +45,10 @@ def insert_alert(db: psycopg.Connection):
         alert_id = alert_id or uuid4()
         detection_id = uuid4()
         db.execute(
-            "INSERT INTO detections (detection_id, created_at, type, method, severity, src_ip, dst_ip, protocol) "
-            "VALUES (%s, %s, %s, 'threshold', %s, %s, %s, %s)",
-            (detection_id, START - timedelta(days=2), detection_type, severity, src_ip, dst_ip, protocol),
+            "INSERT INTO detections "
+            "(detection_id, created_at, type, method, severity, confidence, src_ip, dst_ip, protocol) "
+            "VALUES (%s, %s, %s, 'threshold', %s, %s, %s, %s, %s)",
+            (detection_id, START - timedelta(days=2), detection_type, severity, confidence, src_ip, dst_ip, protocol),
         )
         db.execute(
             "INSERT INTO alerts (alert_id, detection_id, created_at, status, acknowledged_at) "
@@ -87,6 +89,42 @@ def test_empty_list(client, headers) -> None:
     assert response.json()["total_pages"] == 0
     assert response.json()["has_next"] is False
     assert response.json()["has_previous"] is False
+
+
+def test_list_items_include_joined_detection_fields_and_nullable_values(client, headers, insert_alert) -> None:
+    alert_id, detection_id = insert_alert(confidence=0.875)
+    # A different detection per alert detects rows paired with the wrong detection.
+    nullable_alert_id, _ = insert_alert(
+        severity="LOW", detection_type="dns_anomaly", src_ip=None, dst_ip=None, protocol=None, confidence=None
+    )
+
+    response = client.get(URL, params={"sort_order": "asc"}, headers=headers)
+
+    assert response.status_code == 200, response.text
+    items = {item["alert_id"]: item for item in response.json()["items"]}
+    assert items[str(alert_id)] == {
+        "alert_id": str(alert_id),
+        "detection_id": str(detection_id),
+        "status": "NEW",
+        "created_at": "2026-01-01T00:00:00Z",
+        "acknowledged_at": None,
+        "detection": {
+            "type": "port_scan",
+            "severity": "HIGH",
+            "confidence": 0.875,
+            "src_ip": "192.0.2.1",
+            "dst_ip": "2001:db8::1",
+            "protocol": "TCP",
+        },
+    }
+    assert items[str(nullable_alert_id)]["detection"] == {
+        "type": "dns_anomaly",
+        "severity": "LOW",
+        "confidence": None,
+        "src_ip": None,
+        "dst_ip": None,
+        "protocol": None,
+    }
 
 
 @pytest.mark.parametrize("direction", ["asc", "desc"])
@@ -267,7 +305,10 @@ def test_acknowledgement_commits_is_idempotent_and_only_changes_target(client, d
     detail = client.get(f"{URL}/{alert_id}", headers=headers)
     assert detail.json()["acknowledged_at"] == body["acknowledged_at"]
     listed = client.get(URL, params={"status": "ACKNOWLEDGED"}, headers=headers)
-    assert listed.json()["items"] == [body]
+    assert len(listed.json()["items"]) == 1
+    item = listed.json()["items"][0]
+    assert item.pop("detection")["type"] == "port_scan"
+    assert item == body
 
 
 def test_concurrent_acknowledgements_share_first_timestamp(client, db, headers, insert_alert) -> None:
@@ -356,6 +397,14 @@ def test_openapi_documents_authentication_query_and_path_parameters(client) -> N
         "total_pages",
         "has_next",
         "has_previous",
+    }
+    assert set(schema["components"]["schemas"]["AlertListDetectionResponse"]["required"]) == {
+        "type",
+        "severity",
+        "confidence",
+        "src_ip",
+        "dst_ip",
+        "protocol",
     }
     for path, method in [(URL, "get"), (URL + "/{id}", "get"), (URL + "/{id}/acknowledge", "patch")]:
         operation = schema["paths"][path][method]

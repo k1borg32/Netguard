@@ -5,7 +5,7 @@ All three endpoints require a Bearer access token belonging to an existing
 
 ## List
 
-`GET /api/alerts` returns `200 OK` with:
+`GET /api/v1/alerts` returns `200 OK` with:
 
 ```json
 {
@@ -15,7 +15,15 @@ All three endpoints require a Bearer access token belonging to an existing
       "detection_id": "00000000-0000-0000-0000-000000000002",
       "status": "NEW",
       "created_at": "2026-01-01T12:00:00Z",
-      "acknowledged_at": null
+      "acknowledged_at": null,
+      "detection": {
+        "type": "port_scan",
+        "severity": "HIGH",
+        "confidence": 0.92,
+        "src_ip": "192.0.2.1",
+        "dst_ip": "2001:db8::1",
+        "protocol": "TCP"
+      }
     }
   ],
   "total": 1,
@@ -49,6 +57,10 @@ all creation times. Encode `+` as `%2B` in timestamps written directly in a URL.
 
 `total` counts all matching alerts before pagination. Empty lists and pages
 beyond the last page return `items: []`, retaining the matching total.
+Each item includes a `detection` object with the related detection's `type`,
+`severity`, `confidence`, `src_ip`, `dst_ip` and `protocol`. `confidence`, the
+IP addresses and `protocol` are `null` when the detection has no value. The list
+query returns these fields through its existing join, with no per-alert queries.
 `total_pages` is the matching total divided by `page_size`, rounded up. No
 matching records means zero pages. `has_next` indicates that a later page exists;
 `has_previous` indicates that earlier pages exist. Both are false for no results.
@@ -61,7 +73,7 @@ between requests if matching records are inserted or updated.
 Example:
 
 ```http
-GET /api/alerts?status=NEW&severity=HIGH&sort_order=desc&page=1&page_size=20
+GET /api/v1/alerts?status=NEW&severity=HIGH&sort_order=desc&page=1&page_size=20
 Authorization: Bearer <access_token>
 ```
 
@@ -72,8 +84,8 @@ remaining 5 alerts with `has_next=false`.
 
 ## Details
 
-`GET /api/alerts/{id}` accepts an alert UUID and returns `200 OK`. The response
-contains the five alert fields above plus a nested `detection` object:
+`GET /api/v1/alerts/{id}` accepts an alert UUID and returns `200 OK`. The response
+contains the five alert fields above plus a nested `detection` object with full details:
 
 | Detection fields | Contents |
 | --- | --- |
@@ -91,7 +103,7 @@ not modify alert or detection records.
 ## Acknowledge
 
 ```http
-PATCH /api/alerts/00000000-0000-0000-0000-000000000001/acknowledge
+PATCH /api/v1/alerts/00000000-0000-0000-0000-000000000001/acknowledge
 Authorization: Bearer <access_token>
 ```
 
@@ -122,7 +134,8 @@ The existing schema is used without migrations. OpenAPI is available at `/docs`.
 [Integration tests](../../../services/api/tests/integration/test_alerts.py) cover
 both roles, authentication failures on all routes, individual and combined filters,
 IPv6 normalization, half-open time boundaries, optional bounds, stable sorting,
-pagination, empty pages, complete and nullable detection details, persisted and
+pagination, empty pages, complete and nullable detection details and list-item
+detection summaries, persisted and
 concurrent acknowledgement, unchanged unrelated rows, validation and OpenAPI.
 [Unit tests](../../../services/api/tests/unit/test_list_alerts_request.py) cover
 optional bounds and timezone-aware range validation. Integration tests use the
