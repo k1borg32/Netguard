@@ -1,4 +1,7 @@
-"""Unit tests for the replay pacing (services/importer/replay.py), risk R12."""
+"""Unit tests for the replay pacing (services/importer/replay.py), risk R12.
+
+Test plan: UT-21.
+"""
 
 import importlib
 import pathlib

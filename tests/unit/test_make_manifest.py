@@ -1,4 +1,7 @@
-"""Unit tests for the ground-truth manifest generator (services/importer/make_manifest.py)."""
+"""Unit tests for the ground-truth manifest generator (services/importer/make_manifest.py).
+
+Test plan: UT-22.
+"""
 
 import csv
 import importlib

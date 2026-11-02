@@ -1,4 +1,7 @@
-"""Unit tests for the CIC-IDS2017 converter (services/importer/convert_cic.py)."""
+"""Unit tests for the CIC-IDS2017 converter (services/importer/convert_cic.py).
+
+Test plan: UT-20.
+"""
 
 import csv
 import importlib

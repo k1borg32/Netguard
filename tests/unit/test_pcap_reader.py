@@ -2,6 +2,8 @@
 
 Covers flow grouping, flag accumulation and schema validity for the PCAP path
 (IT-03) without needing dpkt or a capture file.
+
+Test plan: UT-11.
 """
 
 import importlib.util
