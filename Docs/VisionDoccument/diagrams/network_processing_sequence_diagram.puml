@@ -3,23 +3,21 @@ title NetGuard - Network Traffic Processing
 
 autonumber
 
-actor "End User / Developer" as User
+actor "End User" as User
 participant "Dashboard" as UI
 participant "REST API" as API
-participant "PCAP Importer / Simulator" as Source
+participant "PCAP Importer" as Source
 queue "Message Broker" as Broker
 participant "Flow Processor" as Processor
 participant "Detection Engine" as Detector
 database "Database" as DB
 
-User -> UI: Start PCAP import / simulation
-UI -> API: Start processing
-API -> Source: Initiate data ingestion
+User -> Source: Import PCAP / flow file
 
-loop For each network packet
-    Source -> Broker: Publish packet event
-    Broker -> Processor: Deliver packet
-    Processor -> Processor: Update network flow statistics
+loop For each network flow
+    Source -> Broker: Publish flow
+    Broker -> Processor: Deliver flow
+    Processor -> Processor: Update window statistics
 end
 
 Processor -> Detector: Submit network flows

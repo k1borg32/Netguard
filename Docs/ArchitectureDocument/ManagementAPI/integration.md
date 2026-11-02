@@ -4,7 +4,7 @@ This is the original target integration plan. The
 [current endpoint plan](../../ManagementAPI/endpoints.md) records implemented paths
 and contracts, including JWT authentication under `/api/v1/auth`, database readiness
 at `/health`, and the pipeline-compatible `/api/v1/detections` list.
-The [current data flow](../README.md#current-data-flow) uses normalized flows on
+The [current data flow](../components.md) uses normalized flows on
 `flows.raw` and a separate persister; the packet-based flow below is a design reference.
 
 ## 1. Provided Interfaces (Backend → Frontend)

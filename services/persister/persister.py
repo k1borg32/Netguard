@@ -2,8 +2,12 @@
 
 Consumes flows.raw and detections, writes to PostgreSQL/TimescaleDB in batches.
 Batching is mandatory for NFR01: one INSERT per flow will not survive 5,000 flows/s.
-Detections use ON CONFLICT DO NOTHING on the deterministic detection_id, so
-re-delivered messages never create duplicate alerts.
+Detections upsert on the deterministic detection_id, so re-delivered messages
+never create duplicates. The detection engine sends a detection again when it
+escalates inside its window; the stored row is only updated when the new
+severity is higher, so redelivery of an older message never downgrades it.
+Detections with `alert: true` (the engine's alert policy, detection.yaml
+`alerts`) also get an alert row; at most one per detection (F17).
 """
 
 from __future__ import annotations
@@ -11,10 +15,12 @@ from __future__ import annotations
 import json
 import os
 import time
+import uuid
 
 import psycopg
 
 from netguard_common import get_logger, setup_logging, topics
+from netguard_common.messages import NETGUARD_NS
 
 log = get_logger("persister")
 
@@ -67,6 +73,29 @@ def detection_row(d: dict) -> tuple:
     )
 
 
+def alert_row(d: dict) -> tuple:
+    """Deterministic alert_id, so a redelivered detection maps to the same alert."""
+    return (str(uuid.uuid5(NETGUARD_NS, f"alert|{d['detection_id']}")), d["detection_id"], d["created_at"])
+
+
+SEVERITY_ORDER = "ARRAY['LOW','MEDIUM','HIGH','CRITICAL']"
+DET_SQL = (
+    "INSERT INTO detections (detection_id, created_at, first_ingested_at, last_ingested_at, type, method, "
+    "severity, confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, "
+    "trace_ids) VALUES (%s, to_timestamp(%s), to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, "
+    "%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s) "
+    # escalation: keep created_at (latency is measured to the first detection), take the stronger evidence
+    "ON CONFLICT (detection_id) DO UPDATE SET severity = EXCLUDED.severity, confidence = EXCLUDED.confidence, "
+    "last_ingested_at = EXCLUDED.last_ingested_at, features = EXCLUDED.features, "
+    "explanation = EXCLUDED.explanation, trace_ids = EXCLUDED.trace_ids "
+    f"WHERE array_position({SEVERITY_ORDER}, EXCLUDED.severity) > array_position({SEVERITY_ORDER}, detections.severity)"
+)
+ALERT_SQL = (
+    "INSERT INTO alerts (alert_id, detection_id, status, created_at) VALUES (%s, %s, 'NEW', to_timestamp(%s)) "
+    "ON CONFLICT (detection_id) DO NOTHING"
+)
+
+
 def main() -> None:
     from netguard_common.broker import ensure_topics, make_consumer, poll_batch
 
@@ -75,13 +104,6 @@ def main() -> None:
     consumer = make_consumer("persister", [topics.FLOWS_RAW, topics.DETECTIONS])
     conn = psycopg.connect(os.environ["DATABASE_URL"], autocommit=False)
     log.info("persister started")
-
-    det_sql = (
-        "INSERT INTO detections (detection_id, created_at, first_ingested_at, last_ingested_at, type, method, "
-        "severity, confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, "
-        "trace_ids) VALUES (%s, to_timestamp(%s), to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, "
-        "%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s) ON CONFLICT (detection_id) DO NOTHING"
-    )
 
     while True:
         flows, dets = [], []
@@ -95,10 +117,13 @@ def main() -> None:
             if flows:
                 cur.executemany(FLOW_INSERT_SQL, [flow_row(f) for f in flows])
             if dets:
-                cur.executemany(det_sql, [detection_row(d) for d in dets])
+                cur.executemany(DET_SQL, [detection_row(d) for d in dets])
+            alerts = [alert_row(d) for d in dets if d.get("alert")]
+            if alerts:  # after the detections: alerts.detection_id references them
+                cur.executemany(ALERT_SQL, alerts)
         conn.commit()
         consumer.commit(asynchronous=False)  # only after DB commit -> at-least-once
-        log.info("batch written", extra={"flows": len(flows), "detections": len(dets)})
+        log.info("batch written", extra={"flows": len(flows), "detections": len(dets), "alerts": len(alerts)})
 
 
 if __name__ == "__main__":

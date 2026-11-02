@@ -64,6 +64,17 @@ services:
     command: ["python", "simulator.py"]
     profiles: [sim]                   # started on demand: make sim / make perf
 
+  importer:
+    <<: *py
+    build: { context: ., dockerfile: services/python.Dockerfile, args: { SERVICE: importer } }
+    command: ["python", "importer.py"]
+    environment:
+      BROKER_BOOTSTRAP: redpanda:9092
+      FLOW_FILE: /app/data/flows/sample.csv
+    volumes:
+      - ./data:/app/data:ro
+    profiles: [import]
+
   processor:
     <<: *py
     build: { context: ., dockerfile: services/python.Dockerfile, args: { SERVICE: processor } }

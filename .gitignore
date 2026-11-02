@@ -21,6 +21,7 @@ data/pcap/*.pcap
 !data/pcap/.gitkeep
 data/runs/
 results/
+!data/pcap/sample.pcap
 
 .idea/
 .vscode/

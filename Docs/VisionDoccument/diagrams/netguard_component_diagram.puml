@@ -1,14 +1,13 @@
 
 @startuml
+!pragma layout smetana
 title Netguard - Component Diagram
 
 skinparam componentStyle rectangle
 skinparam shadowing false
-left to right direction
 
 package "Data Sources" {
     component "PCAP Importer" as PCAP
-    component "Traffic Simulator" as Simulator
 }
 
 package "Message Infrastructure" {
@@ -29,10 +28,9 @@ package "Presentation" {
     component "Monitoring Dashboard" as Dashboard
 }
 
-PCAP --> Broker : Network packets
-Simulator --> Broker : Synthetic traffic
+PCAP --> Broker : Network flows
 
-Broker --> Flow : Packet events
+Broker --> Flow : Flow events
 
 Flow --> Detection : Network flows
 Flow --> DB : Persist flows

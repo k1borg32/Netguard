@@ -1,0 +1,2 @@
+# importer: dpkt parses PCAP files; everything else is netguard_common + stdlib
+dpkt>=1.9.8

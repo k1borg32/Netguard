@@ -33,6 +33,7 @@
       }
     },
     "features":    { "type": "object", "description": "Key feature values, e.g. {unique_dst_ports: 412, threshold: 100} (F09).", "additionalProperties": { "type": ["number", "string", "boolean"] } },
-    "explanation": { "type": "string", "minLength": 1, "maxLength": 2000 }
+    "explanation": { "type": "string", "minLength": 1, "maxLength": 2000 },
+    "alert":       { "type": "boolean", "description": "Optional, missing = false. True if the detection engine's alert policy (detection.yaml `alerts`) says this detection raises an alert (F17). The same detection_id can arrive again with a higher severity; the persister keeps the highest one." }
   }
 }
