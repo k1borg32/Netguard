@@ -27,3 +27,5 @@ results/
 .idea/
 .vscode/
 .DS_Store
+data/raw/
+data/flows/cic*.csv

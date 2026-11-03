@@ -1,0 +1,154 @@
+{
+  "schema_version": 1,
+  "dataset": "LABELLED/cic-friday-portscan",
+  "source": "flowfile",
+  "seed": null,
+  "created_at": 1793650137.734,
+  "episodes": [
+    {
+      "episode_id": "port_scan-001",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499432723.864,
+      "end": 1499432762.5,
+      "params": {
+        "flows": 7,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-002",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499435522.315,
+      "end": 1499435522.315,
+      "params": {
+        "flows": 1,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-003",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499435726.342,
+      "end": 1499436041.171,
+      "params": {
+        "flows": 226,
+        "distinct_dst_ports": 5,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-004",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499436841.586,
+      "end": 1499436961.476,
+      "params": {
+        "flows": 138,
+        "distinct_dst_ports": 5,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-005",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499439060.021,
+      "end": 1499439399.853,
+      "params": {
+        "flows": 138493,
+        "distinct_dst_ports": 998,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-006",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499439810.821,
+      "end": 1499439811.003,
+      "params": {
+        "flows": 2,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-007",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499440080.22,
+      "end": 1499440390.377,
+      "params": {
+        "flows": 11038,
+        "distinct_dst_ports": 1000,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "port_scan-008",
+      "class": "port_scan",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499440867.942,
+      "end": 1499441039.93,
+      "params": {
+        "flows": 9025,
+        "distinct_dst_ports": 999,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    }
+  ],
+  "notes": "CIC-IDS2017 Friday afternoon PortScan (TrafficLabelling, UNB). Labels from the dataset, mapped by convert_cic.py. Timestamps have minute resolution only and were spread evenly within the minute (--spread-minutes), so start/end are accurate to about 1 minute. Attacker 172.16.0.1 is the firewall NAT address of the real attacker 205.174.165.73. Checked by hand against the attack schedule on the dataset page: episodes 003 to 008 lie inside scheduled windows; 001 and 002 are labelled port_scan outside any scheduled window; no labelled flows for 14:01-14:13, 14:57-15:02 and 15:25-15:29."
+}

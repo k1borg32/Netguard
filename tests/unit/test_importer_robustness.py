@@ -1,5 +1,8 @@
 """Robustness tests for the importer (SEC-02): bad input must give a clear error
-(and a summary), never a crash or silent data loss. No dpkt or Docker needed."""
+(and a summary), never a crash or silent data loss. No dpkt or Docker needed.
+
+Test plan: SEC-02, UT-23.
+"""
 
 import importlib
 import pathlib
