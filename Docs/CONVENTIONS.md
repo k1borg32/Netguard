@@ -16,7 +16,7 @@ M1-M5 are the roles from the project spec (section 9):
 |---|---|---|
 | `libs/common/` | M5 | Shared schemas, logging, broker helpers. **Every service uses it.** |
 | `services/importer/` | M1 | PCAP / flow-file import + normalisation (week 3) |
-| `services/simulator/` | M1 (load mode: M5) | Synthetic traffic + 5 scenarios |
+| `services/loadgen/` | M5 | Load generator for the performance tests and CI (test tooling, not part of the product) |
 | `services/processor/` | M2 | Windows, rules, statistical method |
 | `services/persister/`, `services/api/`, `db/` | M3 | Persistence, classification, REST API |
 | `services/dashboard/` | M4 | React dashboard |
@@ -36,7 +36,7 @@ Why key by src_ip: flows from one source always hit the same partition, so they'
 
 ## 3. Trace IDs (F15, NFR08)
 
-- The **first** component that touches data creates `trace_id` (importer or simulator).
+- The **first** component that touches data creates `trace_id` (the importer, or the load generator in tests).
 - Every downstream message copies it (detections carry a sample in `trace_ids`).
 - Every log line is emitted inside `with trace_context(trace_id):` so it appears in the JSON.
 - Debug any event: `make trace ID=<trace_id>`.

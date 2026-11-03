@@ -24,7 +24,7 @@
     "packets":     { "type": "integer", "minimum": 0 },
     "bytes":       { "type": "integer", "minimum": 0 },
     "tcp_flags":   { "type": ["string", "null"], "pattern": "^[FSRPAUEC]*$", "description": "e.g. 'S', 'SA', 'FA'. Null when not TCP / unknown." },
-    "source":      { "enum": ["pcap", "flowfile", "simulator"] },
-    "label":       { "type": ["string", "null"], "enum": [null, "normal", "port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern"], "description": "Ground truth from simulator/labelled datasets. Used ONLY for metrics, never by detectors." }
+    "source":      { "enum": ["pcap", "flowfile", "simulator"], "description": "simulator = synthetic flows from the load generator (tests only)." },
+    "label":       { "type": ["string", "null"], "enum": [null, "normal", "port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern"], "description": "Ground truth from labelled datasets (and the load generator in tests). Used ONLY for metrics, never by detectors." }
   }
 }
