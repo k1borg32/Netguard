@@ -39,7 +39,7 @@ def test_port_scan_reaches_api():
 
     deadline = time.time() + 40
     while time.time() < deadline:
-        if any(d["src_ip"] == attacker for d in _get("/api/v1/detections?limit=200")):
+        if any(d["src_ip"] == attacker for d in _get("/api/v1/detections?limit=200")["items"]):
             return
         time.sleep(2)
     pytest.fail(f"no detection for {attacker} within 40 s")

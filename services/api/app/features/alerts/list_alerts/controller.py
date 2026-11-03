@@ -22,7 +22,7 @@ router = APIRouter()
     description=(
         "Filters are combined with AND. Time bounds apply to alert creation: start_time inclusive, end_time exclusive. "
         "Other detection filters use exact, case-sensitive matches. Sort by created_at, then alert_id in the same "
-        "direction."
+        "direction. Each item includes a detection summary: type, severity, confidence, src_ip, dst_ip and protocol."
     ),
     responses={
         401: {"description": "Authentication required"},

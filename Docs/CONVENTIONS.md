@@ -8,7 +8,7 @@ M1-M5 are the roles from the project spec (section 9):
 |---|---|---|
 | M1 | Valeriia | Network Data & Flow Processing |
 | M2 | Kuzma | Anomaly Detection & Algorithms |
-| M3 | Jakub | Backend & Data Storage |
+| M3 | Jakub | Data Access and Management API |
 | M4 | Daniyar | Frontend & Visualization |
 | M5 | Vlad | Infrastructure, Testing & DevOps |
 

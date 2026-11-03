@@ -1,0 +1,23 @@
+@startuml
+title Detections list - filtered page
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "List detections controller" as API
+control ListDetectionsHandler as Handler
+database TimescaleDB as DB
+
+Client -> API : GET /api/v1/detections\nfilters, page, page_size
+API -> API : Validate filters and pagination
+note over API,Handler : Controller creates handler with request-scoped AsyncSession
+API -> Handler : handle(ListDetectionsQuery)
+Handler -> DB : One SELECT: filtered/page/count CTEs\nAND filters, stable sorting, LIMIT/OFFSET
+DB --> Handler : Page rows + matching total\nincluding total on an empty page
+Handler --> API : ListDetectionsResponse
+API --> Client : 200 {items, total, page, page_size}
+@enduml

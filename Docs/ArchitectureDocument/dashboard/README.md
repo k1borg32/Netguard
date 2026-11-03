@@ -20,7 +20,7 @@ Wireframes are in [`wireframes/`](wireframes/). They are low fidelity: layout an
 | # | Screen | Shows | Requirements | API it uses |
 |---|---|---|---|---|
 | 1 | Login | username + password form | NFR06 | `POST /auth/login` |
-| 2 | Overview | stat cards (flows, flows/s, detections, open alerts), traffic trend, detections over time by severity, detections by type, latest alerts | F12, UC-06 | `GET /dashboard/summary`, time-series (missing, see 6.1), `GET /alerts` |
+| 2 | Overview | stat cards (flows, flows/s, detections, open alerts), traffic trend, detections over time by severity, detections by type, latest alerts | F12, UC-06 | `GET /dashboard/summary`, `GET /dashboard/timeseries` (see 6.1, G1), `GET /alerts` |
 | 3 | Alerts | alert list with filters (time, status, severity, type, source/destination IP, protocol), paging, acknowledge | F13, F17, UC-02, UC-05, UC-09 | `GET /alerts`, `PATCH /alerts/{id}/acknowledge` |
 | 4 | Alert details | type, severity, status, confidence, window, explanation, feature values, contributing flows, trace IDs | F09, F15, UC-03 | `GET /alerts/{id}`, `GET /detections/{id}/flows` |
 | 5 | History | all stored detections (also the ones without an alert), filters, detections-per-hour chart | F13, UC-04 | `GET /detections` with filters (missing, see 6.1) |
@@ -110,7 +110,7 @@ Why not WebSockets or Server-Sent Events now:
   would need a new source (Postgres `LISTEN/NOTIFY` or a consumer of the `detections` topic inside the API).
 - It needs authentication on a long-lived connection, nginx upgrade settings and reconnect logic.
 - A 5 s delay is fine for a human operator. Detection itself (NFR02) is measured in the pipeline, not in the UI.
-- The backend integration plan already lists real-time updates as out of MVP scope.
+- The Management API integration plan already lists real-time updates as out of MVP scope.
 
 If there is time after week 7, an SSE endpoint `GET /stream/alerts` can replace the 5 s polling of the alert list;
 the screens would not change.
@@ -126,7 +126,7 @@ Times are shown in the browser's local time zone.
 
 ## 5. Login and tokens
 
-Authentication is Jakub's JWT module (`/auth/*`, see [Authentication](../../BackendAndDataStorage/auth/README.md)):
+Authentication is Jakub's JWT module (`/auth/*`, see [Authentication](../../ManagementAPI/auth/README.md)):
 access token valid for 15 min, refresh token for 7 days, refresh rotates the pair, tokens are sent in the
 `Authorization: Bearer` header.
 
@@ -173,16 +173,16 @@ token would be safer but needs API changes; we can revisit it in week 8.
 
 ## 6. API review from the UI side
 
-I checked the [backend integration plan](../../Architecture/Backend_Data_Storage/integration.md), the
-[endpoint list](../../BackendAndDataStorage/endpoints.md) and the current code in `services/api` against the screens
+I checked the [Management API integration plan](../ManagementAPI/integration.md), the
+[endpoint list](../../ManagementAPI/endpoints.md) and the current code in `services/api` against the screens
 in section 2.
 
 | Screen | Endpoints | Enough? |
 |---|---|---|
 | Login, user menu | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | Yes. |
 | Overview, cards | `GET /dashboard/summary` | Mostly. Missing: open alerts (status NEW) and counts by type and severity (6.1, G2). |
-| Overview, charts | none | **No.** Trend charts need a time-series endpoint (6.1, G1). |
-| Alerts list | `GET /alerts` | Filters and paging are good. Items lack the detection fields shown in the table (G3). |
+| Overview, charts | `GET /dashboard/timeseries` | Yes for flow and per-severity detection trends. Packets and bytes per bucket are not returned (6.1, G1). |
+| Alerts list | `GET /alerts` | Filters and paging plus nested detection fields for the table (`type`, `severity`, `confidence`, `src_ip`, `dst_ip`, `protocol`; G3). |
 | Alert details | `GET /alerts/{id}`, `PATCH /alerts/{id}/acknowledge` | Yes for the summary and explanation. Evidence flows need `GET /detections/{id}/flows` (G6). |
 | History | `GET /detections` | **No.** Only `limit`, no filters, no paging (G5). |
 | Flows | `GET /flows`, `GET /flows/{flowId}` (planned) | Yes if filters match section 2 (G7). |
@@ -192,41 +192,43 @@ in section 2.
 
 ### 6.1 Gaps and proposals
 
-**G1 - Time-series endpoint for the trend charts (needed for F12, ST-05).**
+**G1 - Time-series endpoint for the trend charts (implemented for F12, ST-05).**
 
 ```http
-GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-10-20T12:15:00Z&interval_s=60
+GET /api/v1/dashboard/timeseries?start_time=2026-10-20T12:00:00Z&end_time=2026-10-20T12:15:00Z&interval=1m
 ```
 
 ```json
 {
-  "interval_s": 60,
-  "points": [
+  "start_time": "2026-10-20T12:00:00Z",
+  "end_time": "2026-10-20T12:15:00Z",
+  "interval": "1m",
+  "data": [
     {
-      "ts": "2026-10-20T12:00:00Z",
-      "flows": 12034,
-      "packets": 401223,
-      "bytes": 88123456,
-      "detections": {"LOW": 1, "MEDIUM": 0, "HIGH": 2, "CRITICAL": 0}
+      "timestamp": "2026-10-20T12:00:00Z",
+      "flows_count": 12034,
+      "detections_count": 3,
+      "detections_by_severity": {"LOW": 1, "MEDIUM": 0, "HIGH": 2, "CRITICAL": 0}
     }
   ]
 }
 ```
 
-- Buckets with TimescaleDB `time_bucket` on `network_flows.ts_start` and `detections.created_at`.
-- Empty buckets returned as zeros (`time_bucket_gapfill`), otherwise the line chart draws a straight line across gaps.
-- Limit the number of points (for example at most 500) and return 422 if `interval_s` is too small for the range.
-  The UI picks the interval: 5 s for 5 min, 15 s for 15 min, 1 min for 1 h, 15 min for 24 h.
-- Flows per second for the "Flows/s" card = `flows / interval_s` of the last full bucket, so no extra endpoint.
+Intervals are `10s`, `30s`, `1m`, `5m`, `15m`, `1h` and `1d` (default `1h`).
+The defaults cover the last 24 hours; ranges are limited to 366 days and 2000 UTC-aligned
+buckets. Empty buckets include zero counts for each severity. Counts are aggregated in
+one SQL statement over `[start_time, end_time)`; the four severity counts sum to
+`detections_count`. The earlier proposal's per-bucket `packets` and `bytes` are not part of the response. The
+"Flows/s" card can use `flows_count` divided by the bucket length of the last full bucket. A 15-minute live chart
+can use `10s`, `30s` or `1m` buckets.
 
 **G2 - More numbers in the summary.** Add to `GET /dashboard/summary`: `open_alert_count` (status NEW),
 `detections_by_type` and `detections_by_severity` (objects `{type: count}`) for the same range. One extra
 `GROUP BY` each; avoids three more requests every 5 s.
 
-**G3 - Detection fields in the alert list.** `GET /alerts` items only have `alert_id`, `detection_id`, `status`,
-`created_at`, `acknowledged_at`. The table shows type, severity, confidence, source, destination, so the UI would need
-one extra request per row. Proposal: add a short `detection` object to each item (`type`, `severity`, `confidence`,
-`src_ip`, `dst_ip`, `protocol`), the same join the filters already use. Nice to have: `acknowledged_by` (username),
+**G3 - Detection fields in the alert list (implemented).** `GET /alerts` items include the alert fields and a nested
+`detection` summary (`type`, `severity`, `confidence`, `src_ip`, `dst_ip`, `protocol`) from the existing join, avoiding
+an additional request per row. Nice to have: `acknowledged_by` (username),
 the ERD has the Users - Alerts relation but the `alerts` table has no column for it yet.
 
 **G4 - Nothing creates alerts yet.** The persister inserts detections but never inserts into `alerts`, so the alert
@@ -250,9 +252,13 @@ first. Please confirm which way you want it.
 `src_ip`, `dst_ip`, `protocol`, `dst_port`, `source`, `page_size`. A `total` count over millions of flows is expensive;
 `has_more` (or a cursor on `ts_start`) is enough for the UI.
 
-**G8 - Detection configuration form.** `parameters` is free JSONB, so the UI shows one input per key with its current
-value (numbers as number fields). Please document the `PATCH` body (whole `parameters` object or one key?) and return
-422 with the field name for invalid values, so the form can show the error next to the field. Writes admin only.
+**G8 - Detection configuration form.** The [configuration API](../../ManagementAPI/detection-configurations/README.md)
+is implemented. `parameters` is free JSONB, so the UI shows one input per key with its current value
+(numbers as number fields). `PATCH` replaces the whole supplied `parameters` object; omitted fields are unchanged.
+Send all parameter keys to retain them. Invalid values return 422 with field locations. Writes are admin only;
+reads require an access token. New definitions are inactive, and `PUT /api/v1/detection-configurations/{id}/activate`
+enables the target without disabling other definitions. The current processor still reads YAML at startup;
+persisting or activating a database definition does not reload it.
 
 **G9 - Simulator control (F11, F14, UC-10 to UC-13, API-06).** Not in the endpoint plan. Proposal:
 

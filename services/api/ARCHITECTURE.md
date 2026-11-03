@@ -5,5 +5,5 @@ Handlers use `AsyncSession` directly; domain models are independent of HTTP and 
 Controllers instantiate handlers directly. Requests use FastAPI's body/query validation.
 Use dependency injection only for infrastructure and authentication, never handlers or request DTOs.
 
-- [Architecture and request sequence](../../Docs/BackendAndDataStorage/architecture/README.md)
-- [Authentication and sequence diagrams](../../Docs/BackendAndDataStorage/auth/README.md)
+- [Architecture and request sequence](../../Docs/ManagementAPI/architecture/README.md)
+- [Authentication and sequence diagrams](../../Docs/ManagementAPI/auth/README.md)
