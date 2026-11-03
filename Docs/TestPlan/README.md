@@ -169,7 +169,9 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 - throughput: flows/s accepted (sent to `flows.raw`), processed and stored
 - detection latency (NFR02): from the ingestion of the last flow that contributed to a detection until the detection
   is created, so `created_at - last_ingested_at` (`latency_s` in the `detection_latency` view). Added to the
-  detection contract in week 2 (PR #44, risk R2). `created_at - first_ingested_at` is reported as time to detect
+  detection contract in week 2 (PR #44, risk R2). `created_at - first_ingested_at` is reported as time to detect.
+  The processor logs the same value with every detection it sends; the baseline script (`make baseline`) uses that
+  log line, because escalated detections had a wrong `latency_s` in the view until #65
 - p50 / p95 / p99 / max of the latency
 - consumer lag of the processor and persister groups, sampled every 5 s. Lag that keeps growing means the system
   can't keep up
@@ -178,8 +180,9 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 
 **Load levels (NFR01):** 100, 1,000, 5,000 and 10,000 flows/s, then further steps up to 50,000 flows/s or until the
 system saturates; we report how far one machine gets. Every level gets 1 min of warm-up (not measured)
-and 5 min of measurement. About 2 % attack traffic is mixed in, so detections (and therefore latency values) exist
-during the run. The generator has to reach the requested rate, otherwise the run is invalid. For high rates we run
+and 5 min of measurement. The load generator mixes in 5 % port scan flows from one source, so detections (and
+therefore latency values) exist during the run; at 100 flows/s that is below the port scan threshold, so latency is
+measured from 1,000 flows/s up. The generator has to reach the requested rate, otherwise the run is invalid. For high rates we run
 several generator instances. The load comes from a load generator that is only test tooling: the former simulator
 code, kept for this and for the CI pipeline test (M5). Replaying the public dataset at a fixed rate is the alternative
 once the importer can replay at a set rate with the timestamps moved to the present (R12).
@@ -304,7 +307,7 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 
 | ID | Risk / finding | Impact | What we do |
 |---|---|---|---|
-| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | performance baseline already in week 4; validate everything at the edge (importer, load generator) instead of again in every consumer; batch DB writes; scale the processor |
+| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | week 4 baseline: 5,000 flows/s are reached without loss, but the persister and the database (5 indexes per flow row, a checkpoint every minute) fall behind (test report). Next: batch inserts with `COPY`, fewer indexes, larger `max_wal_size`; validate everything at the edge (importer, load generator) instead of again in every consumer; batch DB writes; scale the processor |
 | R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: `last_ingested_at` in the detection contract, DB column and `detection_latency` view (PR #44). Still open: a rule that fires only when its window closes adds up to one window to the latency, so M2 fires rules as soon as the threshold is crossed |
 | R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and load generator validate everything they send (the importer puts rejected records on `flows.deadletter`, PR #51); consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
 | R4 | Slow failover: after killing one of two processors its partitions waited 44 s (librdkafka default session timeout is 45 s). A crashed persister also blocked its own restart for about 45 s. The CI step "kill one processor" waits only 40 s, so it would fail about half of the time. | NFR04, flaky CI | session timeout lowered to 10 s in `libs/common` (week 1), to be re-measured with RT-01; the persister should close its consumer when it exits (M3) |
@@ -317,6 +320,7 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 | R11 | Windows/Linux differences (line endings, make, paths). | "works on my machine" | `.gitattributes` (LF), everything runs in Docker, CI on Linux, Windows steps in the README |
 | R12 | Replaying a dataset with old timestamps: the processor closes windows by the wall clock, so with a big file every window is closed after each batch and an attack is split into parts below the threshold (found in the week 3 review of the importer). | wrong detection results on the dataset (DQ) | week 4, with M1 and M2: windows by event time in the processor, or the importer moves the timestamps to the present when it replays |
 | R13 | The traffic simulator was removed from the requirements in week 3. The controllable load for the performance tests and the input of the CI pipeline test came from it. | NFR01/NFR02 can't be measured without a load source | its code stays only as a load generator in the test tooling (M5), not as a product component |
+| R14 | Each window's clock also moves with the wall clock, so flows that reach the processor more than 1 to 2 s late find their window closed and are dropped (found in the week 4 baseline: 4.7 % at 5,000 flows/s). | detections missed under load, without an error | M2: no closing while the processor is behind; the late-flow counter is part of every performance run |
 
 Also fixed in week 1: the DB, broker, API and dashboard were published on all network interfaces with a default
 password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the whole repository including `.venv` and
@@ -443,12 +447,12 @@ which the test is planned. Automated tests carry their ID in the docstring.
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| PT-01 | Load ladder 100 / 1,000 / 5,000 / 10,000 flows/s and up, 1 processor | NFR01 | throughput, lag and resources per level, saturation point found | week 4 (baseline), week 8 |
-| PT-02 | 5,000 flows/s for 5 min | NFR01 | lag does not grow, nothing lost | weeks 4 and 8 |
-| PT-03 | Latency at 5,000 flows/s | NFR02 | p95 <= 3 s (p50, p99, max reported) | week 8 |
+| PT-01 | Load ladder 100 / 1,000 / 5,000 / 10,000 flows/s and up, 1 processor | NFR01 | throughput, lag and resources per level, saturation point found | baseline done in week 4 (test report): stable at 1,000, at 5,000 the lag grows; week 8 |
+| PT-02 | 5,000 flows/s for 5 min | NFR01 | lag does not grow, nothing lost | fails on the laptop in week 4 (nothing lost, but the persister falls behind and 4.7 % of the flows come late); re-test after the persister changes and in week 8 |
+| PT-03 | Latency at 5,000 flows/s | NFR02 | p95 <= 3 s (p50, p99, max reported) | pass on the laptop in week 4 (p95 1.24 s), official in week 8 |
 | PT-04 | Saturation point with 1 vs 3 processor instances | NFR03 | higher with 3 instances | week 8 |
 | PT-05 | API under dashboard-like load (k6, 50 users) | F11 | p95 response time reported | week 8 |
-| PT-06 | CPU and memory per container per load level | NFR01 | reported, no container hits its memory limit | week 8 |
+| PT-06 | CPU and memory per container per load level | NFR01 | reported, no container hits its memory limit | baseline in week 4 (test report), week 8 |
 
 ### Resilience (RT)
 
