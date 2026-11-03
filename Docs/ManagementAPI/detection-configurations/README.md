@@ -147,4 +147,4 @@ errors. No mocks or dependency overrides are used.
 cover required fields, nulls, invalid identifiers, JSONB-compatible values,
 unknown fields, partial updates and pagination bounds.
 
-[Endpoint plan](../endpoints.md) · [Test setup](../../../services/api/tests/README.md)
+[Endpoint plan](../endpoints.md) | [Test setup](../../../services/api/tests/README.md)

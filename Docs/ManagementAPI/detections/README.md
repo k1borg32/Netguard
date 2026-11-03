@@ -7,7 +7,7 @@ Public endpoint returning a filtered page of detections. No token is required ye
 | Query parameter | Contract |
 | --- | --- |
 | `page` | Page number, starting at 1; default 1. |
-| `page_size` | 1–500 items; default 50. |
+| `page_size` | 1 to 500 items; default 50. |
 | `limit` | Deprecated alias for `page_size`; values must match when both are supplied. |
 | `start_time`, `end_time` | Optional ISO 8601 timestamps with timezones; filter `created_at` in `[start_time, end_time)`. Start must precede end. |
 | `severity` | `LOW`, `MEDIUM`, `HIGH`, or `CRITICAL`. |
@@ -84,7 +84,7 @@ are omitted. Repeated trace IDs in the sample do not duplicate response items.
 | Query parameter | Contract |
 | --- | --- |
 | `page` | Page number starting at 1; default 1. |
-| `page_size` | 1–500 items; default 50. |
+| `page_size` | 1 to 500 items; default 50. |
 | `sort_order` | `asc` or `desc` (default), by `ts_start` then `flow_id` in the same direction. |
 
 Response: `{"items": [...], "total": 8, "page": 1, "page_size": 50}`.

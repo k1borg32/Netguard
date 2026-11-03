@@ -147,4 +147,4 @@ validation and OpenAPI using real HTTP and disposable TimescaleDB.
 cover optional filters, port and pagination bounds, invalid IP addresses and
 timezone-aware range comparisons. No mocks or dependency overrides are used.
 
-[Endpoint plan](../endpoints.md) · [Test setup](../../../services/api/tests/README.md)
+[Endpoint plan](../endpoints.md) | [Test setup](../../../services/api/tests/README.md)

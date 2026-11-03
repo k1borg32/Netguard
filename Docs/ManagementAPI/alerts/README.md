@@ -141,4 +141,4 @@ concurrent acknowledgement, unchanged unrelated rows, validation and OpenAPI.
 optional bounds and timezone-aware range validation. Integration tests use the
 existing disposable TimescaleDB setup without mocks or dependency overrides.
 
-[Endpoint plan](../endpoints.md) · [Test setup](../../../services/api/tests/README.md)
+[Endpoint plan](../endpoints.md) | [Test setup](../../../services/api/tests/README.md)

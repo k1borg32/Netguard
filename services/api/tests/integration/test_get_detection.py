@@ -47,7 +47,7 @@ def test_public_detail_returns_requested_record_and_preserves_rows(client: TestC
     last_ingested_at = START - timedelta(seconds=3, microseconds=654321)
     window_start = START - timedelta(seconds=60)
     features = {"unique_dst_ports": 150, "threshold": 100, "samples": [80, 443]}
-    explanation = "Threshold exceeded — scan detected."
+    explanation = "Threshold exceeded - scan detected."
     db.execute(
         "INSERT INTO detection_configs (configuration_id, detection_type, method, parameters) "
         "VALUES (%s, 'port_scan', 'threshold', %s)",
