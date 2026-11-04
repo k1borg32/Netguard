@@ -37,15 +37,15 @@ References:
 
 ### 2.1 Test items
 
-| Component | Code | Owner | State in week 3 |
+| Component | Code | Owner | State in week 4 |
 |---|---|---|---|
 | Load generator (test tooling, not part of the product) | `services/loadgen` | M5 | normal traffic + port scan, used by CI and the performance tests |
-| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import in review (PR #51) |
+| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import (#51), CIC-IDS2017 converter, manifests and replay mode (#63) |
 | Broker + message contracts | Redpanda, `libs/common` | M5 | working |
-| Flow processor / detection engine | `services/processor` | M2 | placeholder port scan rule |
-| Persister + database | `services/persister`, `db/` | M3 | working, schema by M3 (flows hypertable, detections, alerts, users) |
-| REST API | `services/api` | M3 | login (JWT), detections, alerts, dashboard summary; flows, detection details and time series in review (PR #50) |
-| Dashboard | `services/dashboard` | M4 | React app skeleton in the nginx container, screens from week 4 |
+| Flow processor / detection engine | `services/processor` | M2 | 1/10/60 s windows, four rules, z-score method, severity and alert policy (#62) |
+| Persister + database | `services/persister`, `db/` | M3 | writes flows, detections and alerts; schema by M3 (flows hypertable, detections, alerts, users) |
+| REST API | `services/api` | M3 | login (JWT), detections, flows, alerts, dashboard summary and time series, detection configuration (#50) |
+| Dashboard | `services/dashboard` | M4 | login and the overview page; trend charts (#68) and the alert screens next |
 | Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working, dashboard job and build cache added in week 2 |
 
 ### 2.2 In scope
