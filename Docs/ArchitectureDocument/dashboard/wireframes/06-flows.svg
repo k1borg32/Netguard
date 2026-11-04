@@ -4,9 +4,6 @@
 <rect x="1" y="1" width="1278" height="56" fill="#fff"/><line x1="0" y1="56" x2="1280" y2="56" stroke="#9aa0a6"/>
 <rect x="20" y="16" width="24" height="24" rx="5" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
 <text x="54" y="34" font-size="18" font-weight="700" fill="#202124" text-anchor="start">NetGuard</text>
-<rect x="720" y="13" width="250" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
-<circle cx="738" cy="28" r="5" fill="#2f9e44"/>
-<text x="750" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Simulator running · 200 flows/s</text>
 <rect x="980" y="13" width="110" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
 <circle cx="998" cy="28" r="5" fill="#2f9e44"/>
 <text x="1010" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">API · DB ok</text>
@@ -74,7 +71,7 @@
 <text x="933.2786885245903" y="285" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
 <text x="1012.2295081967214" y="285" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
 <text x="1102.4590163934427" y="285" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
-<text x="1164.4918032786886" y="285" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="285" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <line x1="224" y1="300" x2="1256" y2="300" stroke="#d0d4da"/>
 <text x="234" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.840</text>
 <text x="369.344262295082" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">182 ms</text>
@@ -86,7 +83,7 @@
 <text x="933.2786885245903" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">38</text>
 <text x="1012.2295081967214" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">41,220</text>
 <text x="1102.4590163934427" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">SA</text>
-<text x="1164.4918032786886" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="325" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <line x1="224" y1="340" x2="1256" y2="340" stroke="#d0d4da"/>
 <text x="234" y="365" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.711</text>
 <text x="369.344262295082" y="365" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12 ms</text>
@@ -110,7 +107,7 @@
 <text x="933.2786885245903" y="405" font-size="12" font-weight="400" fill="#202124" text-anchor="start">21</text>
 <text x="1012.2295081967214" y="405" font-size="12" font-weight="400" fill="#202124" text-anchor="start">18,004</text>
 <text x="1102.4590163934427" y="405" font-size="12" font-weight="400" fill="#202124" text-anchor="start">SA</text>
-<text x="1164.4918032786886" y="405" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="405" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <line x1="224" y1="420" x2="1256" y2="420" stroke="#d0d4da"/>
 <text x="234" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.402</text>
 <text x="369.344262295082" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.3 ms</text>
@@ -122,7 +119,7 @@
 <text x="933.2786885245903" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
 <text x="1012.2295081967214" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
 <text x="1102.4590163934427" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
-<text x="1164.4918032786886" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="445" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <line x1="224" y1="460" x2="1256" y2="460" stroke="#d0d4da"/>
 <text x="234" y="485" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.377</text>
 <text x="369.344262295082" y="485" font-size="12" font-weight="400" fill="#202124" text-anchor="start">95 ms</text>
@@ -146,7 +143,7 @@
 <text x="933.2786885245903" y="525" font-size="12" font-weight="400" fill="#202124" text-anchor="start">9</text>
 <text x="1012.2295081967214" y="525" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2,870</text>
 <text x="1102.4590163934427" y="525" font-size="12" font-weight="400" fill="#202124" text-anchor="start">SA</text>
-<text x="1164.4918032786886" y="525" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="525" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <line x1="224" y1="540" x2="1256" y2="540" stroke="#d0d4da"/>
 <text x="234" y="565" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:06.188</text>
 <text x="369.344262295082" y="565" font-size="12" font-weight="400" fill="#202124" text-anchor="start">-</text>
@@ -170,7 +167,7 @@
 <text x="933.2786885245903" y="605" font-size="12" font-weight="400" fill="#202124" text-anchor="start">44</text>
 <text x="1012.2295081967214" y="605" font-size="12" font-weight="400" fill="#202124" text-anchor="start">52,113</text>
 <text x="1102.4590163934427" y="605" font-size="12" font-weight="400" fill="#202124" text-anchor="start">SA</text>
-<text x="1164.4918032786886" y="605" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="605" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <line x1="224" y1="620" x2="1256" y2="620" stroke="#d0d4da"/>
 <text x="234" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">12:41:05.973</text>
 <text x="369.344262295082" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">0.2 ms</text>
@@ -182,6 +179,6 @@
 <text x="933.2786885245903" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">1</text>
 <text x="1012.2295081967214" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">60</text>
 <text x="1102.4590163934427" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">S</text>
-<text x="1164.4918032786886" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">simulator</text>
+<text x="1164.4918032786886" y="645" font-size="12" font-weight="400" fill="#202124" text-anchor="start">flowfile</text>
 <text x="224" y="686" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Page 1 · 50 per page · newest first · large result: narrow the time range</text>
 </svg>

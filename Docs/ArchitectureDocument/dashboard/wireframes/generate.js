@@ -8,7 +8,7 @@ const W = 1280, H = 800, TOP = 56, SIDE = 200, CX = 224, CW = W - CX - 24;
 const C = {
   line: "#9aa0a6", panel: "#f6f7f9", head: "#eceff3", text: "#202124", muted: "#6b7280",
   accent: "#3b5bdb", ok: "#2f9e44", ghost: "#d0d4da",
-  sev: { LOW: "#868e96", MEDIUM: "#e8a400", HIGH: "#e8590c", CRITICAL: "#c92a2a" },
+  sev: { LOW: "#ec9f5e", MEDIUM: "#d96f25", HIGH: "#b0420f", CRITICAL: "#6f1a12" },
 };
 const esc = (s) => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
@@ -38,7 +38,7 @@ function svg() {
     badge(x, y, sev) {
       const w = sev.length * 7.5 + 16;
       g.rect(x, y - 13, w, 19, { fill: C.sev[sev], stroke: C.sev[sev], rx: 9 });
-      g.text(x + w / 2, y + 1, sev, { size: 11, fill: "#fff", weight: 700, anchor: "middle" });
+      g.text(x + w / 2, y + 1, sev, { size: 11, fill: sev === "LOW" || sev === "MEDIUM" ? C.text : "#fff", weight: 700, anchor: "middle" });
     },
     status(x, y, s) {
       const isNew = s === "NEW";
@@ -127,10 +127,7 @@ function shell(active, title, subtitle) {
   g.raw(`<rect x="1" y="1" width="${W - 2}" height="${TOP}" fill="#fff"/><line x1="0" y1="${TOP}" x2="${W}" y2="${TOP}" stroke="${C.line}"/>`);
   g.rect(20, 16, 24, 24, { fill: C.accent, stroke: C.accent, rx: 5 });
   g.text(54, 34, "NetGuard", { size: 18, weight: 700 });
-  // simulator + health pills, user menu
-  g.rect(720, 13, 250, 30, { rx: 15, fill: "#fff" });
-  g.raw(`<circle cx="738" cy="28" r="5" fill="${C.ok}"/>`);
-  g.text(750, 33, "Simulator running · 200 flows/s", { size: 12 });
+  // health pill, user menu
   g.rect(980, 13, 110, 30, { rx: 15, fill: "#fff" });
   g.raw(`<circle cx="998" cy="28" r="5" fill="${C.ok}"/>`);
   g.text(1010, 33, "API · DB ok", { size: 12 });
@@ -240,7 +237,7 @@ const ALERT_ROWS = [
   // filter bar
   g.rect(CX, 128, CW, 76, { fill: "#fff" });
   let x = CX + 16;
-  [["Time", "Last 1 hour", 140, true], ["Status", "NEW", 110, true], ["Severity", "Any", 110, true], ["Type", "Any", 130, true], ["Source IP", "e.g. 10.0.0.5", 120, false], ["Destination IP", "", 120, false], ["Protocol", "Any", 90, true]].forEach(([l, v, w, sel]) => {
+  [["Time", "Last 1 hour", 140, true], ["Status", "NEW", 110, true], ["Severity", "Any", 110, true], ["Type", "Any", 130, true], ["Source IP", "e.g. 10.0.0.5", 120, false], ["Destination IP", "", 120, false]].forEach(([l, v, w, sel]) => {
     g.input(x, 156, w, l, v, { select: sel, placeholder: v.startsWith("e.g.") });
     x += w + 12;
   });
@@ -330,16 +327,16 @@ const ALERT_ROWS = [
   g.button(CX + CW - 80, 156, "Reset", { w: 64 });
   const cols = [{ label: "Start", w: 120 }, { label: "Duration", w: 80 }, { label: "Source", w: 110 }, { label: "Src port", w: 70 }, { label: "Destination", w: 110 }, { label: "Dst port", w: 70 }, { label: "Proto", w: 60 }, { label: "Packets", w: 70 }, { label: "Bytes", w: 80 }, { label: "Flags", w: 55 }, { label: "Input", w: 90 }];
   const rows = [
-    ["12:41:06.912", "0.2 ms", "10.66.6.6", "51022", "10.1.0.1", "22", "TCP", "1", "60", "S", "simulator"],
-    ["12:41:06.840", "182 ms", "10.0.0.17", "40112", "10.1.0.1", "443", "TCP", "38", "41,220", "SA", "simulator"],
+    ["12:41:06.912", "0.2 ms", "10.66.6.6", "51022", "10.1.0.1", "22", "TCP", "1", "60", "S", "flowfile"],
+    ["12:41:06.840", "182 ms", "10.0.0.17", "40112", "10.1.0.1", "443", "TCP", "38", "41,220", "SA", "flowfile"],
     ["12:41:06.711", "12 ms", "10.0.1.90", "53001", "10.1.0.1", "53", "UDP", "2", "180", "-", "pcap"],
-    ["12:41:06.520", "301 ms", "10.0.0.3", "44821", "10.1.0.1", "80", "TCP", "21", "18,004", "SA", "simulator"],
-    ["12:41:06.402", "0.3 ms", "10.66.6.6", "51022", "10.1.0.1", "23", "TCP", "1", "60", "S", "simulator"],
+    ["12:41:06.520", "301 ms", "10.0.0.3", "44821", "10.1.0.1", "80", "TCP", "21", "18,004", "SA", "flowfile"],
+    ["12:41:06.402", "0.3 ms", "10.66.6.6", "51022", "10.1.0.1", "23", "TCP", "1", "60", "S", "flowfile"],
     ["12:41:06.377", "95 ms", "10.0.0.250", "39001", "10.1.0.1", "5432", "TCP", "12", "4,310", "SA", "flowfile"],
-    ["12:41:06.201", "44 ms", "10.0.1.11", "60202", "10.1.0.1", "3306", "TCP", "9", "2,870", "SA", "simulator"],
+    ["12:41:06.201", "44 ms", "10.0.1.11", "60202", "10.1.0.1", "3306", "TCP", "9", "2,870", "SA", "flowfile"],
     ["12:41:06.188", "-", "10.0.0.66", "-", "10.1.0.1", "-", "ICMP", "1", "84", "-", "pcap"],
-    ["12:41:06.090", "210 ms", "10.0.0.12", "41888", "10.1.0.1", "443", "TCP", "44", "52,113", "SA", "simulator"],
-    ["12:41:05.973", "0.2 ms", "10.66.6.6", "51022", "10.1.0.1", "25", "TCP", "1", "60", "S", "simulator"],
+    ["12:41:06.090", "210 ms", "10.0.0.12", "41888", "10.1.0.1", "443", "TCP", "44", "52,113", "SA", "flowfile"],
+    ["12:41:05.973", "0.2 ms", "10.66.6.6", "51022", "10.1.0.1", "25", "TCP", "1", "60", "S", "flowfile"],
   ];
   const th = g.table(CX, 220, CW, cols, rows, { rowH: 40 });
   g.note(CX, 220 + th + 26, "Page 1 · 50 per page · newest first · large result: narrow the time range");
@@ -348,8 +345,8 @@ const ALERT_ROWS = [
 
 // ---------- 7. Settings ----------
 {
-  const g = shell("Settings", "Settings", "Detection thresholds and traffic simulator. Changes are admin only (F16, NFR06).");
-  const lw = 600;
+  const g = shell("Settings", "Settings", "Detection thresholds. Changes are admin only (F16, NFR06).");
+  const lw = CW;
   g.panel(CX, 128, lw, 652, "Detection configurations");
   g.table(CX + 16, 168, lw - 32, [{ label: "Type", w: 150 }, { label: "Method", w: 100 }, { label: "Active", w: 80 }, { label: "", w: 80 }],
     [["Port Scan", "rule", "active", { link: "Edit" }], ["DoS/DDoS-like", "rule", { muted: "inactive" }, { link: "Edit" }], ["Brute Force", "rule", "active", { link: "Edit" }], ["Abnormal Traffic", "z-score", "active", { link: "Edit" }]], { rowH: 38 });
@@ -365,26 +362,5 @@ const ALERT_ROWS = [
   g.button(CX + 32, 718, "Save as new version", { primary: true, w: 170 });
   g.button(CX + 214, 718, "Activate", { w: 90 });
   g.button(CX + 316, 718, "Cancel", { w: 80 });
-  const rx = CX + lw + 16, rw = CW - lw - 16;
-  g.panel(rx, 128, rw, 652, "Traffic simulator");
-  g.raw(`<circle cx="${rx + 24}" cy="${180}" r="6" fill="${C.ok}"/>`);
-  g.text(rx + 38, 185, "Running for 04:12 · 51,230 flows sent", { size: 13 });
-  g.text(rx + 16, 226, "Scenarios", { size: 11, fill: C.muted });
-  ["normal", "port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern"].forEach((s, i) => {
-    const cx = rx + 16 + (i % 2) * 190, cy = 240 + Math.floor(i / 2) * 30;
-    g.rect(cx, cy, 16, 16, { rx: 3, fill: i < 2 ? C.accent : "#fff", stroke: i < 2 ? C.accent : C.line });
-    if (i < 2) g.text(cx + 8, cy + 13, "✓", { size: 12, fill: "#fff", anchor: "middle" });
-    g.text(cx + 26, cy + 13, s, { size: 13 });
-  });
-  g.input(rx + 16, 360, 180, "Rate (flows/s)", "200");
-  g.input(rx + 212, 360, 180, "Hosts", "200");
-  g.input(rx + 16, 424, 180, "Anomalous share (%)", "5");
-  g.input(rx + 212, 424, 180, "Duration (s, 0 = until stopped)", "0");
-  g.input(rx + 16, 488, 376, "Load profile", "constant", { select: true });
-  g.button(rx + 16, 548, "Start", { primary: true, w: 100 });
-  g.button(rx + 128, 548, "Stop", { w: 100 });
-  g.note(rx + 16, 610, "F14: hosts, rate, anomalous share and load profile");
-  g.note(rx + 16, 626, "are configurable. Start/stop needs a simulator control");
-  g.note(rx + 16, 642, "endpoint (not in the API plan yet).");
   g.done("07-settings.svg");
 }

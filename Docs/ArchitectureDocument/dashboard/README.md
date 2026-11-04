@@ -2,13 +2,13 @@
 
 > Owner: Daniyar (M4, Frontend & Visualization)
 > Covers: `services/dashboard/`, the screens of the web UI, how the UI gets its data from the REST API,
-> login, and what the UI still needs from the API (F12, F13, F16, F17, UC-02 to UC-13).
+> login, and what the UI still needs from the API (F12, F13, F16, F17, UC-02 to UC-09).
 
 ## 1. Responsibility
 
 The dashboard is the only part of NetGuard a user sees. It shows live traffic statistics, trend charts, alerts and
 detection details with their evidence, the stored history, flows, and lets an administrator change detection
-thresholds and start or stop the traffic simulator.
+thresholds.
 
 It is a static single-page application (SPA). It has no database and no business logic of its own: every number on
 the screen comes from the REST API (`services/api`, M3). It never talks to the broker or the database directly.
@@ -20,16 +20,16 @@ Wireframes are in [`wireframes/`](wireframes/). They are low fidelity: layout an
 | # | Screen | Shows | Requirements | API it uses |
 |---|---|---|---|---|
 | 1 | Login | username + password form | NFR06 | `POST /auth/login` |
-| 2 | Overview | stat cards (flows, flows/s, detections, open alerts), traffic trend, detections over time by severity, detections by type, latest alerts | F12, UC-06 | `GET /dashboard/summary`, `GET /dashboard/timeseries` (see 6.1, G1), `GET /alerts` |
-| 3 | Alerts | alert list with filters (time, status, severity, type, source/destination IP, protocol), paging, acknowledge | F13, F17, UC-02, UC-05, UC-09 | `GET /alerts`, `PATCH /alerts/{id}/acknowledge` |
+| 2 | Overview | stat cards (flows, flows/s, detections, open alerts), traffic trend, detections over time by severity, detections by type, latest detections | F12, UC-06 | `GET /dashboard/summary`, `GET /dashboard/timeseries`, `GET /alerts`, `GET /detections` |
+| 3 | Alerts | alert list with filters (time, status, severity, type, source/destination IP), paging, acknowledge | F13, F17, UC-02, UC-05, UC-09 | `GET /alerts`, `PATCH /alerts/{id}/acknowledge` |
 | 4 | Alert details | type, severity, status, confidence, window, explanation, feature values, contributing flows, trace IDs | F09, F15, UC-03 | `GET /alerts/{id}`, `GET /detections/{id}/flows` |
-| 5 | History | all stored detections (also the ones without an alert), filters, detections-per-hour chart | F13, UC-04 | `GET /detections` with filters (missing, see 6.1) |
+| 5 | History | all stored detections (also the ones without an alert), filters, detections-per-hour chart | F13, UC-04 | `GET /detections` |
 | 6 | Flows | normalised flows with filters and paging | F11, UC-08 | `GET /flows`, `GET /flows/{flowId}` |
-| 7 | Settings | detection configurations (edit and activate, admin only), simulator start/stop with its parameters | F14, F16, UC-07, UC-10 to UC-13 | `/detection-configurations`, simulator control (missing, see 6.1) |
+| 7 | Settings | detection configurations (edit and activate, admin only) | F16, UC-07 | `/detection-configurations` |
 
 All API paths in this document are relative to `/api/v1`.
 
-Every screen except Login has the same frame: top bar with the simulator status, API/DB health and the user menu,
+Every screen except Login has the same frame: top bar with API/DB health and the user menu,
 and a side menu with the five pages. Users without the admin role see Settings read-only; the API enforces this
 anyway, the UI only hides buttons that would fail.
 
@@ -64,7 +64,7 @@ The API returns pre-aggregated buckets, so one chart has at most a few hundred p
 | Chart.js | Fast canvas rendering, popular | Imperative API; needs a React wrapper; canvas content is not visible to component tests. |
 | Apache ECharts | Very powerful, fast | Large bundle, many features we don't need. |
 | D3 | Full control | Low level; every axis and tooltip by hand; too slow to build in our timeline. |
-| Grafana | Ready-made dashboards | A separate tool, not our application; no alert acknowledge or simulator control; the spec asks for our own dashboard. |
+| Grafana | Ready-made dashboards | A separate tool, not our application; no alert acknowledge; the spec asks for our own dashboard. |
 
 ## 4. How the dashboard gets its data
 
@@ -98,7 +98,7 @@ All data is fetched with REST calls. Screens that show live data refetch on a ti
 | Overview (cards, charts, latest alerts) | every 5 s |
 | Alerts list | every 5 s |
 | Alert details | every 10 s (status may be changed by another user) |
-| Top bar (health, simulator status) | every 10 s |
+| Top bar (health) | every 10 s |
 | History, Flows, Settings | on load and when filters change, plus a manual refresh button |
 
 Polling stops while the browser tab is hidden and restarts with an immediate refetch when it becomes visible again
@@ -120,7 +120,7 @@ Load: one open dashboard makes about 4 requests per 5 s. The k6 API load test (P
 
 ### 4.3 Time ranges
 
-The user picks a range (last 5 min / 15 min / 1 h / 24 h or custom from-to). The UI sends `start_time` and
+The user picks a range (last 5 min / 15 min / 1 h / 6 h / 24 h). The UI sends `start_time` and
 `end_time` as ISO 8601 in UTC (`2026-10-20T12:00:00Z`), which the summary and alert endpoints require.
 Times are shown in the browser's local time zone.
 
@@ -162,7 +162,7 @@ Rules in the UI:
   same time share one refresh call; this matters because refresh rotates the token, and a second parallel refresh
   with the old token would get `401` and log the user out.
 - If refresh fails, the UI clears the tokens and shows the login page with "session expired".
-- The role from `/auth/me` decides which buttons are shown (admin: edit configuration, start/stop simulator).
+- The role from `/auth/me` decides which buttons are shown (admin: edit configuration).
   This is only convenience: the API checks the role on every request (NFR06).
 - No self-registration in the UI: accounts are created by an administrator (`POST /auth/register`).
   The first administrator is created with `docker compose exec api python -m app.infrastructure.bootstrap_admin`.
@@ -180,17 +180,31 @@ in section 2.
 | Screen | Endpoints | Enough? |
 |---|---|---|
 | Login, user menu | `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me` | Yes. |
-| Overview, cards | `GET /dashboard/summary` | Mostly. Missing: open alerts (status NEW) and counts by type and severity (6.1, G2). |
-| Overview, charts | `GET /dashboard/timeseries` | Yes for flow and per-severity detection trends. Packets and bytes per bucket are not returned (6.1, G1). |
-| Alerts list | `GET /alerts` | Filters and paging plus nested detection fields for the table (`type`, `severity`, `confidence`, `src_ip`, `dst_ip`, `protocol`; G3). |
-| Alert details | `GET /alerts/{id}`, `PATCH /alerts/{id}/acknowledge` | Yes for the summary and explanation. Evidence flows need `GET /detections/{id}/flows` (G6). |
-| History | `GET /detections` | **No.** Only `limit`, no filters, no paging (G5). |
-| Flows | `GET /flows`, `GET /flows/{flowId}` (planned) | Yes if filters match section 2 (G7). |
-| Settings, thresholds | `/detection-configurations` (planned) | Yes, details on the form in G8. |
-| Settings, simulator | none | **No.** Simulator control is required by F11/F14 and API-06 (G9). |
-| Top bar | `GET /health` | Yes. Simulator status needs G9. |
+| Overview, cards | `GET /dashboard/summary`, `GET /alerts?status=NEW` | Yes. The open-alert count comes from the `total` of the alert list. |
+| Overview, charts | `GET /dashboard/timeseries`, `GET /detections` | Yes. The breakdown by type is counted in the UI from the latest 500 detections. |
+| Alerts list | `GET /alerts` | Yes. Filters, paging and the detection fields for the table (G3). |
+| Alert details | `GET /alerts/{id}`, `PATCH /alerts/{id}/acknowledge`, `GET /detections/{id}/flows` | Yes. |
+| History | `GET /detections` | Yes. |
+| Flows | `GET /flows`, `GET /flows/{flowId}` | Yes. |
+| Settings, thresholds | `/detection-configurations` | Endpoints exist; see G8. |
+| Top bar | `GET /health` | Yes. |
 
-### 6.1 Gaps and proposals
+### 6.1 Gaps: status
+
+The review was done in week 2. State after PR #50 and the detection engine (#62):
+
+| Gap | What | State |
+|---|---|---|
+| G1 | Time-series endpoint for the trend charts | Done, see below |
+| G2 | Open alerts and counts by type and severity in the summary | Not needed for now: the UI gets them from `GET /alerts` and `GET /detections` |
+| G3 | Detection fields in the alert list items | Done, see below |
+| G4 | Something has to create alerts | Done: the engine decides (`alerts` in `config/detection.yaml`: MEDIUM and above, `unknown` from HIGH, one alert per type/source/destination per 5 min) and the persister writes the alert with the detection |
+| G5 | Filters and paging on `GET /detections` | Done |
+| G6 | Evidence flows of a detection | Done: `GET /detections/{id}/flows` finds them by the detection's `trace_ids`, so it returns a sample |
+| G7 | Filters on `GET /flows` | Done |
+| G8 | Detection configuration form | Endpoints done, see below |
+| G9 | Simulator control | Dropped: the supervisors removed the simulator from the requirements in week 3 |
+| G10 | System metrics (instances, consumer lag, p95 latency) | Open, nice to have |
 
 **G1 - Time-series endpoint for the trend charts (implemented for F12, ST-05).**
 
@@ -222,35 +236,10 @@ one SQL statement over `[start_time, end_time)`; the four severity counts sum to
 "Flows/s" card can use `flows_count` divided by the bucket length of the last full bucket. A 15-minute live chart
 can use `10s`, `30s` or `1m` buckets.
 
-**G2 - More numbers in the summary.** Add to `GET /dashboard/summary`: `open_alert_count` (status NEW),
-`detections_by_type` and `detections_by_severity` (objects `{type: count}`) for the same range. One extra
-`GROUP BY` each; avoids three more requests every 5 s.
-
 **G3 - Detection fields in the alert list (implemented).** `GET /alerts` items include the alert fields and a nested
 `detection` summary (`type`, `severity`, `confidence`, `src_ip`, `dst_ip`, `protocol`) from the existing join, avoiding
 an additional request per row. Nice to have: `acknowledged_by` (username),
 the ERD has the Users - Alerts relation but the `alerts` table has no column for it yet.
-
-**G4 - Nothing creates alerts yet.** The persister inserts detections but never inserts into `alerts`, so the alert
-screens stay empty on a running stack. We need a decision (M2 + M3): one alert per detection, or only for severity
-MEDIUM and higher? Same `ON CONFLICT` idempotency as for detections.
-
-**G5 - Detection history with filters (F13, UC-04, API-03).** `GET /detections` should take the same parameters and
-return the same page shape as `GET /alerts`: `start_time`, `end_time`, `type`, `severity`, `method`, `src_ip`,
-`dst_ip`, `page`, `page_size` -> `{items, total, page, page_size}`. Each item ideally carries `alert_id` and
-`alert_status` (null when there is no alert). For the Overview the existing "latest N" behaviour is still useful
-(page 1, newest first). It needs the user/admin role check once the dashboard has login (the code comment already
-says so); the placeholder page and IT-02 currently call it without a token, so this change goes together with the
-React app replacing the placeholder.
-
-**G6 - Evidence flows for a detection.** `GET /detections/{id}/flows` is planned, but `db/init/001_schema.sql` has no
-`detection_flows` table (the ERD has one). Detections carry `trace_ids` (a sample), and `network_flows` has an index on
-`trace_id`, so the endpoint could return the flows whose `trace_id` is in the detection's `trace_ids`. Paged, newest
-first. Please confirm which way you want it.
-
-**G7 - Flow list filters.** `GET /flows`: `start_time` + `end_time` (required, to keep queries on the hypertable small),
-`src_ip`, `dst_ip`, `protocol`, `dst_port`, `source`, `page_size`. A `total` count over millions of flows is expensive;
-`has_more` (or a cursor on `ts_start`) is enough for the UI.
 
 **G8 - Detection configuration form.** The [configuration API](../../ManagementAPI/detection-configurations/README.md)
 is implemented. `parameters` is free JSONB, so the UI shows one input per key with its current value
@@ -259,21 +248,6 @@ Send all parameter keys to retain them. Invalid values return 422 with field loc
 reads require an access token. New definitions are inactive, and `PUT /api/v1/detection-configurations/{id}/activate`
 enables the target without disabling other definitions. The current processor still reads YAML at startup;
 persisting or activating a database definition does not reload it.
-
-**G9 - Simulator control (F11, F14, UC-10 to UC-13, API-06).** Not in the endpoint plan. Proposal:
-
-| Method | Path | Body / result |
-|---|---|---|
-| GET | `/simulator` | `{running, started_at, flows_sent, config}` |
-| POST | `/simulator/start` | `{scenarios, rate, hosts, anomaly_share, duration_s, profile}` (admin) |
-| POST | `/simulator/stop` | (admin) |
-
-Today the simulator is a one-shot `docker compose run` container, so the API cannot start it. This needs a short design
-with Valeriia (M1) and Vlad (M5): for example the simulator runs as a normal service waiting for commands on a
-`simulator.control` topic and publishes its status, and the API publishes start/stop commands.
-
-**G10 - System metrics (F11, "system metrics").** Nice to have for the Overview: processor instances, consumer lag,
-p95 detection latency (`detection_latency` view). Can come later.
 
 **Other notes for the API:**
 
@@ -307,27 +281,31 @@ the API is rendered as text (no HTML), which is what SEC-08 checks.
 
 - **Component tests** (Vitest + Testing Library, `npm test`): API client refresh logic, login form, severity badge,
   alert table rendering, filter to query-string mapping, time-range helpers. Run in CI next to the Python tests.
-- **End-to-end** (Playwright, week 7 with M5, issue #14): ST-02 simulator scenario visible on the dashboard,
+- **End-to-end** (Playwright, week 7 with M5, issue #14): ST-02 attack from an imported file visible on the dashboard,
   ST-03 PCAP import visible, ST-04 history filters, ST-05 live statistics and charts update, SEC-08 HTML in a detection
   field shown as text.
 - **Security**: `npm audit` in the week 9 scans (issue #17), ZAP baseline against the dashboard (SEC-12).
 
 ## 9. Plan
 
-| Week | Dashboard work |
-|---|---|
-| 2 (late) | this section, wireframes, API review (this PR) |
-| 3 | React app in `services/dashboard`, Docker build into nginx, routing and layout, login + API client |
-| 4 | Overview with cards and charts (mid-term presentation: wireframes + running skeleton) |
-| 5 | Alerts list with filters, alert details with evidence, acknowledge |
-| 6 | History and Flows screens, detections endpoint behind login |
-| 7 | Settings (thresholds, simulator), Playwright end-to-end tests with M5 |
-| 8 | Loading/error/empty states, accessibility, check under API load (PT-05) |
-| 9-10 | `npm audit`, screenshots for the test report and the demo, bug fixes |
+The dashboard part of the [work schedule](../../WorkSchedule/README.md):
+
+| Week | Dashboard work | State |
+|---|---|---|
+| 2 | this section, wireframes, API review, React app in `services/dashboard`, Docker build into nginx, login | done |
+| 3-4 | Overview with cards and trend charts (#34) | in review |
+| 5 | Alerts list with filters, alert details with evidence, acknowledge (#35) | in review |
+| 6 | History and Flows screens (#36) | planned |
+| 7 | Settings: detection thresholds (#37), Playwright end-to-end tests with M5 (#14) | planned |
+| 8 | Loading, error and empty states, accessibility, check under API load (#38) | planned |
+| 9-10 | `npm audit`, screenshots for the test report and the demo, bug fixes (#39) | planned |
 
 ## 10. Open questions
 
-- G4: who creates alerts and for which severities (M2, M3)?
-- G9: simulator control design (M1, M3, M5).
+- Flows are counted by their own start time (`ts_start`), while detections get the current time. A file imported with
+  its original timestamps therefore shows detections but no traffic in "last hour"; the Overview says so when a range
+  has no flows. Importing with `REPLAY_SPEED` (M1) moves the flows to the present.
+- Detection configurations live in the database, but the engine reads `config/detection.yaml` at start-up. The Settings
+  screen needs runtime changes to reach the engine (week 6, M2, F16).
 - UC-01 "Import PCAP files" is listed for the End User. The importer (M1) is a command-line tool for now; uploading a
   PCAP from the dashboard is not planned unless we decide otherwise.

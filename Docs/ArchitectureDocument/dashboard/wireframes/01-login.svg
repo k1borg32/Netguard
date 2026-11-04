@@ -11,7 +11,7 @@
 <text x="480" y="420" font-size="11" font-weight="400" fill="#6b7280" text-anchor="start">Password</text>
 <rect x="480" y="426" width="320" height="32" rx="5" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
 <text x="490" y="447" font-size="13" font-weight="400" fill="#202124" text-anchor="start">••••••••••••</text>
-<text x="480" y="482" font-size="12" font-weight="400" fill="#c92a2a" text-anchor="start">Wrong username or password</text>
+<text x="480" y="482" font-size="12" font-weight="400" fill="#6f1a12" text-anchor="start">Wrong username or password</text>
 <rect x="480" y="502" width="320" height="32" rx="6" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
 <text x="640" y="523" font-size="13" font-weight="600" fill="#fff" text-anchor="middle">Sign in</text>
 <text x="640" y="566" font-size="11" font-weight="400" fill="#6b7280" text-anchor="middle">Accounts are created by an administrator</text>
