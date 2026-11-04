@@ -12,6 +12,9 @@ groups have caught up, then collects for the measurement window:
 The detection_latency view is read for the same window too, only to compare: until #65 the persister moved
 last_ingested_at when a detection escalated, so escalated detections got a negative latency there.
 
+A run that can't be used is reported as NOT VALID and the script exits with 1: the generator didn't reach the
+rate, the processor didn't get the flows or restarted, or the consumers didn't catch up after the load.
+
 Usage (stack running with `make up`, venv active):
     python tests/performance/baseline.py --rates 100 1000 5000
 Raw samples and summary.json go to results/perf/<date-time>/, the tables for the test report to stdout.
@@ -87,11 +90,17 @@ def memory_mib(text: str) -> float:
     return 0.0
 
 
-def docker_stats() -> list[dict]:
+def compose_project() -> str:
+    """Containers are named after the Compose project: the folder name unless COMPOSE_PROJECT_NAME is set."""
+    out = subprocess.run([*COMPOSE, "config", "--format", "json"], cwd=ROOT, capture_output=True, text=True).stdout
+    return json.loads(out)["name"]
+
+
+def docker_stats(project: str) -> list[dict]:
     command = ["docker", "stats", "--no-stream", "--format", "{{json .}}"]
     rows = []
     for stat in json_lines(subprocess.run(command, capture_output=True, text=True, timeout=60).stdout):
-        if not stat["Name"].startswith("netguard-"):
+        if not stat["Name"].startswith(f"{project}-"):
             continue
         try:
             cpu = float(stat["CPUPerc"].rstrip("%"))
@@ -104,8 +113,9 @@ def docker_stats() -> list[dict]:
 class Sampler(threading.Thread):
     """Lag of both groups and docker stats every SAMPLE_EVERY_S seconds, until stop is set."""
 
-    def __init__(self) -> None:
+    def __init__(self, project: str) -> None:
         super().__init__(daemon=True)
+        self.project = project
         self.lag_reader = LagReader()
         self.lag_rows: list[dict] = []
         self.stats_rows: list[dict] = []
@@ -117,7 +127,7 @@ class Sampler(threading.Thread):
             t = time.time()
             try:
                 lags = {group: self.lag_reader.lag(group, topic_names) for group, topic_names in GROUPS.items()}
-                stats = docker_stats()
+                stats = docker_stats(self.project)
             except (KafkaException, TimeoutError, subprocess.SubprocessError):
                 self.missed_samples += 1  # one slow answer shouldn't end the sampling
             else:
@@ -162,18 +172,36 @@ def processor_log(since: float) -> list[dict]:
     return entries
 
 
-def late_flows(log: list[dict], run_start: float, run_end: float) -> int | None:
-    """Flows the processor dropped during the run because their window had already closed (its counters are
-    cumulative per instance)."""
+def counter_growth(log: list[dict], counter: str, run_start: float, run_end: float) -> int | None:
+    """How much a cumulative counter of the processor ("flows", "late_flows") grew during the run, over all
+    instances. The counters start at 0, so an instance that started shortly before the run counts from there."""
     total = 0
     for instance in {e["instance"] for e in log}:
-        stats = [e for e in log if e["instance"] == instance and e.get("msg") == "engine stats"]
-        before = [e["late_flows"] for e in stats if e["ts"] <= run_start]
-        after = [e["late_flows"] for e in stats if e["ts"] >= run_end]
-        if not before or not after:
+        entries = [e for e in log if e["instance"] == instance]
+        stats = [e for e in entries if e.get("msg") == "engine stats"]
+        before = [e[counter] for e in stats if e["ts"] <= run_start]
+        after = [e[counter] for e in stats if e["ts"] >= run_end]
+        if not after or not (before or any(e.get("msg") == "processor started" for e in entries)):
             return None
-        total += after[0] - before[-1]
+        total += after[0] - (before[-1] if before else 0)
     return total
+
+
+def invalid_reasons(r: dict) -> list[str]:
+    """Why a run can't be used (test plan 3.7): the rate wasn't reached, the processor didn't get the flows or
+    restarted, or the consumers didn't catch up after the load."""
+    reasons = []
+    if r["achieved_rate"] < 0.95 * r["rate"]:
+        reasons.append(f"the load generator reached only {r['achieved_rate']:,} of {r['rate']:,} flows/s")
+    if r["processed"] is None:
+        reasons.append("no processor counters for the run")
+    elif r["processed"] < 0.99 * r["sent"]:
+        reasons.append(f"the processor got only {r['processed']:,} of {r['sent']:,} flows")
+    if r["processor_restarts"]:
+        reasons.append("the processor restarted during the run")
+    if r["catch_up_s"] is None:
+        reasons.append("the consumers didn't catch up within 3 min after the load")
+    return reasons
 
 
 def wait_for_engine_stats(after: float, timeout_s: float = 45) -> None:
@@ -262,6 +290,7 @@ def summarize(rate: int, run: tuple[float, float], window: tuple[float, float], 
     lag_rows = [r for r in sampler.lag_rows if start <= r["t"] <= end]
     log = processor_log(run[0] - 35)  # from the last counters before the run
     detections = [e for e in log if e.get("msg") == "detection" and start <= e["ts"] < end]
+    restarts = [e for e in log if e.get("msg") == "processor started" and run[0] <= e["ts"] <= run[1]]
     stored = stored_flows(run[0] - 1, run[1] + 1)
     return {
         "rate": rate,
@@ -269,9 +298,11 @@ def summarize(rate: int, run: tuple[float, float], window: tuple[float, float], 
         "window": window,
         "achieved_rate": round(sent / (run[1] - run[0])),
         "sent": sent,
+        "processed": counter_growth(log, "flows", *run),
+        "processor_restarts": len(restarts),
         "stored": stored,
         "lost": sent - stored,
-        "late_flows": late_flows(log, *run),
+        "late_flows": counter_growth(log, "late_flows", *run),
         "max_lag": {g: max((r["lag"] for r in lag_rows if r["group"] == g), default=None) for g in GROUPS},
         "lag_growth_per_s": {g: lag_growth(lag_rows, g) for g in GROUPS},
         "latency_s": latency_stats([d["latency_s"] for d in detections]),
@@ -284,9 +315,9 @@ def summarize(rate: int, run: tuple[float, float], window: tuple[float, float], 
     }
 
 
-def run_level(rate: int, warmup: int, measure: int, generators: int, out: Path) -> dict:
+def run_level(rate: int, warmup: int, measure: int, generators: int, project: str, out: Path) -> dict:
     print(f"{rate} flows/s: {warmup} s warm-up + {measure} s measurement", flush=True)
-    sampler = Sampler()
+    sampler = Sampler(project)
     sampler.start()
     generator_logs = run_generators(rate, warmup + measure, generators)
     starts = [e["ts"] for logs in generator_logs for e in logs if e.get("msg") == "load generator started"]
@@ -303,6 +334,12 @@ def run_level(rate: int, warmup: int, measure: int, generators: int, out: Path) 
     summary = summarize(rate, run, window, sampler, sent=sum(e["sent"] for e in ends))
     summary["catch_up_s"] = catch_up_s
     summary["missed_samples"] = sampler.missed_samples
+    summary["invalid"] = invalid_reasons(summary)
+    summary["warnings"] = []
+    if not sampler.stats_rows:
+        summary["warnings"].append(f"no docker stats for containers of the Compose project '{project}'")
+    if sampler.missed_samples:
+        summary["warnings"].append(f"{sampler.missed_samples} lag/CPU samples missed (slow answers)")
     for name, rows in (("lag", sampler.lag_rows), ("docker_stats", sampler.stats_rows)):
         if rows:
             with open(out / f"{name}_{rate}.csv", "w", newline="", encoding="utf-8") as f:
@@ -372,12 +409,21 @@ def main() -> None:
 
     out = ROOT / "results" / "perf" / datetime.now().strftime("%Y%m%d-%H%M%S")
     out.mkdir(parents=True)
+    project = compose_project()
     report = {"conditions": conditions(args), "results": []}
     for rate in args.rates:
-        report["results"].append(run_level(rate, args.warmup, args.measure, args.generators, out))
+        report["results"].append(run_level(rate, args.warmup, args.measure, args.generators, project, out))
         (out / "summary.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     print_tables(report["results"])
     print(f"\nResults: {out}")
+
+    for r in report["results"]:
+        for warning in r["warnings"]:
+            print(f"Warning at {r['rate']:,} flows/s: {warning}")
+        for reason in r["invalid"]:
+            print(f"NOT VALID at {r['rate']:,} flows/s: {reason}")
+    if any(r["invalid"] for r in report["results"]):
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

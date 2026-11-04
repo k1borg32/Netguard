@@ -465,7 +465,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | RT-02 | Processor process crashes inside its container | NFR04 | Docker restarts it and it rejoins the consumer group | week 8 |
 | RT-03 | Persister restart under load | F10, NFR04 | no flow lost, no duplicate detections | week 8 |
 | RT-04 | DB down for 30 s | NFR04 | API reports `degraded`; persister recovers; data complete afterwards | week 8 |
-| RT-05 | Broker down for 30 s | NFR04 | producers and consumers reconnect; nothing lost within the producer timeout | week 8 |
+| RT-05 | Broker down for 30 s | NFR04 | producers and consumers reconnect; nothing lost within the producer timeout | week 8. Seen once in week 4: after the broker container was recreated, the processor stayed at 0 flows while the persister recovered |
 | RT-06 | Malformed message on `flows.raw` | NFR04, NFR06 | consumers skip it (dead-letter topic) and keep working | fails (R3), re-test week 5 |
 | RT-07 | Full restart without wiping volumes | F10, NFR05 | data kept, processing continues | week 8 |
 
