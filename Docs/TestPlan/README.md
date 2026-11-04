@@ -148,6 +148,9 @@ manifest is stored next to its data file as `<file>.manifest.json`. Example and 
   separately as "detected but not classified"
 - false alarms: alerts per hour on the normal-only dataset
 
+The matching is implemented in `tests/quality/evaluate.py` (week 4): it reads the manifest next to an imported
+labelled file and the detections of the same time range from the database.
+
 We report a table per class, a confusion matrix (real class x predicted class + "missed"), and for every false
 positive / false negative of the final run the reason (threshold, window boundary, traffic mix) and what we changed.
 
