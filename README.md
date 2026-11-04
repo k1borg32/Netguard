@@ -102,7 +102,7 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
 
 | Requirement | Command |
 |---|---|
-| NFR01 load (5,000 flows/s, 5 min) | `make perf` (generates the load; measuring is part of the performance tests) |
+| NFR01/NFR02 throughput and latency | `make baseline`: 100, 1,000 and 5,000 flows/s, measures lag, lost flows, detection latency and CPU per container ([results](Docs/TestReport/README.md)). `make perf` only generates the 5,000 flows/s load |
 | NFR03 scaling | `make scale` (3 processor instances) |
 | NFR04 resilience | `make kill-one` while `make load` runs - detections keep coming. The killed container stays down (`docker kill` counts as a manual stop); the others take over its partitions within ~10 s. |
 | F15 traceability | copy a `trace_id` from a detection, `make trace ID=<id>` |
@@ -124,6 +124,6 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
   [deployment, CI/CD and testing](Docs/ArchitectureDocument/deployment/README.md)
 - [Domain Data Model](Docs/ArchitectureDocument/DomainDataModel/README.md) and [Database Schema](Docs/ArchitectureDocument/DatabaseSchema/README.md)
 - [Data Access and Management API](Docs/ManagementAPI/README.md) - API, authentication, endpoints
-- [Test Plan](Docs/TestPlan/README.md)
+- [Test Plan](Docs/TestPlan/README.md) and [Test Report](Docs/TestReport/README.md)
 - [Work Schedule](Docs/WorkSchedule/README.md) - plan per week and team member
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

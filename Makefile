@@ -1,6 +1,6 @@
 # Windows: install make once (winget install ezwinports.make) and run it from Git Bash,
 # or copy the command under a target and run it directly.
-.PHONY: help setup up down reset logs ps import load perf scale kill-one test test-unit test-int test-stack coverage lint format trace
+.PHONY: help setup up down reset logs ps import load perf baseline scale kill-one test test-unit test-int test-stack coverage lint format trace
 
 ifeq ($(OS),Windows_NT)
 VENV_BIN := .venv/Scripts
@@ -39,6 +39,9 @@ import:          ## Import a PCAP or flow file, e.g. make import FILE=data/pcap/
 
 perf:            ## NFR01 load: 5000 flows/s for 5 min
 	docker compose --profile perf run --rm -e LOAD_RATE=5000 -e LOAD_DURATION_S=300 loadgen
+
+baseline:        ## PT-01/PT-02: 100, 1,000 and 5,000 flows/s with lag, latency and CPU (stack up, ~20 min)
+	python tests/performance/baseline.py
 
 scale:           ## NFR03: three processor instances (--no-deps: don't touch DB/broker)
 	docker compose up -d --no-deps --scale processor=3 processor
