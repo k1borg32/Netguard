@@ -20,9 +20,12 @@ dist/
 data/pcap/*.pcap
 !data/pcap/.gitkeep
 data/runs/
+data/tmp/
 results/
 !data/pcap/sample.pcap
 
 .idea/
 .vscode/
 .DS_Store
+data/raw/
+data/flows/cic*.csv

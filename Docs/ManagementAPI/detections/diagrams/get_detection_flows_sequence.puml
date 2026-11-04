@@ -1,0 +1,30 @@
+@startuml
+title Detection flows - retained evidence sample
+skinparam backgroundColor white
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam sequenceMessageAlign center
+hide footbox
+
+actor Client
+boundary "Detection flows controller" as API
+control GetDetectionFlowsHandler as Handler
+database TimescaleDB as DB
+
+Client -> API : GET /api/v1/detections/{id}/flows\npage, page_size, sort_order
+API -> API : Validate UUID and query parameters
+API -> Handler : handle(GetDetectionFlowsQuery)
+Handler -> DB : One SELECT: parent + matched flows + page + total\nflow.trace_id = ANY(detection.trace_ids)
+alt Detection exists
+    DB --> Handler : Page rows and total\nparent retained even for an empty page
+    Handler --> API : GetDetectionFlowsResponse
+    API --> Client : 200 {items, total, page, page_size}
+else Detection does not exist
+    DB --> Handler : No rows
+    Handler --> API : DetectionNotFoundError
+    API --> Client : 404 {detail: "Detection not found"}
+end
+note over Client,DB : Stored trace IDs are a sample of contributing flows.\nOnly matching flows still present in storage are returned.
+note over Client,API : Invalid UUID or query: 422 before handler dispatch\nUnavailable database: 503 via shared exception handler
+@enduml

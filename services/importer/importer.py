@@ -203,11 +203,23 @@ def main() -> None:
         producer = make_producer()
         log.info("importer started", extra={"flow_file": flow_file})
 
+        replayer = None
+        speed = os.getenv("REPLAY_SPEED")
+        if speed:
+            from replay import Replayer
+
+            max_gap = os.getenv("REPLAY_MAX_GAP_S")
+            replayer = Replayer(float(speed), float(max_gap) if max_gap else None)
+            log.info("replay mode", extra={"speed": float(speed), "max_gap_s": max_gap})
+
         for index, (kind, rec, source) in enumerate(_raw_records(flow_file, warnings)):
             trace_id = new_trace_id()
             ingested_at = time.time()
             try:
                 fields = normalise_row(rec) if kind == "row" else rec
+                if replayer is not None:
+                    fields["ts_start"] = replayer.rebase(fields["ts_start"])
+                    ingested_at = time.time()
                 flow = finalise_flow(fields, source_name, index, ingested_at, trace_id, source)
                 validate_flow(flow)
             except (ValueError, SchemaError) as e:
@@ -220,7 +232,7 @@ def main() -> None:
             with trace_context(trace_id):
                 producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
             accepted += 1
-            if (index + 1) % 1000 == 0:
+            if replayer is not None or (index + 1) % 1000 == 0:
                 producer.poll(0)
     except InputError as e:
         fatal = str(e)

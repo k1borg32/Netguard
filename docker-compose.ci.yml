@@ -19,3 +19,7 @@ services:
     build:
       cache_from: ["type=gha,scope=dashboard"]
       cache_to: ["type=gha,scope=dashboard,mode=max"]
+  importer:
+    build:
+      cache_from: ["type=gha,scope=importer"]
+      cache_to: ["type=gha,scope=importer,mode=max"]

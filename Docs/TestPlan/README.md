@@ -275,7 +275,7 @@ generator did not reach the requested rate or something else was running on the 
 | Everyone | unit tests for their own code, runs the tests before opening a PR, reviews tests in PRs, takes part in the week 9 campaign (spec 9) |
 | M1 - Valeriia (Network Data & Flow Processing) | importer tests, PCAP test files, preparing the labelled dataset and its ground-truth manifests |
 | M2 - Kuzma (Anomaly Detection & Algorithms) | unit tests for windows, rules and statistics; detection quality evaluation together with M5; threshold sweeps |
-| M3 - Jakub (Backend & Data Storage) | API and persistence tests; API security tests (auth, rate limiting) together with M5 |
+| M3 - Jakub (Data Access and Management API) | API and persistence tests; API security tests (auth, rate limiting) together with M5 |
 | M4 - Daniyar (Frontend & Visualization) | dashboard component tests; Playwright end-to-end tests together with M5 |
 | M5 - Vlad (Infrastructure, Testing & DevOps) | test plan and report, CI, test environment, load generator, automation of integration/system/performance/resilience/security tests, coordination |
 
@@ -374,7 +374,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-08 | Normal traffic | F06 | no port scan detection | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-09 | Same flows processed twice | NFR04 | same `detection_id` | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-10 | Consumer helper gets an undecodable message | NFR04 | message skipped and logged, the rest is processed | `tests/unit/test_broker.py` | pass |
-| UT-11 | PCAP parser on a known PCAP | F01, F02 | expected flows (5-tuple, packets, bytes, duration) | | week 3 |
+| UT-11 | PCAP parser on a known PCAP | F01, F02 | expected flows (5-tuple, packets, bytes, duration) | `tests/unit/test_pcap_reader.py` | pass |
 | UT-12 | Feature extraction per window | F03 | correct connection rate and unique ports/addresses | | week 3-5 |
 | UT-13 | 1 s, 10 s and 60 s windows, flows on window boundaries | F05 | each flow counted in the right window | `tests/unit/test_detection_engine.py` | pass |
 | UT-14 | DoS, brute force and suspicious connection pattern rules | F06 | fire above the threshold, silent below | `tests/unit/test_detection_engine.py` | pass |
@@ -383,6 +383,10 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | `tests/unit/test_detection_engine.py` | pass |
 | UT-18 | Removed in v0.4 (simulator parameters, F14) | - | - | | - |
 | UT-19 | Ground-truth manifest: valid manifest accepted; unknown class, empty attackers, end before start, duplicate episode IDs rejected | NFR11 | `SchemaError` naming the problem | `tests/unit/test_manifest.py` | pass |
+| UT-20 | CIC-IDS2017 converter: label mapping, 12-hour clock without AM/PM, negative durations skipped, time window | F01, NFR09 | correct flow.v1 rows and class labels | `tests/unit/test_convert_cic.py` | pass |
+| UT-21 | Importer replay: timestamps moved to the present, speed and maximum gap respected | F01, NFR05 | rebased timestamps, waits as configured | `tests/unit/test_replay.py` | pass |
+| UT-22 | Manifest generator and checker: episodes built from labels, counts compared with the CSV | NFR11 | valid manifest; checker reports OK or FAILED | `tests/unit/test_make_manifest.py`, `tests/unit/test_check_manifest.py` | pass |
+| UT-23 | Importer robustness: bad rows rejected with reason, broken file gives clear error and exit code 1 | F01, SEC-02 | summary line always printed | `tests/unit/test_importer_robustness.py` | pass |
 
 ### Integration tests (IT)
 

@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "dataset": "LABELLED/cic-tuesday-bruteforce",
+  "source": "flowfile",
+  "seed": null,
+  "created_at": 1793652473.514,
+  "episodes": [
+    {
+      "episode_id": "brute_force-001",
+      "class": "brute_force",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499159859.056,
+      "end": 1499163605.351,
+      "params": {
+        "flows": 7937,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "brute_force-002",
+      "class": "brute_force",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499164200.0,
+      "end": 1499164200.0,
+      "params": {
+        "flows": 1,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "brute_force-003",
+      "class": "brute_force",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499177389.049,
+      "end": 1499181063.529,
+      "params": {
+        "flows": 5897,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    }
+  ],
+  "notes": "CIC-IDS2017 Tuesday (TrafficLabelling, UNB). FTP-Patator and SSH-Patator mapped to brute_force by convert_cic.py. Minute-only timestamps spread within the minute (accurate to about 1 minute). Attacker 172.16.0.1 is the firewall NAT address of 205.174.165.73. Checked against the attack schedule of the dataset page: FTP-Patator 9:20-10:20 matches (episode 001, 9:17-10:20); SSH-Patator 14:00-15:00 does not match to the minute (episode 003 runs 14:09-15:11); episode 002 is one flow at 10:30 outside any scheduled attack."
+}

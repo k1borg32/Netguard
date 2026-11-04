@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "dataset": "LABELLED/cic-friday-ddos",
+  "source": "flowfile",
+  "seed": null,
+  "created_at": 1793652474.081,
+  "episodes": [
+    {
+      "episode_id": "dos-001",
+      "class": "dos",
+      "attackers": [
+        "172.16.0.1"
+      ],
+      "targets": [
+        "192.168.10.50"
+      ],
+      "start": 1499442960.229,
+      "end": 1499444189.178,
+      "params": {
+        "flows": 128024,
+        "distinct_dst_ports": 1,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    },
+    {
+      "episode_id": "dos-002",
+      "class": "dos",
+      "attackers": [
+        "192.168.10.50"
+      ],
+      "targets": [
+        "172.16.0.1"
+      ],
+      "start": 1499443605.208,
+      "end": 1499443605.223,
+      "params": {
+        "flows": 3,
+        "distinct_dst_ports": 3,
+        "distinct_targets": 1,
+        "gap_s": 120.0
+      }
+    }
+  ],
+  "notes": "CIC-IDS2017 Friday afternoon DDoS (TrafficLabelling, UNB). DDoS mapped to dos by convert_cic.py. Minute-only timestamps spread within the minute (accurate to about 1 minute). The three attacking Windows hosts (205.174.165.69-71) appear as the firewall NAT address 172.16.0.1. Checked against the attack schedule of the dataset page: DDoS 15:56-16:16 matches (episode 001). Episode 002 is 3 flows labelled DoS whose source is the victim 192.168.10.50 (label noise)."
+}

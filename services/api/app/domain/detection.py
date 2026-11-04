@@ -21,6 +21,7 @@ class Detection:
     severity: str
     configuration_id: UUID | None = None
     first_ingested_at: datetime | None = None
+    last_ingested_at: datetime | None = None
     confidence: float | None = None
     src_ip: str | None = None
     dst_ip: str | None = None
