@@ -37,15 +37,15 @@ References:
 
 ### 2.1 Test items
 
-| Component | Code | Owner | State in week 3 |
+| Component | Code | Owner | State in week 4 |
 |---|---|---|---|
-| Load generator (test tooling, not part of the product) | `services/simulator` for now | M5 | normal traffic + port scan, used by CI and the performance tests |
-| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import in review (PR #51) |
+| Load generator (test tooling, not part of the product) | `services/loadgen` | M5 | normal traffic + port scan, used by CI and the performance tests |
+| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import (#51), CIC-IDS2017 converter, manifests and replay mode (#63) |
 | Broker + message contracts | Redpanda, `libs/common` | M5 | working |
-| Flow processor / detection engine | `services/processor` | M2 | placeholder port scan rule |
-| Persister + database | `services/persister`, `db/` | M3 | working, schema by M3 (flows hypertable, detections, alerts, users) |
-| REST API | `services/api` | M3 | login (JWT), detections, alerts, dashboard summary; flows, detection details and time series in review (PR #50) |
-| Dashboard | `services/dashboard` | M4 | React app skeleton in the nginx container, screens from week 4 |
+| Flow processor / detection engine | `services/processor` | M2 | 1/10/60 s windows, four rules, z-score method, severity and alert policy (#62) |
+| Persister + database | `services/persister`, `db/` | M3 | writes flows, detections and alerts; schema by M3 (flows hypertable, detections, alerts, users) |
+| REST API | `services/api` | M3 | login (JWT), detections, flows, alerts, dashboard summary and time series, detection configuration (#50) |
+| Dashboard | `services/dashboard` | M4 | login and the overview page; trend charts (#68) and the alert screens next |
 | Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working, dashboard job and build cache added in week 2 |
 
 ### 2.2 In scope
@@ -376,11 +376,11 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-10 | Consumer helper gets an undecodable message | NFR04 | message skipped and logged, the rest is processed | `tests/unit/test_broker.py` | pass |
 | UT-11 | PCAP parser on a known PCAP | F01, F02 | expected flows (5-tuple, packets, bytes, duration) | `tests/unit/test_pcap_reader.py` | pass |
 | UT-12 | Feature extraction per window | F03 | correct connection rate and unique ports/addresses | | week 3-5 |
-| UT-13 | 1 s, 10 s and 60 s windows, flows on window boundaries | F05 | each flow counted in the right window | | week 5 |
-| UT-14 | DoS, brute force and suspicious connection pattern rules | F06 | fire above the threshold, silent below | | week 5 |
-| UT-15 | Statistical method | F07 | baseline built, abnormal traffic detected as a deviation from it, other anomalies reported as `unknown`, no result before the minimum number of baseline windows | | week 5 |
-| UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | | week 5 |
-| UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | | week 5 |
+| UT-13 | 1 s, 10 s and 60 s windows, flows on window boundaries | F05 | each flow counted in the right window | `tests/unit/test_detection_engine.py` | pass |
+| UT-14 | DoS, brute force and suspicious connection pattern rules | F06 | fire above the threshold, silent below | `tests/unit/test_detection_engine.py` | pass |
+| UT-15 | Statistical method | F07 | baseline built, abnormal traffic detected as a deviation from it, other anomalies reported as `unknown`, no result before the minimum number of baseline windows | `tests/unit/test_detection_engine.py` | pass |
+| UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | `tests/unit/test_detection_engine.py` | pass |
+| UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | `tests/unit/test_detection_engine.py` | pass |
 | UT-18 | Removed in v0.4 (simulator parameters, F14) | - | - | | - |
 | UT-19 | Ground-truth manifest: valid manifest accepted; unknown class, empty attackers, end before start, duplicate episode IDs rejected | NFR11 | `SchemaError` naming the problem | `tests/unit/test_manifest.py` | pass |
 | UT-20 | CIC-IDS2017 converter: label mapping, 12-hour clock without AM/PM, negative durations skipped, time window | F01, NFR09 | correct flow.v1 rows and class labels | `tests/unit/test_convert_cic.py` | pass |
@@ -394,9 +394,9 @@ which the test is planned. Automated tests carry their ID in the docstring.
 |---|---|---|---|---|---|
 | IT-01 | API health | F11 | `status: ok`, DB reachable | `tests/integration/test_stack.py` | pass |
 | IT-02 | Port scan flows sent to the broker | F04, F06, F10, F11 | detection visible in the API within 40 s | `tests/integration/test_stack.py` | pass |
-| IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | | week 3 |
+| IT-03 | PCAP and flow-file import | F01, F02, F10 | flows on the broker and stored with `source = pcap` / `flowfile` | `tests/integration/test_import.py` | pass |
 | IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | | week 5 |
-| IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | | week 3 |
+| IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | `tests/integration/test_import.py` | pass |
 | IT-06 | Follow one trace_id | F15, NFR08 | found in the logs of every service and in the detection | | week 3 |
 | IT-07 | Stored detection | F08, F09 | type, severity, confidence, time, source, destination, ID, features and window present | | week 6 |
 | IT-08 | Alert created from a detection | F17 | alert with status `new` in the alert list, linked to its detection | | week 6 |
@@ -459,7 +459,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | RT-03 | Persister restart under load | F10, NFR04 | no flow lost, no duplicate detections | week 8 |
 | RT-04 | DB down for 30 s | NFR04 | API reports `degraded`; persister recovers; data complete afterwards | week 8 |
 | RT-05 | Broker down for 30 s | NFR04 | producers and consumers reconnect; nothing lost within the producer timeout | week 8 |
-| RT-06 | Malformed message on `flows.raw` | NFR04, NFR06 | consumers skip it (dead-letter topic) and keep working | fails (R3), re-test week 5 |
+| RT-06 | Malformed message on `flows.raw` | NFR04, NFR06 | consumers skip it (dead-letter topic) and keep working | fails (R3): the processor skips it since week 3, the persister still crashes; re-test week 6 |
 | RT-07 | Full restart without wiping volumes | F10, NFR05 | data kept, processing continues | week 8 |
 
 ### Security (SEC)
@@ -467,7 +467,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | SEC-01 | Schema-invalid flows sent into the pipeline | NFR06 | rejected at the edge, never crash a consumer | fails (R3), re-test week 3 |
-| SEC-02 | Broken, oversized and non-PCAP files imported | F01, NFR06 | rejected with an error report, importer keeps running | week 3 |
+| SEC-02 | Broken, oversized and non-PCAP files imported | F01, NFR06 | rejected with an error report, importer keeps running | pass (`tests/integration/test_import.py`) |
 | SEC-03 | Request without a token | NFR06 | 401 | week 6 |
 | SEC-04 | Non-admin token on administrative operations (thresholds) | NFR06 | 403 | week 6 |
 | SEC-05 | Tampered or expired JWT | NFR06 | 401 | week 6 |
