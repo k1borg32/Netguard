@@ -84,10 +84,10 @@ DET_SQL = (
     "severity, confidence, src_ip, dst_ip, window_size_s, window_start, window_end, features, explanation, "
     "trace_ids) VALUES (%s, to_timestamp(%s), to_timestamp(%s), to_timestamp(%s), %s, %s, %s, %s, %s, %s, "
     "%s, to_timestamp(%s), to_timestamp(%s), %s, %s, %s) "
-    # escalation: keep created_at (latency is measured to the first detection), take the stronger evidence
+    # escalation: keep created_at and last_ingested_at, the pair the latency of the first detection is measured
+    # from (NFR02), and take the stronger evidence
     "ON CONFLICT (detection_id) DO UPDATE SET severity = EXCLUDED.severity, confidence = EXCLUDED.confidence, "
-    "last_ingested_at = EXCLUDED.last_ingested_at, features = EXCLUDED.features, "
-    "explanation = EXCLUDED.explanation, trace_ids = EXCLUDED.trace_ids "
+    "features = EXCLUDED.features, explanation = EXCLUDED.explanation, trace_ids = EXCLUDED.trace_ids "
     f"WHERE array_position({SEVERITY_ORDER}, EXCLUDED.severity) > array_position({SEVERITY_ORDER}, detections.severity)"
 )
 ALERT_SQL = (
