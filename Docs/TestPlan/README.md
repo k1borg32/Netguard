@@ -1,8 +1,12 @@
-# NetGuard - Test Plan v0.4
+# NetGuard - Test Plan v0.5
 
-Version 0.4, week 3 (2026-10-27), updated after the supervisors removed the traffic simulator from the requirements
-(Vision v1.2). Owner: Vlad (M5, Infrastructure, Testing & DevOps). Next update: week 5 (after the first version of the
-detection engine).
+Version 0.5, week 5 (2026-11-09), after the first detection quality run. Owner: Vlad (M5, Infrastructure, Testing &
+DevOps). Next update: week 6 (after the tuning of the detection and the API tests).
+
+Changes in v0.5: first detection quality results, in the test report (section 3); episodes with fewer than 10 flows
+left out of recall, macro F1 over the classes with labelled episodes, threshold sweep and content check scripts,
+targets reviewed and kept (3.6); new UT-24; status of DQ-01 to DQ-04 and DQ-06 to DQ-08 (12); new risk R15, R14 also
+seen during a dataset import.
 
 Changes in v0.4: the simulator is no longer part of the product. Test data comes from prepared PCAP and flow files and
 a public labelled dataset (3.6, 5); the load for the performance tests comes from a load generator that is only test
@@ -140,27 +144,36 @@ manifest is stored next to its data file as `<file>.manifest.json`. Example and 
   sources) belongs to the episode, and the detection window overlaps the episode time (plus/minus one window)
 - precision of class c = detections of class c that match an episode of class c / all detections of class c
 - recall of class c = episodes of class c matched by at least one detection of class c / all episodes of class c
-- F1 = 2PR / (P + R), macro average over the five attack classes
+- F1 = 2PR / (P + R), macro average over the attack classes that have episodes in the test set
 - several detections of one episode (for example one per window) count as one match for recall. We also report
   alerts per episode, because too many alerts are a problem for the operator
 - a detection with the wrong class counts as a false positive for the predicted class and a false negative for the
   real class (unless another detection got it right). `unknown` detections that hit an episode are reported
   separately as "detected but not classified"
 - false alarms: alerts per hour on the normal-only dataset
+- episodes with fewer than 10 labelled flows (stray labels of the dataset, for example one flow labelled PortScan
+  minutes before the scan) don't count for recall, but a detection that hits them still counts as correct
+  (`--min-flows 10`, since week 5)
 
 The matching is implemented in `tests/quality/evaluate.py` (week 4): it reads the manifest next to an imported
-labelled file and the detections of the same time range from the database.
+labelled file and the detections of the same time range from the database. `tests/quality/sweep.py` (week 5) runs
+the engine of the processor directly on a file, without the stack, and scores it the same way; at the default config
+it gives the same detections as the stack (test report, 3.1). `tests/quality/check_content.py` checks the content of
+every detection (DQ-08) the same way.
 
 We report a table per class, a confusion matrix (real class x predicted class + "missed"), and for every false
 positive / false negative of the final run the reason (threshold, window boundary, traffic mix) and what we changed.
 
-**Threshold sweep.** For the main threshold of every rule we plot precision and recall over a range of values (for
-example 20-200 unique ports) to justify the default in `config/detection.yaml`.
+**Threshold sweep.** For the main threshold of every rule we measure precision and recall over a range of values (for
+example 20-200 unique ports) and the false alarms on the normal-only file, to justify the default in
+`config/detection.yaml` (test report, 3.4).
 
-**Targets** (NFR11, reviewed in week 5 after the first measurement):
+**Targets** (NFR11, reviewed in week 5 after the first measurement and kept: the first run is below them, but nothing
+was tuned yet, see the test report, section 3):
 
 - port scan, DoS, brute force (rule based): precision >= 0.90 and recall >= 0.90 on the labelled test set
-- macro F1 >= 0.80 over all five attack classes on the labelled test set
+- macro F1 >= 0.80 over the attack classes with labelled episodes in the test set. CIC-IDS2017 only has port scan,
+  DoS and brute force; abnormal traffic and suspicious connection patterns need labelled captures of our own (R15)
 - at least 30 min of normal-only traffic: no HIGH/CRITICAL alert and at most 2 alerts per 10 minutes
 - small hand-made captures and the held-out part of the dataset: no fixed target, results reported together with
   the error analysis
@@ -323,7 +336,8 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 | R11 | Windows/Linux differences (line endings, make, paths). | "works on my machine" | `.gitattributes` (LF), everything runs in Docker, CI on Linux, Windows steps in the README |
 | R12 | Replaying a dataset with old timestamps: the processor closes windows by the wall clock, so with a big file every window is closed after each batch and an attack is split into parts below the threshold (found in the week 3 review of the importer). | wrong detection results on the dataset (DQ) | week 4, with M1 and M2: windows by event time in the processor, or the importer moves the timestamps to the present when it replays |
 | R13 | The traffic simulator was removed from the requirements in week 3. The controllable load for the performance tests and the input of the CI pipeline test came from it. | NFR01/NFR02 can't be measured without a load source | its code stays only as a load generator in the test tooling (M5), not as a product component |
-| R14 | Each window's clock also moves with the wall clock, so flows that reach the processor more than 1 to 2 s late find their window closed and are dropped (found in the week 4 baseline: 4.7 % at 5,000 flows/s). | detections missed under load, without an error | M2: no closing while the processor is behind; the late-flow counter is part of every performance run |
+| R14 | Each window's clock also moves with the wall clock, so flows that reach the processor more than 1 to 2 s late find their window closed and are dropped (found in the week 4 baseline: 4.7 % at 5,000 flows/s). In week 5 also during a dataset import without any stall: 0.3 to 1.3 % of the flows. | detections missed under load, without an error | M2: no closing while the processor is behind; the late-flow counter is part of every performance and detection quality run |
+| R15 | The public labelled dataset covers only three of our five attack classes (no abnormal traffic, no suspicious connection pattern) and has a single DDoS episode (found in week 5). | per-class quality (NFR11) can't be measured for two classes; DoS recall depends on one attack | macro F1 over the classes with episodes; the Wednesday file of CIC-IDS2017 for more DoS episodes; small labelled captures of our own for the other two classes (M1, M5) |
 
 Also fixed in week 1: the DB, broker, API and dashboard were published on all network interfaces with a default
 password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the whole repository including `.venv` and
@@ -394,6 +408,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-21 | Importer replay: timestamps moved to the present, speed and maximum gap respected | F01, NFR05 | rebased timestamps, waits as configured | `tests/unit/test_replay.py` | pass |
 | UT-22 | Manifest generator and checker: episodes built from labels, counts compared with the CSV | NFR11 | valid manifest; checker reports OK or FAILED | `tests/unit/test_make_manifest.py`, `tests/unit/test_check_manifest.py` | pass |
 | UT-23 | Importer robustness: bad rows rejected with reason, broken file gives clear error and exit code 1 | F01, SEC-02 | summary line always printed | `tests/unit/test_importer_robustness.py` | pass |
+| UT-24 | Detection quality matching: same class, attacker or target, window give or take one window; wrong class, `unknown`, several detections per episode, small episodes left out of recall | NFR11 | the rules of section 3.6 | `tests/unit/test_detection_quality.py` | pass |
 
 ### Integration tests (IT)
 
@@ -437,14 +452,14 @@ which the test is planned. Automated tests carry their ID in the docstring.
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| DQ-01 | Precision, recall, F1 per class on LABELLED | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | weeks 5 and 9 |
-| DQ-02 | False alarms on NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | weeks 5 and 9 |
-| DQ-03 | Confusion matrix including `unknown` | F08, NFR11 | reported, errors analysed | weeks 5 and 9 |
-| DQ-04 | Threshold sweep for every rule | F06, F16 | default thresholds justified by the curves | week 5 |
+| DQ-01 | Precision, recall, F1 per class on LABELLED | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | fails in week 5 (test report, 3.7), re-test in weeks 6 and 9 |
+| DQ-02 | False alarms on NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | fails in week 5 (19.7 alerts per 10 min), re-test in weeks 6 and 9 |
+| DQ-03 | Confusion matrix including `unknown` | F08, NFR11 | reported, errors analysed | pass in week 5, again in week 9 |
+| DQ-04 | Threshold sweep for every rule | F06, F16 | default thresholds justified by the curves | done in week 5 (`tests/quality/sweep.py`), 3 defaults to change; again after the tuning |
 | DQ-05 | Metrics on the held-out part of the dataset (not used for tuning) and on PCAP-SMALL | F01, F06, NFR11 | reported with error analysis | week 9 |
-| DQ-06 | Hard cases: scan split across two windows, slow scan just below the threshold, attack hidden in heavy normal traffic | F05, F06 | behaviour documented, misses explained | week 5 |
-| DQ-07 | Detection with the labels removed | F08 | exactly the same detections | week 5 |
-| DQ-08 | Content of every detection | F09 | key features, threshold or deviation, window, source/destination, severity and confidence present | week 5 |
+| DQ-06 | Hard cases: scan split across two windows, slow scan just below the threshold, attack hidden in heavy normal traffic | F05, F06 | behaviour documented, misses explained | pass (`tests/unit/test_detection_hard_cases.py`) |
+| DQ-07 | Detection with the labels removed | F08 | exactly the same detections | pass (`tests/unit/test_detection_engine.py`) |
+| DQ-08 | Content of every detection | F09 | key features, threshold or deviation, window, source/destination, severity and confidence present | pass (`tests/quality/check_content.py`) |
 
 ### Performance (PT)
 
