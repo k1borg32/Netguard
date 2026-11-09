@@ -162,3 +162,29 @@ def test_time_window(tmp_path):
     src = _write(tmp_path / "in.csv", [_row(), _row(**{" Timestamp": "7/7/2017 4:10"})])
     convert_cic.convert(str(src), str(tmp_path / "out.csv"), from_time="16:00")
     assert len(_read(tmp_path / "out.csv")) == 1
+
+
+def test_attack_flow_recorded_server_to_client_is_turned_around(tmp_path):
+    """UT-20: a victim -> attacker attack flow gets the attacker as source; normal flows are left alone."""
+    reply = {
+        " Label": "PortScan",
+        " Source IP": "192.168.10.50",
+        " Source Port": "80",
+        " Destination IP": "172.16.0.1",
+        " Destination Port": "4444",
+    }
+    benign_reply = {k: v for k, v in reply.items() if k != " Label"}
+    src = _write(tmp_path / "in.csv", [_row(**reply), _row(**benign_reply)])
+    dst = tmp_path / "out.csv"
+
+    stats = convert_cic.convert(str(src), str(dst))
+    attack, benign = _read(dst)
+
+    assert stats["turned_around"] == 1
+    assert (attack["src_ip"], attack["src_port"], attack["dst_ip"], attack["dst_port"]) == (
+        "172.16.0.1",
+        "4444",
+        "192.168.10.50",
+        "80",
+    )
+    assert (benign["src_ip"], benign["src_port"]) == ("192.168.10.50", "80")

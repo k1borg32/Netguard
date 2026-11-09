@@ -416,9 +416,9 @@ which the test is planned. Automated tests carry their ID in the docstring.
 |---|---|---|---|---|---|
 | IT-01 | API health | F11 | `status: ok`, DB reachable | `tests/integration/test_stack.py` | pass |
 | IT-02 | Port scan flows sent to the broker | F04, F06, F10, F11 | detection visible in the API within 40 s | `tests/integration/test_stack.py` | pass |
-| IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | | week 3 |
+| IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | `tests/integration/test_import.py` | pass |
 | IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | | week 5 |
-| IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | | week 3 |
+| IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | `tests/integration/test_import.py` | pass |
 | IT-06 | Follow one trace_id | F15, NFR08 | found in the logs of every service and in the detection | | week 3 |
 | IT-07 | Stored detection | F08, F09 | type, severity, confidence, time, source, destination, ID, features and window present | | week 6 |
 | IT-08 | Alert created from a detection | F17 | alert with status `new` in the alert list, linked to its detection | | week 6 |

@@ -60,6 +60,38 @@ CSV_EXTENSIONS = (".csv",)
 PCAP_EXTENSIONS = (".pcap", ".cap")
 # The PCAP path keeps all flows in memory; big captures must be converted to flow CSV first.
 MAX_PCAP_MB = int(os.getenv("MAX_PCAP_MB", "200"))
+MAX_LOGGED_REJECTIONS = int(os.getenv("MAX_LOGGED_REJECTIONS", "20"))
+MAX_REASON_KEYS = 50
+
+
+class RejectionReporter:
+    """Logs rejected rows and sends them to the dead-letter topic, but only the first `limit` of them.
+
+    A big file with mostly bad rows must not flood the logs and the broker. The summary still counts every row.
+    """
+
+    def __init__(self, send, limit: int = MAX_LOGGED_REJECTIONS):
+        self.send = send
+        self.limit = limit
+        self.reported = 0
+        self.suppressed = 0
+
+    def report(self, index: int, reason: str, trace_id: str) -> None:
+        if self.reported >= self.limit:
+            self.suppressed += 1
+            return
+        self.reported += 1
+        with trace_context(trace_id):
+            log.error("flow rejected", extra={"row": index, "reason": reason})
+        self.send({"row": index, "reason": reason})
+
+
+def count_reason(reasons: dict[str, int], reason: str) -> None:
+    """Counts a rejection reason; after MAX_REASON_KEYS different reasons the rest is counted as one."""
+    key = reason[:80]
+    if key not in reasons and len(reasons) >= MAX_REASON_KEYS:
+        key = "other reasons"
+    reasons[key] += 1
 
 
 def _protocol(raw: str) -> str:
@@ -195,6 +227,7 @@ def main() -> None:
     warnings: list[str] = []
     fatal: str | None = None
     producer = None
+    reporter = RejectionReporter(lambda payload: producer.produce(topics.DEAD_LETTER, value=encode(payload)))
 
     try:
         if not os.path.exists(flow_file):
@@ -224,10 +257,8 @@ def main() -> None:
                 validate_flow(flow)
             except (ValueError, SchemaError) as e:
                 rejected += 1
-                reasons[str(e)[:80]] += 1
-                with trace_context(trace_id):
-                    log.error("flow rejected", extra={"row": index, "reason": str(e)})
-                producer.produce(topics.DEAD_LETTER, value=encode({"row": index, "reason": str(e)}))
+                count_reason(reasons, str(e))
+                reporter.report(index, str(e), trace_id)
                 continue
             with trace_context(trace_id):
                 producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
@@ -244,6 +275,10 @@ def main() -> None:
 
     if fatal is None and accepted + rejected == 0:
         warnings.append("input contained no records")
+    if reporter.suppressed:
+        warnings.append(
+            f"{reporter.suppressed} more rejected rows were counted but not logged (limit {reporter.limit})"
+        )
 
     extra = {
         "accepted": accepted,

@@ -29,7 +29,7 @@ test plan needs real traffic with attack labels to measure detection quality
 |------|---------|----------|----------|
 | `cic-friday-portscan.csv` | Friday port-scan slice | `.manifest.json` | 8 |
 | `cic-tuesday-bruteforce.csv` | Tuesday brute-force slice | `.manifest.json` | 3 |
-| `cic-friday-ddos.csv` | Friday DDoS slice | `.manifest.json` | 2 |
+| `cic-friday-ddos.csv` | Friday DDoS slice | `.manifest.json` | 1 |
 
 Each slice also contains benign flows from the same time range.
 
@@ -58,6 +58,9 @@ them as `suspicious_pattern`. CIC-IDS2017 has **no ground truth for
 - **Address 172.16.0.1** is the NAT address of the victim network: many attacks
   appear to come from it.
 - **Negative durations** are skipped and counted.
+- **Direction:** CICFlowMeter names the sender of the first packet "source", so a reply of the victim can be
+  recorded server -> client. Attack flows from the victim network (192.168.10.x) to 172.16.0.1 are turned around
+  (addresses and ports swapped), so the attacker is always the source, as in the manifests.
 - **Label noise:** a few labels in the source are known to be inconsistent;
   they are taken as they are.
 
@@ -80,7 +83,7 @@ python3 services/importer/convert_cic.py data/raw/<file>.csv data/flows/<name>.c
 
 # 2. generate and check the manifest
 python3 services/importer/make_manifest.py data/flows/<name>.csv
-python3 services/importer/check_manifest.py data/flows/<name>.csv data/flows/<name>.csv.manifest.json
+python3 services/importer/check_manifest.py data/flows/<name>.csv   # finds <name>.csv.manifest.json next to it
 
 # 3. import (optional: REPLAY_SPEED=1 for real time)
 docker compose --profile import run --rm -e FLOW_FILE=/app/data/flows/<name>.csv importer

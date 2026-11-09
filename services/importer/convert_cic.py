@@ -142,6 +142,13 @@ def _flags(line: list[str], idx: dict[str, int]) -> str:
     return out
 
 
+# CICFlowMeter calls the sender of the first packet of a flow "source". A reply of the victim to the attacker can be
+# recorded that way (server -> client). In our manifests the attacker is the source, so these attack flows are turned
+# around: addresses and ports are swapped.
+VICTIM_NET = "192.168.10."
+ATTACKER_NAT = "172.16.0.1"
+
+
 def convert(
     src: str,
     dst: str,
@@ -158,6 +165,7 @@ def convert(
     skipped: Counter = Counter()
     rows: list[list] = []  # [ts, has_seconds, duration_ms, src, dst, sport, dport, proto, pkts, bytes, flags, label]
     read = 0
+    turned_around = 0
 
     with open(src, newline="", encoding="latin-1") as f:
         reader = csv.reader(f)
@@ -206,13 +214,18 @@ def convert(
                 if (from_time and hhmm < from_time) or (to_time and hhmm > to_time):
                     skipped["outside time window"] += 1
                     continue
+            src_ip = line[idx["source ip"]].strip()
+            dst_ip = line[idx["destination ip"]].strip()
+            if label != "normal" and src_ip.startswith(VICTIM_NET) and dst_ip == ATTACKER_NAT:
+                src_ip, dst_ip, sport, dport = dst_ip, src_ip, dport, sport
+                turned_around += 1
             rows.append(
                 [
                     ts,
                     has_seconds,
                     round(duration_us / 1000.0, 3),
-                    line[idx["source ip"]].strip(),
-                    line[idx["destination ip"]].strip(),
+                    src_ip,
+                    dst_ip,
                     sport,
                     dport,
                     proto,
@@ -254,6 +267,7 @@ def convert(
         "first_ts": rows[0][0] if rows else None,
         "last_ts": rows[-1][0] if rows else None,
         "minute_resolution": minute_resolution,
+        "turned_around": turned_around,
     }
 
 
@@ -292,7 +306,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"labels: {dict(s['labels'])}")
     print(f"skipped: {dict(s['skipped'])}")
     print(f"time range: {fmt(s['first_ts'])} .. {fmt(s['last_ts'])}")
-    if s["minute_resolution"]:
+    if s["turned_around"]:
+        print(f"note: {s['turned_around']} attack flows recorded server -> client were turned around.")
+    if s["minute_resolution"] and args.spread_minutes:
+        print(f"note: {s['minute_resolution']} flows have minute-only timestamps, spread over their minute.")
+    elif s["minute_resolution"]:
         print(
             f"warning: {s['minute_resolution']} flows have minute-only timestamps; "
             "flows of one minute share one time. Use --spread-minutes to spread them."
