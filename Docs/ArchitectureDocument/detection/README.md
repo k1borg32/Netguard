@@ -202,7 +202,7 @@ escalation should compare with the highest severity seen during the cooldown ins
 | Change | Why | Compatible? |
 |---|---|---|
 | `alert` (optional boolean) in `detection.v1.json` | carries the alert decision to the persister | yes: missing = false, `schema_version` stays 1 |
-| same `detection_id` sent again with a higher severity | early firing + escalation | the persister upserts: updates severity, confidence, features, explanation, trace IDs and `last_ingested_at` **only** if the new severity is higher; `created_at` stays, so latency is measured to the first detection and an older redelivered message never downgrades a row |
+| same `detection_id` sent again with a higher severity | early firing + escalation | the persister upserts: updates severity, confidence, features, explanation and trace IDs **only** if the new severity is higher; `created_at` and `last_ingested_at` stay from the first detection (#65), so latency is measured to the first detection and an older redelivered message never downgrades a row |
 
 ## 11. Scalability and resilience (NFR01, NFR03, NFR04)
 
