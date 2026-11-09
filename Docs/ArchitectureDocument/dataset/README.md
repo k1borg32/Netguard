@@ -58,6 +58,9 @@ them as `suspicious_pattern`. CIC-IDS2017 has **no ground truth for
 - **Address 172.16.0.1** is the NAT address of the victim network: many attacks
   appear to come from it.
 - **Negative durations** are skipped and counted.
+- **Direction:** CICFlowMeter names the sender of the first packet "source", so a reply of the victim can be
+  recorded server -> client. Attack flows from the victim network (192.168.10.x) to 172.16.0.1 are turned around
+  (addresses and ports swapped), so the attacker is always the source, as in the manifests.
 - **Label noise:** a few labels in the source are known to be inconsistent;
   they are taken as they are.
 
