@@ -1,9 +1,11 @@
 """Replay pacing for old datasets (owner: Member 1).
 
-The processor closes its time windows by the wall clock, so flows with timestamps from
-2017 would all look old and every window would be closed after each batch (risk R12).
-The Replayer rebases the timestamps to the present and sleeps between flows, so the data
-arrives like live traffic. Original gaps are kept, divided by `speed`; `max_gap_s` caps
+Since #62 the processor runs its windows on flow time, so old timestamps no longer break
+the detection (risk R12). Replay is still used for demos: it rebases the timestamps to the
+present, so the 2017 flows show up in the dashboard charts as live data, and it sleeps
+between flows so the data arrives like live traffic. For quality evaluation import
+without replay, so the detections keep the flow time of the manifest. Original gaps are
+kept, divided by `speed`; `max_gap_s` caps
 long idle periods (in seconds of the original data).
 
 speed=1 keeps real time: rates stay realistic and the detection thresholds apply as they

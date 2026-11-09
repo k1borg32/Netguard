@@ -104,3 +104,32 @@ def test_valid_csv_streams_rows(tmp_path):
 def test_suspicious_pattern_label_is_accepted():
     """Allowed labels come from the schema, so new enum values are never rejected."""
     assert importer._label("suspicious_pattern") == "suspicious_pattern"
+
+
+def test_rejection_logging_is_capped(monkeypatch):
+    """SEC-02: a file with many bad rows logs and dead-letters only the first ones; all are still counted."""
+    import types
+
+    errors, sent = [], []
+    monkeypatch.setattr(importer, "log", types.SimpleNamespace(error=lambda msg, extra=None: errors.append(extra)))
+    reporter = importer.RejectionReporter(sent.append, limit=3)
+
+    for i in range(10):
+        reporter.report(i, "bad", "trace")
+
+    assert len(errors) == 3 and len(sent) == 3
+    assert reporter.suppressed == 7
+    assert sent[0] == {"row": 0, "reason": "bad"}
+
+
+def test_rejection_reasons_are_capped():
+    """SEC-02: reasons that contain row values must not grow the summary without limit."""
+    from collections import defaultdict
+
+    reasons = defaultdict(int)
+    for i in range(200):
+        importer.count_reason(reasons, f"bad value {i}")
+
+    assert len(reasons) == importer.MAX_REASON_KEYS + 1
+    assert reasons["other reasons"] == 200 - importer.MAX_REASON_KEYS
+    assert sum(reasons.values()) == 200
