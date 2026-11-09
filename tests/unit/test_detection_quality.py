@@ -86,3 +86,19 @@ def test_several_detections_of_one_episode_count_once_for_recall():
     assert result["detections_per_matched_episode"] == {"avg": 4, "max": 4}
     assert result["per_class"]["dos"]["f1"] == 0.0  # episode without any detection
     assert result["macro_f1"] == 0.5
+
+
+def test_small_episodes_left_out_of_recall():
+    """Stray labelled flows (1 to 7 flows in the CIC data) shouldn't cap the recall."""
+    stray = {**SCAN, "episode_id": "port_scan-002", "start": T0 + 900, "end": T0 + 901, "params": {"flows": 2}}
+    big = {**SCAN, "params": {"flows": 500}}
+    detections = [scan_detection(), scan_detection(start=T0 + 895)]
+
+    result = evaluate.evaluate(detections, [big, stray], hours=1, min_flows=10)
+
+    assert result["per_class"]["port_scan"] == {
+        "detections": 2, "episodes": 1, "precision": 1.0, "recall": 1.0, "f1": 1.0,
+    }  # fmt: skip
+    assert result["false_alarms"] == 0  # the stray episode is still an attack
+    assert result["small_episodes"] == [{"episode": "port_scan-002", "flows": 2, "detected": True}]
+    assert evaluate.evaluate([scan_detection()], [big, stray], hours=1)["per_class"]["port_scan"]["recall"] == 0.5

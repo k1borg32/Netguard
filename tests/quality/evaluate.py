@@ -61,17 +61,21 @@ def f1(precision: float | None, recall: float | None) -> float:
     return 2 * precision * recall / (precision + recall)
 
 
-def evaluate(detections: list[Detection], episodes: list[dict], hours: float) -> dict:
+def evaluate(detections: list[Detection], episodes: list[dict], hours: float, min_flows: int = 0) -> dict:
+    """Episodes with fewer than min_flows labelled flows (params.flows, stray labels in the dataset) still make a
+    detection that hits them correct, but they don't count for recall; they are listed separately."""
     # per episode: indexes of the detections that hit it, and of those that also have its class
     hit = [[i for i, d in enumerate(detections) if hits(d, e)] for e in episodes]
     right = [[i for i in hit[k] if detections[i].type == e["class"]] for k, e in enumerate(episodes)]
     correct = {i for found in right for i in found}
     hit_any = {i for found in hit for i in found}
+    small = {k for k, e in enumerate(episodes) if e.get("params", {}).get("flows", min_flows) < min_flows}
+    scored = [k for k in range(len(episodes)) if k not in small]
 
     per_class = {}
     for c in ATTACK_CLASSES:
         predicted = [i for i, d in enumerate(detections) if d.type == c]
-        real = [k for k, e in enumerate(episodes) if e["class"] == c]
+        real = [k for k in scored if episodes[k]["class"] == c]
         if not predicted and not real:
             continue
         precision = sum(i in correct for i in predicted) / len(predicted) if predicted else None
@@ -87,22 +91,26 @@ def evaluate(detections: list[Detection], episodes: list[dict], hours: float) ->
     # rows: real class of every episode (counted once per predicted class), plus "normal" for detections that hit
     # no episode at all
     confusion: dict[str, Counter] = {}
-    for k, e in enumerate(episodes):
-        confusion.setdefault(e["class"], Counter()).update({detections[i].type for i in hit[k]} or {"missed"})
+    for k in scored:
+        confusion.setdefault(episodes[k]["class"], Counter()).update({detections[i].type for i in hit[k]} or {"missed"})
     false_alarms = [d for i, d in enumerate(detections) if i not in hit_any]
     if false_alarms:
         confusion["normal"] = Counter(d.type for d in false_alarms)
 
-    scored = [m["f1"] for m in per_class.values() if m["f1"] is not None]
-    matched = [len(found) for found in right if found]
+    f1_scores = [m["f1"] for m in per_class.values() if m["f1"] is not None]
+    matched = [len(right[k]) for k in scored if right[k]]
     return {
         "per_class": per_class,
-        "macro_f1": statistics.fmean(scored) if scored else None,
+        "macro_f1": statistics.fmean(f1_scores) if f1_scores else None,
         "confusion": confusion,
-        "unclassified_episodes": sum(any(detections[i].type == "unknown" for i in found) for found in hit),
+        "unclassified_episodes": sum(any(detections[i].type == "unknown" for i in hit[k]) for k in scored),
         "detections_per_matched_episode": {"avg": statistics.fmean(matched), "max": max(matched)} if matched else None,
         "false_alarms": len(false_alarms),
         "false_alarms_per_hour": len(false_alarms) / hours if hours > 0 else None,
+        "small_episodes": [
+            {"episode": episodes[k]["episode_id"], "flows": episodes[k]["params"]["flows"], "detected": bool(right[k])}
+            for k in sorted(small)
+        ],
     }
 
 
@@ -164,6 +172,12 @@ def print_report(name: str, result: dict) -> None:
     print(f", {ratio(result['false_alarms_per_hour'])} per hour of data")
     print(f"Episodes hit by an unknown detection (detected but not classified): {result['unclassified_episodes']}")
     print(f"Detections per matched episode: {result['detections_per_matched_episode']}")
+    if result["small_episodes"]:
+        small = ", ".join(
+            f"{s['episode']} ({s['flows']} flows, {'detected' if s['detected'] else 'missed'})"
+            for s in result["small_episodes"]
+        )
+        print(f"Left out of recall, too few flows: {small}")
     columns = sorted({c for row in result["confusion"].values() for c in row} - {"missed"}) + ["missed"]
     print(f"\n| Real \\ predicted | {' | '.join(columns)} |\n|---|{'---|' * len(columns)}")
     for real, row in result["confusion"].items():
@@ -173,11 +187,13 @@ def print_report(name: str, result: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Precision, recall and F1 per class against a ground-truth manifest.")
     parser.add_argument("flows", type=Path, help="the labelled flow CSV that was imported")
+    parser.add_argument("--min-flows", type=int, default=0, help="leave episodes with fewer flows out of recall")
     args = parser.parse_args()
 
     manifest = validate_manifest(json.loads(Path(f"{args.flows}.manifest.json").read_text(encoding="utf-8")))
     first, last = time_range(args.flows)
-    result = evaluate(stored_detections(first, last), manifest["episodes"], (last - first) / 3600)
+    detections = stored_detections(first, last)
+    result = evaluate(detections, manifest["episodes"], (last - first) / 3600, args.min_flows)
     print_report(args.flows.name, result)
 
     out = ROOT / "results" / "quality"
