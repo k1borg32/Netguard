@@ -29,7 +29,7 @@ test plan needs real traffic with attack labels to measure detection quality
 |------|---------|----------|----------|
 | `cic-friday-portscan.csv` | Friday port-scan slice | `.manifest.json` | 8 |
 | `cic-tuesday-bruteforce.csv` | Tuesday brute-force slice | `.manifest.json` | 3 |
-| `cic-friday-ddos.csv` | Friday DDoS slice | `.manifest.json` | 2 |
+| `cic-friday-ddos.csv` | Friday DDoS slice | `.manifest.json` | 1 |
 
 Each slice also contains benign flows from the same time range.
 
