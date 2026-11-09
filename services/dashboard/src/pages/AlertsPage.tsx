@@ -1,14 +1,16 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import type { FormEvent } from 'react'
-import { Link, useSearchParams } from 'react-router'
+import { Link } from 'react-router'
 import { getAlerts, type AlertFilters, type AlertListItem } from '../api/alerts'
 import { ApiError } from '../api/client'
 import { SEVERITIES } from '../api/detections'
 import { AcknowledgeButton } from '../components/AcknowledgeButton'
 import { AlertStatusBadge } from '../components/AlertStatusBadge'
+import { Pager } from '../components/Pager'
 import { SeverityBadge } from '../components/SeverityBadge'
-import { DETECTION_TYPES, formatConfidence, formatDateTime, formatNumber, formatType } from '../lib/format'
+import { TextFilter } from '../components/TextFilter'
+import { DETECTION_TYPES, formatConfidence, formatDateTime, formatType } from '../lib/format'
 import { RANGES, rangeToTimes, type RangeId } from '../lib/timeRange'
+import { useUrlFilters } from '../lib/useUrlFilters'
 
 const REFRESH_MS = 5_000
 const PAGE_SIZE = 20
@@ -36,35 +38,14 @@ function AlertRow({ alert }: { alert: AlertListItem }) {
 }
 
 export function AlertsPage() {
-  const [params, setParams] = useSearchParams()
-  const page = Math.max(1, Number(params.get('page')) || 1)
-
-  /** Every filter change goes back to page 1; filters live in the URL, so a view can be reloaded and shared. */
-  function setFilter(name: string, value: string) {
-    setParams((current) => {
-      const next = new URLSearchParams(current)
-      next.delete('page')
-      if (value) next.set(name, value)
-      else next.delete(name)
-      return next
-    })
-  }
-
-  function setPage(value: number) {
-    setParams((current) => {
-      const next = new URLSearchParams(current)
-      next.set('page', String(value))
-      return next
-    })
-  }
-
-  const range = params.get('range') as RangeId | null
+  const { get, page, setFilter, setPage, reset } = useUrlFilters()
+  const range = get('range') as RangeId | undefined
   const filters: AlertFilters = {
-    status: params.get('status') ?? undefined,
-    severity: params.get('severity') ?? undefined,
-    detection_type: params.get('type') ?? undefined,
-    src_ip: params.get('src') ?? undefined,
-    dst_ip: params.get('dst') ?? undefined,
+    status: get('status'),
+    severity: get('severity'),
+    detection_type: get('type'),
+    src_ip: get('src'),
+    dst_ip: get('dst'),
     page,
     page_size: PAGE_SIZE,
   }
@@ -76,10 +57,6 @@ export function AlertsPage() {
     refetchInterval: REFRESH_MS,
     placeholderData: keepPreviousData,
   })
-
-  function onTextFilter(e: FormEvent<HTMLFormElement>) {
-    e.preventDefault()
-  }
 
   const data = alerts.data
   const invalidFilter = alerts.error instanceof ApiError && alerts.error.status === 422
@@ -93,7 +70,7 @@ export function AlertsPage() {
         </div>
       </div>
 
-      <form className="card filters" onSubmit={onTextFilter} aria-label="Alert filters">
+      <form className="card filters" onSubmit={(e) => e.preventDefault()} aria-label="Alert filters">
         <label>
           Time
           <select value={range ?? ''} onChange={(e) => setFilter('range', e.target.value)}>
@@ -135,27 +112,9 @@ export function AlertsPage() {
             ))}
           </select>
         </label>
-        <label>
-          Source IP
-          {/* Applied on Enter or when leaving the field, not on every key, so half an address is never sent. */}
-          <input
-            key={`src-${filters.src_ip ?? ''}`}
-            defaultValue={filters.src_ip ?? ''}
-            placeholder="e.g. 10.0.0.5"
-            onBlur={(e) => setFilter('src', e.target.value.trim())}
-            onKeyDown={(e) => e.key === 'Enter' && setFilter('src', e.currentTarget.value.trim())}
-          />
-        </label>
-        <label>
-          Destination IP
-          <input
-            key={`dst-${filters.dst_ip ?? ''}`}
-            defaultValue={filters.dst_ip ?? ''}
-            onBlur={(e) => setFilter('dst', e.target.value.trim())}
-            onKeyDown={(e) => e.key === 'Enter' && setFilter('dst', e.currentTarget.value.trim())}
-          />
-        </label>
-        <button type="button" className="btn" onClick={() => setParams(new URLSearchParams())}>
+        <TextFilter label="Source IP" value={filters.src_ip} placeholder="e.g. 10.0.0.5" onApply={(v) => setFilter('src', v)} />
+        <TextFilter label="Destination IP" value={filters.dst_ip} onApply={(v) => setFilter('dst', v)} />
+        <button type="button" className="btn" onClick={reset}>
           Reset
         </button>
       </form>
@@ -192,19 +151,7 @@ export function AlertsPage() {
               </tbody>
             </table>
           </div>
-          <div className="pager">
-            <span className="muted small">
-              {formatNumber(data.total)} alerts · page {data.page} of {Math.max(1, data.total_pages)}
-            </span>
-            <span className="pager-buttons">
-              <button type="button" className="btn btn-small" disabled={!data.has_previous} onClick={() => setPage(page - 1)}>
-                Previous
-              </button>
-              <button type="button" className="btn btn-small" disabled={!data.has_next} onClick={() => setPage(page + 1)}>
-                Next
-              </button>
-            </span>
-          </div>
+          <Pager noun="alerts" total={data.total} page={data.page} pageSize={PAGE_SIZE} onPage={setPage} />
         </section>
       )}
     </>
