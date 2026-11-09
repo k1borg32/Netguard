@@ -292,7 +292,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"labels: {dict(s['labels'])}")
     print(f"skipped: {dict(s['skipped'])}")
     print(f"time range: {fmt(s['first_ts'])} .. {fmt(s['last_ts'])}")
-    if s["minute_resolution"]:
+    if s["minute_resolution"] and args.spread_minutes:
+        print(f"note: {s['minute_resolution']} flows have minute-only timestamps, spread over their minute.")
+    elif s["minute_resolution"]:
         print(
             f"warning: {s['minute_resolution']} flows have minute-only timestamps; "
             "flows of one minute share one time. Use --spread-minutes to spread them."

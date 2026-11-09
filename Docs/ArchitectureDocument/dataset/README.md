@@ -80,7 +80,7 @@ python3 services/importer/convert_cic.py data/raw/<file>.csv data/flows/<name>.c
 
 # 2. generate and check the manifest
 python3 services/importer/make_manifest.py data/flows/<name>.csv
-python3 services/importer/check_manifest.py data/flows/<name>.csv data/flows/<name>.csv.manifest.json
+python3 services/importer/check_manifest.py data/flows/<name>.csv   # finds <name>.csv.manifest.json next to it
 
 # 3. import (optional: REPLAY_SPEED=1 for real time)
 docker compose --profile import run --rm -e FLOW_FILE=/app/data/flows/<name>.csv importer
