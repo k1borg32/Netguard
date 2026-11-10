@@ -26,6 +26,39 @@ export function getRange(id: RangeId): RangeOption {
   return RANGES.find((r) => r.id === id) ?? RANGES[1]
 }
 
+/** A value of a datetime-local input (browser time) as UTC ISO, or undefined when empty or invalid. */
+export function localToIso(value: string | undefined): string | undefined {
+  if (!value) return undefined
+  const date = new Date(value)
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString()
+}
+
+export interface ChartSpan {
+  range: TimeRange
+  interval: TimeseriesInterval
+  label: string
+  description: string
+}
+
+const MAX_CHART_MS = 366 * 24 * 60 * 60 * 1000 // the longest range GET /dashboard/timeseries accepts
+
+/** The range and bucket size of a chart for optional from/to values. Without "from" it shows the last 24 hours. */
+export function chartSpan(start: string | undefined, end: string | undefined, now: Date = new Date()): ChartSpan {
+  const until = end ? new Date(end) : now
+  const since = start
+    ? new Date(Math.max(new Date(start).getTime(), until.getTime() - MAX_CHART_MS))
+    : new Date(until.getTime() - 24 * 60 * 60 * 1000)
+  const hours = (until.getTime() - since.getTime()) / 3_600_000
+  const [interval, label]: [TimeseriesInterval, string] =
+    hours <= 2 ? ['1m', 'minute'] : hours <= 12 ? ['15m', '15 min'] : hours <= 72 ? ['1h', 'hour'] : ['1d', 'day']
+  return {
+    range: { start_time: since.toISOString(), end_time: until.toISOString() },
+    interval,
+    label,
+    description: start || end ? 'selected range' : 'last 24 hours',
+  }
+}
+
 /** API time range ending now, as UTC ISO strings (the API requires a timezone). */
 export function rangeToTimes(id: RangeId, now: Date = new Date()): TimeRange {
   const { seconds } = getRange(id)

@@ -4,6 +4,10 @@ import { RequireAuth } from './auth/RequireAuth'
 import { Layout } from './components/Layout'
 import { AlertDetailsPage } from './pages/AlertDetailsPage'
 import { AlertsPage } from './pages/AlertsPage'
+import { DetectionDetailsPage } from './pages/DetectionDetailsPage'
+import { FlowDetailsPage } from './pages/FlowDetailsPage'
+import { FlowsPage } from './pages/FlowsPage'
+import { HistoryPage } from './pages/HistoryPage'
 import { OverviewPage } from './pages/OverviewPage'
 import { PlannedPage } from './pages/PlannedPage'
 
@@ -21,22 +25,10 @@ export function App() {
         <Route index element={<OverviewPage />} />
         <Route path="alerts" element={<AlertsPage />} />
         <Route path="alerts/:id" element={<AlertDetailsPage />} />
-        <Route
-          path="history"
-          element={
-            <PlannedPage title="Detection history" week={6}>
-              All stored detections with filters by time, type, severity and source.
-            </PlannedPage>
-          }
-        />
-        <Route
-          path="flows"
-          element={
-            <PlannedPage title="Network flows" week={6}>
-              Normalised flows with filters and paging.
-            </PlannedPage>
-          }
-        />
+        <Route path="history" element={<HistoryPage />} />
+        <Route path="history/:id" element={<DetectionDetailsPage />} />
+        <Route path="flows" element={<FlowsPage />} />
+        <Route path="flows/:id" element={<FlowDetailsPage />} />
         <Route
           path="settings"
           element={

@@ -1,5 +1,5 @@
 import { api } from './client'
-import type { Severity } from './detections'
+import type { DetectionDetails } from './detections'
 
 export type AlertStatus = 'NEW' | 'ACKNOWLEDGED'
 
@@ -22,27 +22,8 @@ export interface AlertPage {
   has_previous: boolean
 }
 
-// Mirrors AlertDetectionResponse in services/api/app/features/alerts/get_alert/response.py
-export interface AlertDetection {
-  detection_id: string
-  created_at: string
-  first_ingested_at: string | null
-  type: string
-  method: string
-  severity: Severity
-  confidence: number | null
-  src_ip: string | null
-  dst_ip: string | null
-  src_port: number | null
-  dst_port: number | null
-  protocol: string | null
-  window_size_s: number | null
-  window_start: string | null
-  window_end: string | null
-  explanation: string | null
-  features: Record<string, unknown> | null
-  trace_ids: string[]
-}
+// AlertDetectionResponse in services/api/app/features/alerts/get_alert/response.py has no last_ingested_at.
+export type AlertDetection = Omit<DetectionDetails, 'last_ingested_at'>
 
 export interface AlertDetails extends Alert {
   detection: AlertDetection

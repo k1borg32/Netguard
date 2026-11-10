@@ -27,6 +27,49 @@ export interface ListDetectionsResponse {
   page_size: number
 }
 
+export interface DetectionFilters {
+  start_time?: string
+  end_time?: string
+  severity?: string
+  detection_type?: string
+  method?: string
+  src_ip?: string
+  dst_ip?: string
+  page?: number
+  page_size?: number
+}
+
+export function getDetections(filters: DetectionFilters): Promise<ListDetectionsResponse> {
+  return api<ListDetectionsResponse>('/detections', { query: { ...filters } })
+}
+
+// Mirrors GetDetectionResponse in services/api/app/features/detections/get_detection/response.py
+export interface DetectionDetails {
+  detection_id: string
+  created_at: string
+  first_ingested_at: string | null
+  last_ingested_at: string | null
+  type: string
+  method: string
+  severity: Severity
+  confidence: number | null
+  src_ip: string | null
+  dst_ip: string | null
+  src_port: number | null
+  dst_port: number | null
+  protocol: string | null
+  window_size_s: number | null
+  window_start: string | null
+  window_end: string | null
+  explanation: string | null
+  features: Record<string, unknown> | null
+  trace_ids: string[]
+}
+
+export function getDetection(id: string): Promise<DetectionDetails> {
+  return api<DetectionDetails>(`/detections/${encodeURIComponent(id)}`)
+}
+
 /** Latest detections, newest first, from the first page. */
 export async function getLatestDetections(limit = 50): Promise<Detection[]> {
   const response = await api<ListDetectionsResponse>('/detections', { query: { page: 1, page_size: limit } })

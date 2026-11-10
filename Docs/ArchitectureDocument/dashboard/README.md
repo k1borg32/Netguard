@@ -293,9 +293,9 @@ The dashboard part of the [work schedule](../../WorkSchedule/README.md):
 | Week | Dashboard work | State |
 |---|---|---|
 | 2 | this section, wireframes, API review, React app in `services/dashboard`, Docker build into nginx, login | done |
-| 3-4 | Overview with cards and trend charts (#34) | in review |
-| 5 | Alerts list with filters, alert details with evidence, acknowledge (#35) | in review |
-| 6 | History and Flows screens (#36) | planned |
+| 3-4 | Overview with cards and trend charts (#34) | done |
+| 5 | Alerts list with filters, alert details with evidence, acknowledge (#35) | done |
+| 6 | History and Flows screens (#36) | in review |
 | 7 | Settings: detection thresholds (#37), Playwright end-to-end tests with M5 (#14) | planned |
 | 8 | Loading, error and empty states, accessibility, check under API load (#38) | planned |
 | 9-10 | `npm audit`, screenshots for the test report and the demo, bug fixes (#39) | planned |
