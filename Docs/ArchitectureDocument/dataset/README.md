@@ -140,3 +140,16 @@ python3 tests/quality/evaluate.py data/flows/it04-portscan.csv
 
 Expected: the class of the slice is detected for its episode (recall 1.00 for the episode). The result for every class
 goes into the test report. The DoS slice is expected to fail until the DoS rule is tuned (test report, DQ-01).
+
+### 10.5 IT-04 results (2026-11-17)
+
+Four slices went through the stack with 0 rejected flows. Precision, recall and F1 come from `tests/quality/evaluate.py`.
+
+| Class | Slice | Result |
+|---|---|---|
+| port_scan (fast) | `port_scan-005`, first 120 s | found: P 1.00, R 1.00, F1 1.00; 15 detections, 0 false alarms; also reported as `dos` (60 detections) because it exceeds 500 connections/s |
+| port_scan (slow) | `port_scan-003` | missed: at most 5 ports in 10 s, the rule needs 100 |
+| brute_force | `brute_force-001`, first 300 s | found: F1 1.00; 10 false alarms on normal traffic |
+| dos | `dos-001`, first 120 s | missed: peak 180 flows/s and 1,884 packets/s, the rule needs 500 connections/s or 20,000 packets/s; one source (NAT), so the DDoS check (10 or more sources) cannot apply |
+
+The misses come from the detection thresholds, not from the import.
