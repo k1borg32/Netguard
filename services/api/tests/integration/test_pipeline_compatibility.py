@@ -9,7 +9,7 @@ import pytest
 from app.domain.network_flow import NetworkFlow
 from app.infrastructure.persistence.mappings import configure_mappings
 from fastapi.testclient import TestClient
-from persister import FLOW_INSERT_SQL, flow_row
+from persister import FLOW_BATCH_SQL, write_flows
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 
@@ -120,8 +120,12 @@ def test_persister_writes_labels_and_deduplicates_composite_key(db: psycopg.Conn
     }
     unlabelled = {key: value for key, value in flow.items() if key != "label"}
     unlabelled["ts_start"] += 10
-    with db.cursor() as cursor:
-        cursor.executemany(FLOW_INSERT_SQL, [flow_row(flow), flow_row(flow), flow_row(unlabelled)])
+    duplicate = {**flow, "label": "normal"}
+    with db.transaction(), db.cursor() as cursor:
+        cursor.execute(FLOW_BATCH_SQL)
+        write_flows(cursor, [flow, duplicate, unlabelled])
+    with db.transaction(), db.cursor() as cursor:
+        write_flows(cursor, [duplicate])
     rows = db.execute("SELECT ts_start, label, trace_id FROM network_flows ORDER BY ts_start").fetchall()
     assert rows == [(START, "port_scan", flow["trace_id"]), (START + timedelta(seconds=10), None, flow["trace_id"])]
 
