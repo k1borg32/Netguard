@@ -1,4 +1,4 @@
-"""Persister - SKELETON (owner: Member 3).
+"""Persister (owner: Member 3).
 
 Consumes flows.raw and detections, writes to PostgreSQL/TimescaleDB in batches.
 Batching is mandatory for NFR01: one INSERT per flow will not survive 5,000 flows/s.
@@ -42,14 +42,31 @@ FLOW_COLS = (
     "label",
 )
 
-_FLOW_PLACEHOLDERS = ["to_timestamp(%s)" if c in ("ingested_at", "ts_start") else "%s" for c in FLOW_COLS]
+_FLOW_COLUMNS = ", ".join(FLOW_COLS)
+_FLOW_EPOCH_COLUMNS = {"ingested_at", "ts_start"}
+_FLOW_BATCH_COLUMNS = ", ".join(
+    f"NULL::double precision AS {column}" if column in _FLOW_EPOCH_COLUMNS else column for column in FLOW_COLS
+)
+_FLOW_INSERT_COLUMNS = ", ".join(
+    f"to_timestamp({column})" if column in _FLOW_EPOCH_COLUMNS else column for column in FLOW_COLS
+)
+FLOW_BATCH_SQL = (
+    "CREATE TEMP TABLE flow_batch ON COMMIT DELETE ROWS AS "
+    f"SELECT {_FLOW_BATCH_COLUMNS}, NULL::integer AS batch_order FROM network_flows WITH NO DATA"
+)
+FLOW_COPY_SQL = f"COPY flow_batch ({_FLOW_COLUMNS}, batch_order) FROM STDIN"
 FLOW_INSERT_SQL = (
-    f"INSERT INTO network_flows ({','.join(FLOW_COLS)}) VALUES ({','.join(_FLOW_PLACEHOLDERS)}) ON CONFLICT DO NOTHING"
+    f"INSERT INTO network_flows ({_FLOW_COLUMNS}) "
+    f"SELECT {_FLOW_INSERT_COLUMNS} FROM flow_batch ORDER BY batch_order ON CONFLICT DO NOTHING"
 )
 
 
-def flow_row(f: dict) -> tuple:
-    return tuple(f.get(c) for c in FLOW_COLS)
+def write_flows(cur: psycopg.Cursor, flows: list[dict]) -> None:
+    # Keep the first occurrence of a key, including duplicates within this batch.
+    with cur.copy(FLOW_COPY_SQL) as copy:
+        for order, flow in enumerate(flows):
+            copy.write_row(tuple(flow.get(column) for column in FLOW_COLS) + (order,))
+    cur.execute(FLOW_INSERT_SQL)
 
 
 def detection_row(d: dict) -> tuple:
@@ -103,6 +120,8 @@ def main() -> None:
     ensure_topics()
     consumer = make_consumer("persister", [topics.FLOWS_RAW, topics.DETECTIONS])
     conn = psycopg.connect(os.environ["DATABASE_URL"], autocommit=False)
+    conn.execute(FLOW_BATCH_SQL)
+    conn.commit()
     log.info("persister started")
 
     while True:
@@ -115,7 +134,7 @@ def main() -> None:
             continue
         with conn.cursor() as cur:
             if flows:
-                cur.executemany(FLOW_INSERT_SQL, [flow_row(f) for f in flows])
+                write_flows(cur, flows)
             if dets:
                 cur.executemany(DET_SQL, [detection_row(d) for d in dets])
             alerts = [alert_row(d) for d in dets if d.get("alert")]
