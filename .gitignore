@@ -23,6 +23,7 @@ data/runs/
 data/tmp/
 results/
 !data/pcap/sample.pcap
+!data/pcap/portscan-small.pcap
 
 .idea/
 .vscode/

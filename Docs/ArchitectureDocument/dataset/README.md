@@ -104,3 +104,39 @@ Restart the processor between datasets so the per-source clock starts clean.
   cause is not known yet.
 - Label noise in the source data affects precision/recall by a small amount.
 - The slices are subsets, not the whole days.
+
+## 10. Files for the end-to-end checks (IT-04, IT-09, ST-02, ST-03)
+
+**Small attack files, committed** (`make_scan_fixtures.py`, the same output on every run): one port scan, 300 SYN
+packets from 10.0.0.66 to 300 ports of 10.0.0.5 in 8 s, plus a little normal traffic. The default rule fires at 100
+ports in 10 s, so the scan is clearly above it.
+
+| File | Used by |
+|------|---------|
+| `data/flows/scan-small.csv` and `.manifest.json` | ST-02 (flow file with a known attack -> dashboard) |
+| `data/pcap/portscan-small.pcap` | ST-03 (PCAP import -> dashboard) |
+| `tests/integration/test_e2e_import.py` | IT-09: the same scan with a new attacker address per run, imported through the running stack; the flows are stored and a `port_scan` detection appears |
+
+The time of the files is 2023. For the dashboard import with `REPLAY_SPEED` set, so the flows land in the present
+and show up in the charts of the last minutes.
+
+**Real attacks, one slice per class** (IT-04). `slice_flows.py` cuts an episode and the normal traffic around it out
+of a dataset file and writes the manifest of the slice:
+
+```bash
+python3 services/importer/slice_flows.py data/flows/cic-friday-portscan.csv data/flows/it04-portscan.csv --episode port_scan-003 --pad 30
+python3 services/importer/slice_flows.py data/flows/cic-tuesday-bruteforce.csv data/flows/it04-bruteforce.csv --episode brute_force-001 --pad 30 --max-seconds 300
+python3 services/importer/slice_flows.py data/flows/cic-friday-ddos.csv data/flows/it04-ddos.csv --episode dos-001 --pad 30 --max-seconds 120
+```
+
+For every slice (stack running, **without replay**, so the detections keep the flow time of the manifest):
+
+```bash
+make reset && make up
+make import FILE=data/flows/it04-portscan.csv
+# wait until the processor has caught up (about 30 s), then
+python3 tests/quality/evaluate.py data/flows/it04-portscan.csv
+```
+
+Expected: the class of the slice is detected for its episode (recall 1.00 for the episode). The result for every class
+goes into the test report. The DoS slice is expected to fail until the DoS rule is tuned (test report, DQ-01).
