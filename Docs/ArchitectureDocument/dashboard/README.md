@@ -202,7 +202,7 @@ The review was done in week 2. State after PR #50 and the detection engine (#62)
 | G5 | Filters and paging on `GET /detections` | Done |
 | G6 | Evidence flows of a detection | Done: `GET /detections/{id}/flows` finds them by the detection's `trace_ids`, so it returns a sample |
 | G7 | Filters on `GET /flows` | Done |
-| G8 | Detection configuration form | Endpoints done, see below |
+| G8 | Detection configuration form | Done: Settings screen (#37); the engine does not read the stored configurations yet |
 | G9 | Simulator control | Dropped: the supervisors removed the simulator from the requirements in week 3 |
 | G10 | System metrics (instances, consumer lag, p95 latency) | Open, nice to have |
 
@@ -296,7 +296,8 @@ The dashboard part of the [work schedule](../../WorkSchedule/README.md):
 | 3-4 | Overview with cards and trend charts (#34) | done |
 | 5 | Alerts list with filters, alert details with evidence, acknowledge (#35) | done |
 | 6 | History and Flows screens (#36) | in review |
-| 7 | Settings: detection thresholds (#37), Playwright end-to-end tests with M5 (#14) | planned |
+| 7 | Settings: detection thresholds (#37) | in review |
+| 7 | Playwright end-to-end tests with M5 (#14) | planned |
 | 8 | Loading, error and empty states, accessibility, check under API load (#38) | planned |
 | 9-10 | `npm audit`, screenshots for the test report and the demo, bug fixes (#39) | planned |
 
