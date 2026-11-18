@@ -4,9 +4,12 @@ Defensive, lab-only platform: imports PCAP and flow files, processes them as a s
 detects and classifies anomalies (rules + statistical method), stores results, and shows them in an API and dashboard.
 **No real networks, no real attacks, no production data.**
 
-> Status: week 3. PCAP and flow files go through the importer and the pipeline end to end, with a placeholder
-> port-scan rule. The API has login, alerts and a dashboard summary. The other detection rules and the dashboard pages
-> follow the work schedule.
+> Status: week 4 (mid-term). PCAP and flow files, also the CIC-IDS2017 dataset converted to our flow format, go
+> through the importer into the stream processor. It keeps 1, 10 and 60 s windows per source and runs four detection
+> rules and a z-score method; detections and alerts are stored. The API has login, detections, flows, alerts, the
+> dashboard summary and time series and the detection configuration; the dashboard has login and the overview.
+> Detection quality on the labelled data, threshold tuning and the other dashboard pages follow the
+> [work schedule](Docs/WorkSchedule/README.md).
 
 ## Architecture
 

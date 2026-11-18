@@ -6,7 +6,7 @@ set rate, because the performance tests (NFR01, NFR02) need a load we can contro
 the CI pipeline test needs a quick, known attack. No real packets, no real network.
 
 Env:
-  LOAD_RATE        flows per second (default 200; the performance tests use 5000+)
+  LOAD_RATE        flows per second (default 500, enough for a steady port scan; the performance tests use 5000+)
   LOAD_DURATION_S  stop after N seconds (0 = forever)
   LOAD_SCENARIOS   comma list, e.g. "normal,port_scan"
 """
@@ -78,7 +78,7 @@ def main() -> None:
     from netguard_common.broker import encode, ensure_topics, make_producer
 
     setup_logging("loadgen")
-    rate = int(os.getenv("LOAD_RATE", "200"))
+    rate = int(os.getenv("LOAD_RATE", "500"))
     duration = float(os.getenv("LOAD_DURATION_S", "0"))
     scenarios = os.getenv("LOAD_SCENARIOS", "normal,port_scan").split(",")
     ensure_topics()
