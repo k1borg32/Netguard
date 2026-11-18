@@ -409,6 +409,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-22 | Manifest generator and checker: episodes built from labels, counts compared with the CSV | NFR11 | valid manifest; checker reports OK or FAILED | `tests/unit/test_make_manifest.py`, `tests/unit/test_check_manifest.py` | pass |
 | UT-23 | Importer robustness: bad rows rejected with reason, broken file gives clear error and exit code 1 | F01, SEC-02 | summary line always printed | `tests/unit/test_importer_robustness.py` | pass |
 | UT-24 | Detection quality matching: same class, attacker or target, window give or take one window; wrong class, `unknown`, several detections per episode, small episodes left out of recall | NFR11 | the rules of section 3.6 | `tests/unit/test_detection_quality.py` | pass |
+| UT-25 | Scan test files and slice tool: identical on every run, valid flows, manifest matches the CSV, PCAP gives the same scan, slice with its own manifest | NFR05, NFR11 | all checks hold | `tests/unit/test_scan_fixtures.py` | pass |
 
 ### Integration tests (IT)
 
@@ -417,11 +418,12 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | IT-01 | API health | F11 | `status: ok`, DB reachable | `tests/integration/test_stack.py` | pass |
 | IT-02 | Port scan flows sent to the broker | F04, F06, F10, F11 | detection visible in the API within 40 s | `tests/integration/test_stack.py` | pass |
 | IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | `tests/integration/test_import.py` | pass |
-| IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | | week 5 |
+| IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | procedure: [dataset doc, section 10](../ArchitectureDocument/dataset/README.md) | done: 2 of 3 classes detected, see dataset doc 10.5 |
 | IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | `tests/integration/test_import.py` | pass |
 | IT-06 | Follow one trace_id | F15, NFR08 | found in the logs of every service and in the detection | | week 3 |
 | IT-07 | Stored detection | F08, F09 | type, severity, confidence, time, source, destination, ID, features and window present | | week 6 |
 | IT-08 | Alert created from a detection | F17 | alert with status `new` in the alert list, linked to its detection | | week 6 |
+| IT-09 | Port scan file (PCAP and flow file, a new attacker address in every run) through the stack | F01, F04, F06, F10 | flows stored with their source; a `port_scan` detection for the attacker within 90 s | `tests/integration/test_e2e_import.py` | pass |
 
 ### API tests (API)
 
@@ -442,8 +444,8 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | ST-01 | Deployment from a clean clone with the documented command | NFR05, NFR09 | all services healthy within 5 min, integration tests pass | automated in CI (first run after push) |
-| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | week 7 |
-| ST-03 | PCAP import -> dashboard | F01, F12, UC-01 | alerts from the file shown | week 7 |
+| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | week 7; input `data/flows/scan-small.csv` |
+| ST-03 | PCAP import -> dashboard | F01, F12, UC-01 | alerts from the file shown | week 7; input `data/pcap/portscan-small.pcap` |
 | ST-04 | History and filters on the dashboard | F13, UC-04, UC-05 | correct rows for each filter | week 7 |
 | ST-05 | Live statistics and trend charts | F12, UC-06 | values update while traffic runs | week 7 |
 | ST-06 | README procedure done by someone who didn't write it, on a clean machine | NFR05, NFR10 | system runs and demo works without extra help | weeks 4 and 10 (manual) |
