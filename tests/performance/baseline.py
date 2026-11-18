@@ -172,15 +172,17 @@ def processor_log(since: float) -> list[dict]:
     return entries
 
 
-def counter_growth(log: list[dict], counter: str, run_start: float, run_end: float) -> int | None:
-    """How much a cumulative counter of the processor ("flows", "late_flows") grew during the run, over all
-    instances. The counters start at 0, so an instance that started shortly before the run counts from there."""
+def counter_growth(log: list[dict], counter: str, run_start: float, caught_up: float) -> int | None:
+    """How much a cumulative counter of the processor ("flows", "late_flows") grew for the flows of the run, over
+    all instances. Read from the first stats line after `caught_up` (the moment the consumers had no lag left), not
+    the first one after the load: under load the processor is still behind then and the counter isn't complete.
+    The counters start at 0, so an instance that started shortly before the run counts from there."""
     total = 0
     for instance in {e["instance"] for e in log}:
         entries = [e for e in log if e["instance"] == instance]
         stats = [e for e in entries if e.get("msg") == "engine stats"]
         before = [e[counter] for e in stats if e["ts"] <= run_start]
-        after = [e[counter] for e in stats if e["ts"] >= run_end]
+        after = [e[counter] for e in stats if e["ts"] >= caught_up]
         if not after or not (before or any(e.get("msg") == "processor started" for e in entries)):
             return None
         total += after[0] - (before[-1] if before else 0)
@@ -284,8 +286,11 @@ def container_usage(stats_rows: list[dict]) -> dict:
     return usage
 
 
-def summarize(rate: int, run: tuple[float, float], window: tuple[float, float], sampler: Sampler, sent: int) -> dict:
-    """run = from the first to the last generated flow, window = run without the warm-up."""
+def summarize(
+    rate: int, run: tuple[float, float], window: tuple[float, float], caught_up: float, sampler: Sampler, sent: int
+) -> dict:
+    """run = from the first to the last generated flow, window = run without the warm-up, caught_up = when the
+    consumers had read everything after the load (or gave up waiting)."""
     start, end = window
     lag_rows = [r for r in sampler.lag_rows if start <= r["t"] <= end]
     log = processor_log(run[0] - 35)  # from the last counters before the run
@@ -298,11 +303,11 @@ def summarize(rate: int, run: tuple[float, float], window: tuple[float, float], 
         "window": window,
         "achieved_rate": round(sent / (run[1] - run[0])),
         "sent": sent,
-        "processed": counter_growth(log, "flows", *run),
+        "processed": counter_growth(log, "flows", run[0], caught_up),
         "processor_restarts": len(restarts),
         "stored": stored,
         "lost": sent - stored,
-        "late_flows": counter_growth(log, "late_flows", *run),
+        "late_flows": counter_growth(log, "late_flows", run[0], caught_up),
         "max_lag": {g: max((r["lag"] for r in lag_rows if r["group"] == g), default=None) for g in GROUPS},
         "lag_growth_per_s": {g: lag_growth(lag_rows, g) for g in GROUPS},
         "latency_s": latency_stats([d["latency_s"] for d in detections]),
@@ -325,13 +330,14 @@ def run_level(rate: int, warmup: int, measure: int, generators: int, project: st
     if not starts or len(ends) < generators:
         raise RuntimeError(f"the load generator didn't run at {rate} flows/s: {generator_logs}")
     catch_up_s = wait_until_caught_up(sampler, timeout_s=180)
+    caught_up = time.time()
     sampler.stop.set()
     sampler.join()
     run_end = max(e["ts"] for e in ends)
-    wait_for_engine_stats(after=run_end)
+    wait_for_engine_stats(after=caught_up)
 
     run, window = (min(starts), run_end), (max(starts) + warmup, min(e["ts"] for e in ends))
-    summary = summarize(rate, run, window, sampler, sent=sum(e["sent"] for e in ends))
+    summary = summarize(rate, run, window, caught_up, sampler, sent=sum(e["sent"] for e in ends))
     summary["catch_up_s"] = catch_up_s
     summary["missed_samples"] = sampler.missed_samples
     summary["invalid"] = invalid_reasons(summary)
