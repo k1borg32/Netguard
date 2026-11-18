@@ -1,7 +1,11 @@
-# NetGuard - Test Plan v0.5
+# NetGuard - Test Plan v0.6
 
-Version 0.5, week 5 (2026-11-09), after the first detection quality run. Owner: Vlad (M5, Infrastructure, Testing &
-DevOps). Next update: week 6 (after the tuning of the detection and the API tests).
+Version 0.6, week 6 (2026-11-18), after the API and security tests. Owner: Vlad (M5, Infrastructure, Testing &
+DevOps). Next update: week 7 (end-to-end tests with Playwright).
+
+Changes in v0.6: API and security tests run (API-03 to API-08, SEC-03 to SEC-07, results in the test report,
+section 4); `services/api/tests/integration/test_security.py` checks every route at once; IT-06 automated; state of
+the components in week 6 (2.1).
 
 Changes in v0.5: first detection quality results, in the test report (section 3); episodes with fewer than 10 flows
 left out of recall, macro F1 over the classes with labelled episodes, threshold sweep and content check scripts,
@@ -41,15 +45,15 @@ References:
 
 ### 2.1 Test items
 
-| Component | Code | Owner | State in week 4 |
+| Component | Code | Owner | State in week 6 |
 |---|---|---|---|
 | Load generator (test tooling, not part of the product) | `services/loadgen` | M5 | normal traffic + port scan, used by CI and the performance tests |
-| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import (#51), CIC-IDS2017 converter, manifests and replay mode (#63) |
+| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import (#51), CIC-IDS2017 converter, manifests and replay mode (#63), robustness (#73), small attack test files (#75) |
 | Broker + message contracts | Redpanda, `libs/common` | M5 | working |
 | Flow processor / detection engine | `services/processor` | M2 | 1/10/60 s windows, four rules, z-score method, severity and alert policy (#62) |
-| Persister + database | `services/persister`, `db/` | M3 | writes flows, detections and alerts; schema by M3 (flows hypertable, detections, alerts, users) |
+| Persister + database | `services/persister`, `db/` | M3 | writes flows (in batches with `COPY` since #76), detections and alerts; schema by M3 (flows hypertable, detections, alerts, users) |
 | REST API | `services/api` | M3 | login (JWT), detections, flows, alerts, dashboard summary and time series, detection configuration (#50) |
-| Dashboard | `services/dashboard` | M4 | login and the overview page; trend charts (#68) and the alert screens next |
+| Dashboard | `services/dashboard` | M4 | login, overview with trend charts (#68), alert list and details with acknowledge (#70), history and flows screens (#74); settings screen in review (#77) |
 | Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working, dashboard job and build cache added in week 2 |
 
 ### 2.2 In scope
@@ -323,7 +327,7 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 
 | ID | Risk / finding | Impact | What we do |
 |---|---|---|---|
-| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | week 4 baseline: 5,000 flows/s are reached without loss, but the persister and the database (5 indexes per flow row, a checkpoint every minute) fall behind (test report). Next: batch inserts with `COPY`, fewer indexes, larger `max_wal_size`; validate everything at the edge (importer, load generator) instead of again in every consumer; batch DB writes; scale the processor |
+| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | week 4 baseline: 5,000 flows/s are reached without loss, but the persister and the database (5 indexes per flow row, a checkpoint every minute) fall behind (test report). Week 6: with `COPY` (#76) the persister keeps up at 5,000 flows/s on the laptop (test report 2.6). Still to try if needed: fewer indexes, larger `max_wal_size`; validate everything at the edge (importer, load generator) instead of again in every consumer; scale the processor |
 | R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: `last_ingested_at` in the detection contract, DB column and `detection_latency` view (PR #44). Still open: a rule that fires only when its window closes adds up to one window to the latency, so M2 fires rules as soon as the threshold is crossed |
 | R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and load generator validate everything they send (the importer puts rejected records on `flows.deadletter`, PR #51); consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
 | R4 | Slow failover: after killing one of two processors its partitions waited 44 s (librdkafka default session timeout is 45 s). A crashed persister also blocked its own restart for about 45 s. The CI step "kill one processor" waits only 40 s, so it would fail about half of the time. | NFR04, flaky CI | session timeout lowered to 10 s in `libs/common` (week 1), to be re-measured with RT-01; the persister should close its consumer when it exits (M3) |
@@ -431,12 +435,12 @@ which the test is planned. Automated tests carry their ID in the docstring.
 |---|---|---|---|---|
 | API-01 | Detection list | F11 | contains every field the dashboard uses | pass (`services/api/tests/integration`) |
 | API-02 | Invalid query parameters (`limit=0`, `-1`, `501`, `abc`) | NFR06 | 422, never 500 | pass (`services/api/tests/integration`) |
-| API-03 | Filters by time, type, severity and source | F13 | only matching rows | week 6 |
-| API-04 | Flow list and flow details | F11, UC-08 | correct data, 404 for unknown ID | week 6 |
-| API-05 | Statistics and metrics endpoints | F11 | numbers match the database | week 6 |
+| API-03 | Filters by time, type, severity and source | F13 | only matching rows | pass (`test_list_detections.py`, `test_alerts.py`, `test_flows.py` in `services/api/tests/integration`) |
+| API-04 | Flow list and flow details | F11, UC-08 | correct data, 404 for unknown ID | pass (`test_flows.py`) |
+| API-05 | Statistics and metrics endpoints | F11 | numbers match the database | pass (`test_dashboard_summary.py`, `test_dashboard_timeseries.py`) |
 | API-06 | Removed in v0.4 (simulator control, F14) | - | - | - |
-| API-07 | Change a threshold (admin) | F16 | new value used by the detection engine | week 6 |
-| API-08 | Acknowledge an alert | F17 | status changes and is stored | week 6 |
+| API-07 | Change a threshold (admin) | F16 | new value used by the detection engine | partly: the API stores and activates the change (`test_detection_configurations.py`), the processor still reads only `detection.yaml` at start-up (F16 at runtime, M2) |
+| API-08 | Acknowledge an alert | F17 | status changes and is stored | pass (`test_alerts.py`) |
 | API-09 | Schemathesis on the OpenAPI schema | NFR06 | no 500 responses | week 9 |
 
 ### System tests (ST)
@@ -468,7 +472,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | PT-01 | Load ladder 100 / 1,000 / 5,000 / 10,000 flows/s and up, 1 processor | NFR01 | throughput, lag and resources per level, saturation point found | baseline done in week 4 (test report): stable at 1,000, at 5,000 the lag grows; week 8 |
-| PT-02 | 5,000 flows/s for 5 min | NFR01 | lag does not grow, nothing lost | fails on the laptop in week 4 (nothing lost, but the persister falls behind and 4.7 % of the flows come late); re-test after the persister changes and in week 8 |
+| PT-02 | 5,000 flows/s for 5 min | NFR01 | lag does not grow, nothing lost | failed on the laptop in week 4 (the persister fell behind, 4.7 % late flows); passes on the laptop in week 6 after `COPY` (#76): nothing lost, lag flat, caught up 2 s after the load, 0.3 % late (test report 2.6); official in week 8 |
 | PT-03 | Latency at 5,000 flows/s | NFR02 | p95 <= 3 s (p50, p99, max reported) | pass on the laptop in week 4 (p95 1.24 s), official in week 8 |
 | PT-04 | Saturation point with 1 vs 3 processor instances | NFR03 | higher with 3 instances | week 8 |
 | PT-05 | API under dashboard-like load (k6, 50 users) | F11 | p95 response time reported | week 8 |
@@ -492,11 +496,11 @@ which the test is planned. Automated tests carry their ID in the docstring.
 |---|---|---|---|---|
 | SEC-01 | Schema-invalid flows sent into the pipeline | NFR06 | rejected at the edge, never crash a consumer | fails (R3), re-test week 3 |
 | SEC-02 | Broken, oversized and non-PCAP files imported | F01, NFR06 | rejected with an error report, importer keeps running | pass (`tests/integration/test_import.py`) |
-| SEC-03 | Request without a token | NFR06 | 401 | week 6 |
-| SEC-04 | Non-admin token on administrative operations (thresholds) | NFR06 | 403 | week 6 |
-| SEC-05 | Tampered or expired JWT | NFR06 | 401 | week 6 |
-| SEC-06 | Injection strings in query parameters | NFR06 | 422 or empty result, no 500, no SQL error in the response | week 6 |
-| SEC-07 | Too many requests from one client | NFR06 | 429 after the limit | week 6 |
+| SEC-03 | Request without a token | NFR06 | 401 | fails for 3 routes: detection list, details and flows answer without a token; the other 16 protected routes pass (`services/api/tests/integration/test_security.py`) |
+| SEC-04 | Non-admin token on administrative operations (thresholds) | NFR06 | 403 | pass (`test_security.py`, all 4 admin operations, nothing changes) |
+| SEC-05 | Tampered or expired JWT | NFR06 | 401 | pass on every route that checks the token (expired, another user's id, wrong key, `alg: none`); the 3 detection routes don't check it (SEC-03) |
+| SEC-06 | Injection strings in query parameters | NFR06 | 422 or empty result, no 500, no SQL error in the response | pass (`test_security.py`, 10 strings in 19 query parameters) |
+| SEC-07 | Too many requests from one client | NFR06 | 429 after the limit | blocked: the API has no rate limiting yet (M3) |
 | SEC-08 | HTML inside detection fields | NFR06 | shown as text on the dashboard, no script runs | week 7 |
 | SEC-09 | Secret scanning | NFR06 | gitleaks on every push finds nothing; `.env` never committed | automated in CI |
 | SEC-10 | Dependency audit (pip-audit, npm audit) | NFR06 | no known high/critical vulnerabilities, or documented | week 9 |
