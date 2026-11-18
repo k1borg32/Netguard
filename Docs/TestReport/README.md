@@ -132,6 +132,32 @@ At 1,000 flows/s run 1 had no late flows and a maximum lag of 300 / 701 messages
 | PT-03 | latency at 5,000 flows/s | p95 at most 3 s | p95 1.24 s, rules p50 0.02 s | pass (indicative) | official run in week 8; late flows are not in this number |
 | PT-06 | CPU and memory per container | reported, no container at its limit | database 82 % of a core on average, 1.4 GiB; the rest below 45 % of a core | pass (baseline) | compose sets no memory limits; total far below the 7.6 GiB of Docker |
 
+### 2.6 Re-run at 5,000 flows/s after #76 (week 6)
+
+Since #76 (Jakub) the persister writes each batch of flows with `COPY` into a temporary table and moves it into
+`network_flows` with one statement, instead of one insert per flow. Re-run on 2026-11-18 on the same laptop and Docker
+settings, main at `c5207ab`, with the script of #71 (it checks that a run can be used: this one can). Only the
+5,000 flows/s step, 1 min warm-up and 5 min measured, on a fresh stack.
+
+| | Week 4 (run 2) | Week 6, after #76 |
+|---|---|---|
+| Sent / stored / lost | 1,791,000 / 1,791,000 / 0 | 1,795,500 / 1,795,500 / 0 |
+| Late flows | 84,348 (4.7 %) | 5,018 (0.3 %) |
+| Max lag processor / persister | 57,080 / 179,772 | 13,083 / 58,008 |
+| Persister lag growth during the 5 min | grows, catches up only after the load | 17 messages/s (0.3 % of the rate) |
+| Caught up after the load | 58 s | 2 s |
+| Detection latency p95 / max | 1.24 s / 5.80 s | 0.12 s / 1.11 s |
+| CPU avg / max: database, persister | 82 / 119 %, 17 / 30 % | 26 / 85 %, 8 / 21 % |
+
+- **The persister keeps up now.** The database needs a third of the CPU of week 4, the persister lag stays around
+  3,500 messages (median, under a second of data) with short peaks up to 58,008 in 10 of the 60 samples, and it is
+  gone 2 s after the load. PT-02 passes on the laptop.
+- With less load on the laptop the processor falls behind less too (13,083 instead of 57,080), so far fewer flows
+  arrive after their window has closed (0.3 % instead of 4.7 %). The late-flow defect itself is still open.
+- **Not the same conditions as week 4:** a fresh stack and only the 5,000 step, while in week 4 it came after the 100
+  and 1,000 steps (about 395,000 rows already stored). No z-score detections either, they need 10 minutes of history,
+  so the latency is the rules only. The week 8 campaign repeats the whole ladder on the fixed machine.
+
 ## 3. Detection quality (week 5)
 
 Test cases DQ-01 to DQ-04, DQ-06 and DQ-08 (test plan 3.6): the first measurement on real attacks, with the default
@@ -356,7 +382,67 @@ at a z-score threshold of 3, 8.4 at 10, 6.1 at 15 and still 3.9 with 7 HIGH/CRIT
 | DQ-06 | split scan, scan just below the threshold, slow scan, scan in heavy traffic | behaviour documented, misses explained | split scan and 99 ports per window missed, slow scan found as `unknown`, scan in heavy traffic found | pass | `tests/unit/test_detection_hard_cases.py` |
 | DQ-08 | content of every detection | features, threshold or deviation, window, source/destination, severity, confidence | all 5,545 detections complete | pass | `tests/quality/check_content.py` |
 
-## 4. Defects found
+## 4. API and security tests (week 6)
+
+Test cases API-03 to API-08 and SEC-03 to SEC-07 (test plan 3.4) and IT-06, run on 2026-11-18 on the laptop of 2.1:
+main at `c5207ab` (after #74, #75 and #76) with the new tests.
+
+### 4.1 How it was tested
+
+- Most of the API behaviour was already covered by Jakub's integration tests (`services/api/tests/integration`, 315
+  tests against their own TimescaleDB in Docker): filters, paging, 404 and 422, both roles, missing and malformed
+  tokens per endpoint. The API test cases point to them in the table below.
+- New `services/api/tests/integration/test_security.py` goes over every route at once (19 protected, 3 public). Its
+  route list is compared with the OpenAPI schema, so a new route has to be added to it and gets the same checks:
+  - SEC-03: every protected route without a token
+  - SEC-04: the 4 admin operations (register a user, create, change and activate a detection configuration) with the
+    token of a regular user
+  - SEC-05: every protected route with 4 bad tokens: expired (signed with the server key), the admin's user id put into
+    the user's token under the old signature, signed with another key, and unsigned (`alg: none`)
+  - SEC-06: 10 injection strings (SQL, script, path, 5,000 characters, non-ASCII) in 19 query parameters of the 5 list
+    endpoints, 190 requests, with one stored row in every table, so a filter turned into "always true" would return it
+- New `tests/integration/test_trace.py` (IT-06): a port scan sent to the broker, every flow with its own trace id,
+  then the detection in the database, in the API and in the service logs. Run with the other full-stack tests on a
+  fresh stack: 17 passed.
+
+### 4.2 Test cases
+
+| ID | Scenario | Expected | Actual | Status | Comment |
+|---|---|---|---|---|---|
+| API-03 | filters by time, type, severity and source | only matching rows | every filter alone and combined selects only matching rows, the total matches | pass | `test_list_detections.py`, `test_alerts.py`, `test_flows.py` |
+| API-04 | flow list and flow details | correct data, 404 for an unknown id | all fields, stable paging, 404 for an unknown flow | pass | `test_flows.py` |
+| API-05 | summary and time series | numbers match the database | counts per range and per bucket match the inserted rows | pass | `test_dashboard_summary.py`, `test_dashboard_timeseries.py` |
+| API-07 | admin changes a threshold | the new value is used by the detection engine | the API stores and activates the new configuration, but the processor reads only `config/detection.yaml` at start-up | partly | needs runtime configuration in the processor (F16, M2) |
+| API-08 | acknowledge an alert | status changes and is stored | stored, a second acknowledge changes nothing, concurrent ones keep the first time | pass | `test_alerts.py` |
+| SEC-03 | request without a token | 401 | 401 on 16 of 19 protected routes; the detection list, details and flows answer without a token | fail | their description says "No token needed for now" |
+| SEC-04 | regular user on the admin operations | 403 | 403 on all 4, no row changed | pass | `test_security.py` |
+| SEC-05 | tampered or expired token | 401 | 401 for all 4 bad tokens on the 16 routes that check the token, also for the user with the admin's id | pass | the 3 detection routes don't check tokens (SEC-03) |
+| SEC-06 | injection strings in query parameters | 422 or empty result, no 500, no SQL error | 190 requests: only 422 or empty results, no database text in any response, tables intact | pass | `test_security.py` |
+| SEC-07 | too many requests from one client | 429 after the limit | the API has no rate limiting | blocked | M3, test when the limit exists |
+| IT-06 | follow one trace id | in the logs of every service and in the detection | in the detection (database and API) and in the processor's detection log line; the persister logs only "batch written", without trace ids | partly | that check is marked as expected to fail in `test_trace.py` |
+
+### 4.3 What it shows
+
+1. **The token check holds where it exists.** No route that checks the token accepted an expired, edited, wrongly
+   signed or unsigned token, and a regular user can't use the admin operations. Editing the user id in a token to the
+   admin's doesn't work either.
+2. **The detection routes are public.** Anyone who can reach port 8000 reads every detection with its IP addresses,
+   features and flows. The API is only bound to 127.0.0.1, so on our laptops this stays local, but it fails NFR06.
+   When the routes get the check, IT-02 and IT-06 (they read detections without a token) need a login, and the
+   expected-to-fail marks in `test_security.py` start failing until they are removed, so nobody forgets them.
+3. **Injection strings never caused an error.** Enums, addresses and times are checked by the API (422), free-text
+   filters just find nothing.
+4. **Tracing stops at the processor.** `make trace ID=<id>` finds the processor's detection line, but not where the
+   persister stored it, and the importer logs trace ids only for rejected rows (F15).
+
+### 4.4 Next steps
+
+- API and persister (M3): token check on the detection routes (with a login in IT-02 and IT-06), rate limiting for
+  SEC-07, a log line with the trace id when the persister stores a detection.
+- Processor (M2): use the active configuration from the database (API-07, F16).
+- M5: SEC-07 test when the limit exists, API-09 (Schemathesis) in week 9.
+
+## 5. Defects found
 
 | Found | Defect | Effect | Status |
 |---|---|---|---|
@@ -368,3 +454,7 @@ at a z-score threshold of 3, 8.4 at 10, 6.1 at 15 and still 3.9 with 7 HIGH/CRIT
 | week 5, detection quality | a fast port scan also fires the DoS rule | 176 wrong DoS detections next to the port scan (DQ-01) | open (M2) |
 | week 5, detection quality | the z-score method compares raw bytes and packets with the history of a source | about 200 false detections per hour on normal traffic, most of them HIGH/CRITICAL (DQ-02) | open (M2) |
 | week 5, CIC-IDS2017 data | some flows are recorded server -> client | false port scan on normal traffic, the DDoS also seen from the victim (DQ-01) | to decide (M1, M5) |
+| week 6, API tests | the detection list, details and flows answer without a token | anyone who reaches the API reads detections with their IP addresses (SEC-03) | open (M3) |
+| week 6, API tests | no rate limiting in the API | SEC-07 blocked; nothing limits repeated requests, for example password guessing on the login | open (M3) |
+| week 6, IT-06 | the persister logs whole batches without trace ids | `make trace` doesn't show where a detection was stored (F15) | open (M3) |
+| week 6, API-07 | a threshold changed through the API is stored but not used, the processor reads only `detection.yaml` at start-up | thresholds can't be changed at runtime yet (F16) | open (M2) |
