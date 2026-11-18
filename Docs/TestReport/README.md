@@ -363,6 +363,7 @@ at a z-score threshold of 3, 8.4 at 10, 6.1 at 15 and still 3.9 with 7 HIGH/CRIT
 | week 1 | one malformed message on `flows.raw` stops the consumers (#8, RT-06) | pipeline stops | processor skips it since #62, persister still open |
 | week 4, baseline | escalated detections get a negative latency in `detection_latency` | NFR02 can't be read from the database | fix in #65 |
 | week 4, baseline | flows that reach the processor late are dropped, the window clock moves with the wall clock | detections missed under load, without an error | open (M2) |
+| week 4, baseline (seen once) | after the broker container was recreated, the processor stayed at 0 flows while the persister recovered | processing stops after a broker outage | to check with RT-05 in week 8 |
 | week 4, baseline | persister and database don't keep up with 5,000 flows/s on the laptop | NFR01 | open (M3, M5), risk R1 |
 | week 5, detection quality | the DoS rule counts all packets of a flow in the second where the flow starts | a long download is a CRITICAL DoS (DQ-02) | open (M2) |
 | week 5, detection quality | a fast port scan also fires the DoS rule | 176 wrong DoS detections next to the port scan (DQ-01) | open (M2) |
