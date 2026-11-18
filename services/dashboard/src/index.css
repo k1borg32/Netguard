@@ -406,6 +406,14 @@ select {
   width: 140px;
 }
 
+.filters input[type='datetime-local'] {
+  width: 190px;
+}
+
+.chart-gap {
+  margin-bottom: 16px;
+}
+
 .btn-small {
   padding: 3px 10px;
   font-size: 12px;

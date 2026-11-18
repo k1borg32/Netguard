@@ -43,6 +43,16 @@ export function formatType(type: string): string {
   return DETECTION_TYPES[type] ?? type.replace(/_/g, ' ').replace(/^\w/, (c) => c.toUpperCase())
 }
 
+export function formatDuration(ms: number | null): string {
+  if (ms === null) return '-'
+  return ms < 1000 ? `${ms.toFixed(1)} ms` : `${(ms / 1000).toFixed(1)} s`
+}
+
+export function endpoint(ip: string | null, port: number | null): string {
+  if (!ip) return '-'
+  return port === null ? ip : `${ip}:${port}`
+}
+
 export function formatConfidence(c: number | null): string {
   return c === null ? '-' : c.toFixed(2)
 }
