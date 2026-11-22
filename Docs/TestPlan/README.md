@@ -364,7 +364,7 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 | F15 Traceability | UT-04, IT-06 |
 | F16 Detection configuration | UT-17, API-07, DQ-04 |
 | F17 Alert management | IT-08, API-08 |
-| NFR01 Performance | UT-05, PT-01, PT-02, PT-06 |
+| NFR01 Performance | UT-05, UT-26, PT-01, PT-02, PT-06, PT-07 |
 | NFR02 Latency | PT-03 |
 | NFR03 Scalability | PT-04, RT-01 |
 | NFR04 Resilience | UT-03, UT-09, UT-10, RT-01 to RT-07 |
@@ -410,6 +410,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-23 | Importer robustness: bad rows rejected with reason, broken file gives clear error and exit code 1 | F01, SEC-02 | summary line always printed | `tests/unit/test_importer_robustness.py` | pass |
 | UT-24 | Detection quality matching: same class, attacker or target, window give or take one window; wrong class, `unknown`, several detections per episode, small episodes left out of recall | NFR11 | the rules of section 3.6 | `tests/unit/test_detection_quality.py` | pass |
 | UT-25 | Scan test files and slice tool: identical on every run, valid flows, manifest matches the CSV, PCAP gives the same scan, slice with its own manifest | NFR05, NFR11 | all checks hold | `tests/unit/test_scan_fixtures.py` | pass |
+| UT-26 | Fast flow check of the importer agrees with the JSON schema: never accepts what the schema rejects, same rejection reason | NFR01, F01 | all checks hold | `tests/unit/test_importer_fast_validation.py` | pass |
 
 ### Integration tests (IT)
 
@@ -473,6 +474,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | PT-04 | Saturation point with 1 vs 3 processor instances | NFR03 | higher with 3 instances | week 8 |
 | PT-05 | API under dashboard-like load (k6, 50 users) | F11 | p95 response time reported | week 8 |
 | PT-06 | CPU and memory per container per load level | NFR01 | reported, no container hits its memory limit | baseline in week 4 (test report), week 8 |
+| PT-07 | Import of large files: 1,000,000-flow CSV and a 150 MB PCAP, importer alone and into the stack | NFR01, F01 | flows/s and peak memory reported; CSV import faster than 5,000 flows/s, memory does not grow with the file | `tests/performance/import_speed.py` | pass, see dataset doc 11 |
 
 ### Resilience (RT)
 
