@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Navigate, useLocation } from 'react-router'
 import { ApiError } from '../api/client'
+import { usePageTitle } from '../lib/usePageTitle'
 import { useAuth } from './context'
 
 function loginErrorMessage(err: unknown): string {
@@ -18,6 +19,7 @@ export function LoginPage() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  usePageTitle('Sign in')
 
   if (status === 'authenticated') {
     const from = (location.state as { from?: string } | null)?.from ?? '/'

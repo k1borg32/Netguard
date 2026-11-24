@@ -230,3 +230,31 @@ describe('AlertDetailsPage', () => {
     expect(await screen.findByText('Alert not found.')).toBeInTheDocument()
   })
 })
+
+describe('AlertsPage loading and error states (#38)', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('says it is loading until the first answer arrives', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise<Response>(() => {})),
+    )
+    renderAt('/alerts')
+    expect(await screen.findByRole('status')).toHaveTextContent('Loading alerts...')
+  })
+
+  it('says in plain words that the API is down instead of "Failed to fetch"', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Promise.reject(new TypeError('Failed to fetch'))),
+    )
+    renderAt('/alerts')
+    expect(await screen.findByRole('alert')).toHaveTextContent("Could not load alerts. The API can't be reached.")
+  })
+
+  it('names a server error by its status', async () => {
+    stubApi({ listStatus: 500 })
+    renderAt('/alerts')
+    expect(await screen.findByRole('alert')).toHaveTextContent('The API had an internal error (500).')
+  })
+})

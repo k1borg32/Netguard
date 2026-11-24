@@ -3,15 +3,18 @@ import { Link } from 'react-router'
 import { ApiError } from '../api/client'
 import { getFlows, type FlowFilters } from '../api/flows'
 import { Pager } from '../components/Pager'
+import { Loading, LoadError } from '../components/QueryStatus'
 import { TextFilter } from '../components/TextFilter'
 import { endpoint, formatDateTime, formatDuration, formatNumber } from '../lib/format'
 import { localToIso } from '../lib/timeRange'
+import { usePageTitle } from '../lib/usePageTitle'
 import { useUrlFilters } from '../lib/useUrlFilters'
 
 const PAGE_SIZE = 50
 const PROTOCOLS = ['TCP', 'UDP', 'ICMP', 'OTHER']
 
 export function FlowsPage() {
+  usePageTitle('Flows')
   const { get, page, setFilter, setPage, reset } = useUrlFilters()
   const from = get('from')
   const to = get('to')
@@ -33,7 +36,8 @@ export function FlowsPage() {
     placeholderData: keepPreviousData,
   })
 
-  const data = flows.data
+  // Rows of the previous filters are not shown under an error for the new ones.
+  const data = flows.isError && flows.isPlaceholderData ? undefined : flows.data
   const invalidFilter = flows.error instanceof ApiError && flows.error.status === 422
 
   return (
@@ -72,7 +76,10 @@ export function FlowsPage() {
       </form>
 
       {invalidFilter && <p className="error">Check the filters: an IP address, a port or the time range is not valid.</p>}
-      {flows.isError && !invalidFilter && <p className="error">Could not load flows: {flows.error.message}</p>}
+      {flows.isPending && <Loading what="flows" />}
+      {flows.isError && !invalidFilter && (
+        <LoadError what="flows" error={flows.error} updatedAt={flows.isPlaceholderData ? 0 : flows.dataUpdatedAt} />
+      )}
       {data?.items.length === 0 && (
         <section className="card">
           <p className="muted">No flows match these filters. Imported files keep their original timestamps.</p>

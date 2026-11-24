@@ -4,6 +4,7 @@
   --border: #d0d4da;
   --text: #202124;
   --muted: #6b7280;
+  --table-head: #4b5563; /* 6.4:1 on the header background; --muted is only 4.2:1 there (WCAG AA needs 4.5) */
   --accent: #3b5bdb;
   --accent-soft: #e7ecff;
   --ok: #2f9e44;
@@ -59,6 +60,50 @@ h2 {
   background: var(--accent-soft);
   padding: 8px 12px;
   border-radius: 6px;
+}
+
+.notice-warn {
+  background: #fff4e6;
+  color: #8a3a00;
+}
+
+/* Text for screen readers only */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard focus is always visible; mouse clicks don't draw it */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.content:focus {
+  outline: none;
+}
+
+.skip-link {
+  position: absolute;
+  top: -48px;
+  left: 12px;
+  z-index: 10;
+  padding: 8px 14px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.skip-link:focus {
+  top: 8px;
 }
 
 input,
@@ -280,6 +325,7 @@ select {
 
 /* Tables */
 .table-wrap {
+  position: relative; /* keeps .sr-only text inside the scroll box */
   overflow-x: auto;
 }
 
@@ -291,7 +337,7 @@ select {
 .table th {
   text-align: left;
   font-size: 12px;
-  color: var(--muted);
+  color: var(--table-head);
   background: #eceff3;
   padding: 8px 10px;
 }
@@ -469,6 +515,7 @@ select {
 
 .kv dd {
   margin: 0;
+  overflow-wrap: anywhere; /* long IDs wrap instead of widening the page */
 }
 
 .explanation {
@@ -553,6 +600,60 @@ select {
 .add-param {
   padding-top: 12px;
   border-top: 1px solid #eceff3;
+}
+
+/* Phones and narrow windows: the side menu becomes a row under the top bar, nothing scrolls sideways
+   except wide tables inside their own box. */
+@media (max-width: 800px) {
+  .shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 10px 16px;
+  }
+
+  .topbar-right {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .sidebar {
+    flex-direction: row;
+    overflow-x: auto;
+    padding: 8px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .nav-item {
+    white-space: nowrap;
+  }
+
+  .content {
+    padding: 16px;
+  }
+
+  .page-head {
+    flex-wrap: wrap;
+  }
+
+  .page-actions {
+    flex-wrap: wrap;
+  }
+
+  .kv > div {
+    grid-template-columns: 110px 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Login */
