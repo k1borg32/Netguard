@@ -33,6 +33,21 @@ npm run lint         # oxlint
 npm run build        # type check + production build into dist/
 ```
 
+## End-to-end tests (Playwright)
+
+They run in a real browser against the running stack (test plan ST-02 to ST-05, SEC-08), in CI as the `e2e` job.
+
+```bash
+docker compose up -d                  # in the repository root, the whole stack
+npx playwright install chromium       # once
+npx playwright test                   # here, in services/dashboard
+```
+
+`e2e/global-setup.ts` runs first: it creates the test account `e2e-admin` with a new random password and imports a
+port scan from a new attacker address, so every run has its own alert. A test signs in with `signIn(page)` and finds
+that alert with `attacker()` (both in `e2e/helpers.ts`). Test files are named `*.e2e.ts`, so Vitest leaves them alone.
+On Windows run it from a terminal that shows the drive as `D:` (see Troubleshooting in the main README).
+
 ## Structure
 
 | Path | What |
