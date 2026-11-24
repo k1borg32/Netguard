@@ -40,7 +40,9 @@ def insert_minimal_detection(db: psycopg.Connection):
     return detection_id
 
 
-def test_public_detail_returns_requested_record_and_preserves_rows(client: TestClient, db: psycopg.Connection):
+def test_authenticated_detail_returns_requested_record_and_preserves_rows(
+    authenticated_client: TestClient, db: psycopg.Connection
+):
     insert_minimal_detection(db)
     detection_id, configuration_id = uuid4(), uuid4()
     first_ingested_at = START - timedelta(seconds=13, microseconds=123456)
@@ -74,7 +76,7 @@ def test_public_detail_returns_requested_record_and_preserves_rows(client: TestC
     )
     before = db.execute("SELECT * FROM detections ORDER BY detection_id").fetchall()
 
-    response = client.get(f"{URL}/{detection_id}")
+    response = authenticated_client.get(f"{URL}/{detection_id}")
 
     assert response.status_code == 200, response.text
     assert response.json() == {
@@ -102,10 +104,10 @@ def test_public_detail_returns_requested_record_and_preserves_rows(client: TestC
     assert db.execute("SELECT * FROM detections ORDER BY detection_id").fetchall() == before
 
 
-def test_detail_keeps_nullable_fields_and_empty_trace_ids(client: TestClient, db: psycopg.Connection):
+def test_detail_keeps_nullable_fields_and_empty_trace_ids(authenticated_client: TestClient, db: psycopg.Connection):
     detection_id = insert_minimal_detection(db)
 
-    response = client.get(f"{URL}/{detection_id}")
+    response = authenticated_client.get(f"{URL}/{detection_id}")
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -115,7 +117,9 @@ def test_detail_keeps_nullable_fields_and_empty_trace_ids(client: TestClient, db
 
 
 @pytest.mark.parametrize("field", ["first_ingested_at", "last_ingested_at"])
-def test_detail_allows_independently_missing_ingestion_timestamps(client: TestClient, db: psycopg.Connection, field):
+def test_detail_allows_independently_missing_ingestion_timestamps(
+    authenticated_client: TestClient, db: psycopg.Connection, field
+):
     detection_id = insert_minimal_detection(db)
     timestamp = START - timedelta(seconds=3)
     # SQL identifiers come from the fixed parametrization above, never an HTTP request.
@@ -124,7 +128,7 @@ def test_detail_allows_independently_missing_ingestion_timestamps(client: TestCl
         (timestamp, detection_id),
     )
 
-    response = client.get(f"{URL}/{detection_id}")
+    response = authenticated_client.get(f"{URL}/{detection_id}")
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -133,43 +137,45 @@ def test_detail_allows_independently_missing_ingestion_timestamps(client: TestCl
     assert body[other] is None
 
 
-def test_unknown_detection_returns_404_even_when_other_records_exist(client: TestClient, db: psycopg.Connection):
+def test_unknown_detection_returns_404_even_when_other_records_exist(
+    authenticated_client: TestClient, db: psycopg.Connection
+):
     insert_minimal_detection(db)
 
-    response = client.get(f"{URL}/{uuid4()}")
+    response = authenticated_client.get(f"{URL}/{uuid4()}")
 
     assert response.status_code == 404, response.text
     assert response.json() == {"detail": "Detection not found"}
 
 
 @pytest.mark.parametrize("identifier", ["not-a-uuid", "123", "550e8400-e29b-41d4-a716-44665544000g"])
-def test_invalid_uuid_returns_path_validation_error(client: TestClient, identifier: str):
-    response = client.get(f"{URL}/{identifier}")
+def test_invalid_uuid_returns_path_validation_error(authenticated_client: TestClient, identifier: str):
+    response = authenticated_client.get(f"{URL}/{identifier}")
 
     assert response.status_code == 422, response.text
     assert response.json()["detail"][0]["loc"] == ["path", "id"]
 
 
-def test_unavailable_database_returns_503_without_connection_details(client: TestClient, monkeypatch):
+def test_unavailable_database_returns_503_without_connection_details(authenticated_client: TestClient, monkeypatch):
     # Real connection refusal on a reserved, non-listening port; no dependency overrides.
     with socket.socket() as unavailable:
         unavailable.bind(("127.0.0.1", 0))
         port = unavailable.getsockname()[1]
         monkeypatch.setenv("DATABASE_URL", f"postgresql://unavailable:private@127.0.0.1:{port}/missing")
-        response = client.get(f"{URL}/{uuid4()}")
+        response = authenticated_client.get(f"{URL}/{uuid4()}")
 
     assert response.status_code == 503, response.text
     assert response.json() == {"detail": "Database storage unavailable"}
     assert "private" not in response.text
 
 
-def test_openapi_describes_public_uuid_route_and_nullable_response(client: TestClient):
-    schema = client.get("/openapi.json").json()
+def test_openapi_describes_authenticated_uuid_route_and_nullable_response(authenticated_client: TestClient):
+    schema = authenticated_client.get("/openapi.json").json()
     operation = schema["paths"][URL + "/{id}"]["get"]
 
     assert "requestBody" not in operation
-    assert operation.get("security", []) == []
-    assert {"200", "404", "422", "503"} <= operation["responses"].keys()
+    assert operation["security"] == [{"HTTPBearer": []}]
+    assert {"200", "401", "404", "422", "503"} <= operation["responses"].keys()
     assert operation["parameters"][0]["in"] == "path"
     assert operation["parameters"][0]["name"] == "id"
     assert operation["parameters"][0]["schema"]["format"] == "uuid"

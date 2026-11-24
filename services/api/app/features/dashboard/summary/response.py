@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from pydantic import BaseModel, Field
 
 
@@ -5,3 +7,6 @@ class DashboardSummaryResponse(BaseModel):
     flow_count: int = Field(ge=0)
     detection_count: int = Field(ge=0)
     alert_count: int = Field(ge=0)
+
+    detections_by_type: dict[str, Annotated[int, Field(ge=0)]]
+    detections_by_severity: dict[str, Annotated[int, Field(ge=0)]]

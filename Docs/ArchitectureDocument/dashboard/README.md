@@ -131,8 +131,8 @@ a growing delay, keeps the last rows on screen with a "the last refresh failed: 
 back to normal on the next successful poll.
 
 The largest request is the Overview's latest 500 detections (about 690 bytes per detection, so up to 345 KB per
-5 s once there are 500 detections). The counts by type in `GET /dashboard/summary` (gap G2) would replace it with
-a few bytes; until then it is the request to include in the API load test. The k6 test (PT-05) polls the alert list
+5 s once there are 500 detections). The counts by type in `GET /dashboard/summary` (gap G2) are now available. Switching the UI to these
+aggregates would replace the large counting request with a small response; until then include it in the API load test. The k6 test (PT-05) polls the alert list
 every 2 s per virtual user, more often than the dashboard does.
 
 ### 4.3 Time ranges
@@ -213,7 +213,7 @@ The review was done in week 2. State after PR #50 and the detection engine (#62)
 | Gap | What | State |
 |---|---|---|
 | G1 | Time-series endpoint for the trend charts | Done, see below |
-| G2 | Open alerts and counts by type and severity in the summary | Open, nice to have: the UI gets them from `GET /alerts` and the latest 500 detections, which is the largest dashboard request (see 4.2) |
+| G2 | Open alerts and counts by type and severity in the summary | Partially implemented: summary returns both detection breakdowns. The UI still uses the latest 500 detections (see 4.2); switching it to the aggregates and adding open-alert counts remain follow-ups. |
 | G3 | Detection fields in the alert list items | Done, see below |
 | G4 | Something has to create alerts | Done: the engine decides (`alerts` in `config/detection.yaml`: MEDIUM and above, `unknown` from HIGH, one alert per type/source/destination per 5 min) and the persister writes the alert with the detection |
 | G5 | Filters and paging on `GET /detections` | Done |
@@ -252,6 +252,13 @@ one SQL statement over `[start_time, end_time)`; the four severity counts sum to
 `detections_count`. The earlier proposal's per-bucket `packets` and `bytes` are not part of the response. The
 "Flows/s" card can use `flows_count` divided by the bucket length of the last full bucket. A 15-minute live chart
 can use `10s`, `30s` or `1m` buckets.
+
+**G2 - More numbers in the summary (partially implemented).** `GET /dashboard/summary` returns
+`detections_by_type` and `detections_by_severity` for the same `[start_time, end_time)` range,
+without a 500-record limit. All severity keys are present, including zeros; absent types are omitted.
+The dashboard can use these aggregates instead of fetching 500 detections for counting;
+its latest-detections table still needs a small list request. `open_alert_count` (status NEW)
+remains a separate follow-up.
 
 **G3 - Detection fields in the alert list (implemented).** `GET /alerts` items include the alert fields and a nested
 `detection` summary (`type`, `severity`, `confidence`, `src_ip`, `dst_ip`, `protocol`) from the existing join, avoiding

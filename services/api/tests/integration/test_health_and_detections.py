@@ -1,4 +1,4 @@
-"""Health check and the public detections list through real HTTP and TimescaleDB."""
+"""Health check and the authenticated detections list through real HTTP and TimescaleDB."""
 
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
@@ -27,12 +27,12 @@ def test_health_reports_the_database(client: TestClient) -> None:
     assert response.json() == {"status": "ok", "db": "ok"}
 
 
-def test_detections_are_listed_newest_first(client: TestClient, db: psycopg.Connection) -> None:
+def test_detections_are_listed_newest_first(authenticated_client: TestClient, db: psycopg.Connection) -> None:
     """API-01"""
     for minutes in (0, 2, 1):
         insert_detection(db, START + timedelta(minutes=minutes), src_ip=f"10.66.6.{minutes + 1}")
 
-    response = client.get("/api/v1/detections", params={"limit": 2})
+    response = authenticated_client.get("/api/v1/detections", params={"limit": 2})
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -43,15 +43,15 @@ def test_detections_are_listed_newest_first(client: TestClient, db: psycopg.Conn
 
 
 @pytest.mark.parametrize("limit", ["0", "-1", "501", "abc"])
-def test_invalid_limit_is_rejected(client: TestClient, limit: str) -> None:
+def test_invalid_limit_is_rejected(authenticated_client: TestClient, limit: str) -> None:
     """API-02"""
-    assert client.get("/api/v1/detections", params={"limit": limit}).status_code == 422
+    assert authenticated_client.get("/api/v1/detections", params={"limit": limit}).status_code == 422
 
 
 @pytest.mark.parametrize("first_ingested_at", [START - timedelta(seconds=13, microseconds=123456), None])
 @pytest.mark.parametrize("last_ingested_at", [START - timedelta(seconds=3, microseconds=123456), None])
 def test_detections_include_ingestion_timestamps(
-    client: TestClient,
+    authenticated_client: TestClient,
     db: psycopg.Connection,
     first_ingested_at: datetime | None,
     last_ingested_at: datetime | None,
@@ -63,7 +63,7 @@ def test_detections_include_ingestion_timestamps(
         (uuid4(), START, first_ingested_at, last_ingested_at),
     )
 
-    response = client.get("/api/v1/detections")
+    response = authenticated_client.get("/api/v1/detections")
 
     assert response.status_code == 200, response.text
     detection = response.json()["items"][0]

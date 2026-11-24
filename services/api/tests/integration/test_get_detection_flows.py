@@ -73,8 +73,8 @@ def seed_flow(db):
     return seed
 
 
-def test_public_page_uses_only_requested_trace_sample_without_duplicates_or_writes(
-    client: TestClient,
+def test_authenticated_page_uses_only_requested_trace_sample_without_duplicates_or_writes(
+    authenticated_client: TestClient,
     db,
     seed_detection,
     seed_flow,
@@ -87,7 +87,7 @@ def test_public_page_uses_only_requested_trace_sample_without_duplicates_or_writ
     before_flows = db.execute("SELECT * FROM network_flows ORDER BY ts_start, flow_id").fetchall()
     before_detections = db.execute("SELECT * FROM detections ORDER BY detection_id").fetchall()
 
-    response = client.get(f"{URL}/{detection_id}/flows")
+    response = authenticated_client.get(f"{URL}/{detection_id}/flows")
 
     assert response.status_code == 200, response.text
     assert response.json() == {
@@ -119,7 +119,9 @@ def test_public_page_uses_only_requested_trace_sample_without_duplicates_or_writ
 
 
 @pytest.mark.parametrize("sort_order", ["asc", "desc"])
-def test_stable_pages_keep_composite_flow_keys_and_total(client: TestClient, seed_detection, seed_flow, sort_order):
+def test_stable_pages_keep_composite_flow_keys_and_total(
+    authenticated_client: TestClient, seed_detection, seed_flow, sort_order
+):
     detection_id = seed_detection(["trace-matched"])
     keys = [
         (UUID(int=1), START),
@@ -133,7 +135,7 @@ def test_stable_pages_keep_composite_flow_keys_and_total(client: TestClient, see
     expected = sorted(keys, key=lambda key: (key[1], key[0]), reverse=sort_order == "desc")
     collected = []
     for page in (1, 2, 3, 4):
-        response = client.get(
+        response = authenticated_client.get(
             f"{URL}/{detection_id}/flows",
             params={
                 "page": page,
@@ -148,7 +150,7 @@ def test_stable_pages_keep_composite_flow_keys_and_total(client: TestClient, see
         assert actual == expected[(page - 1) * 2 : page * 2]
         collected.extend(actual)
     assert collected == expected
-    default = client.get(f"{URL}/{detection_id}/flows").json()
+    default = authenticated_client.get(f"{URL}/{detection_id}/flows").json()
     assert [(UUID(row["flow_id"]), datetime.fromisoformat(row["ts_start"])) for row in default["items"]] == sorted(
         keys,
         key=lambda key: (key[1], key[0]),
@@ -158,7 +160,7 @@ def test_stable_pages_keep_composite_flow_keys_and_total(client: TestClient, see
 
 @pytest.mark.parametrize("trace_ids", [[], ["trace-missing"]])
 def test_existing_detection_without_retained_matches_returns_empty_page(
-    client: TestClient,
+    authenticated_client: TestClient,
     seed_detection,
     seed_flow,
     trace_ids,
@@ -166,27 +168,29 @@ def test_existing_detection_without_retained_matches_returns_empty_page(
     detection_id = seed_detection(trace_ids)
     seed_flow()
 
-    response = client.get(f"{URL}/{detection_id}/flows", params={"page": 3})
+    response = authenticated_client.get(f"{URL}/{detection_id}/flows", params={"page": 3})
 
     assert response.status_code == 200, response.text
     assert response.json() == {"items": [], "total": 0, "page": 3, "page_size": 50}
 
 
-def test_unknown_detection_returns_404_instead_of_empty_page(client: TestClient, seed_detection, seed_flow):
+def test_unknown_detection_returns_404_instead_of_empty_page(
+    authenticated_client: TestClient, seed_detection, seed_flow
+):
     seed_detection(["trace-matched"])
     seed_flow()
 
-    response = client.get(f"{URL}/{uuid4()}/flows")
+    response = authenticated_client.get(f"{URL}/{uuid4()}/flows")
 
     assert response.status_code == 404, response.text
     assert response.json() == {"detail": "Detection not found"}
 
 
-def test_flow_evidence_can_be_nullable(client: TestClient, seed_detection, seed_flow):
+def test_flow_evidence_can_be_nullable(authenticated_client: TestClient, seed_detection, seed_flow):
     detection_id = seed_detection(["trace-matched"])
     seed_flow(**dict.fromkeys(NULLABLE_FLOW_FIELDS))
 
-    response = client.get(f"{URL}/{detection_id}/flows")
+    response = authenticated_client.get(f"{URL}/{detection_id}/flows")
 
     assert response.status_code == 200, response.text
     item = response.json()["items"][0]
@@ -194,11 +198,11 @@ def test_flow_evidence_can_be_nullable(client: TestClient, seed_detection, seed_
     assert item["trace_id"] == "trace-matched"
 
 
-def test_page_size_upper_bound_is_accepted(client: TestClient, seed_detection, seed_flow):
+def test_page_size_upper_bound_is_accepted(authenticated_client: TestClient, seed_detection, seed_flow):
     detection_id = seed_detection(["trace-matched"])
     seed_flow()
 
-    response = client.get(f"{URL}/{detection_id}/flows", params={"page_size": 500})
+    response = authenticated_client.get(f"{URL}/{detection_id}/flows", params={"page_size": 500})
 
     assert response.status_code == 200, response.text
     assert response.json()["page_size"] == 500
@@ -206,8 +210,8 @@ def test_page_size_upper_bound_is_accepted(client: TestClient, seed_detection, s
 
 
 @pytest.mark.parametrize("identifier", ["not-a-uuid", "123", "550e8400-e29b-41d4-a716-44665544000g"])
-def test_invalid_uuid_returns_422(client: TestClient, identifier):
-    response = client.get(f"{URL}/{identifier}/flows")
+def test_invalid_uuid_returns_422(authenticated_client: TestClient, identifier):
+    response = authenticated_client.get(f"{URL}/{identifier}/flows")
 
     assert response.status_code == 422, response.text
     assert response.json()["detail"][0]["loc"] == ["path", "id"]
@@ -226,33 +230,33 @@ def test_invalid_uuid_returns_422(client: TestClient, identifier):
         {"sort_order": "sideways"},
     ],
 )
-def test_invalid_pagination_or_sort_returns_422(client: TestClient, seed_detection, parameters):
+def test_invalid_pagination_or_sort_returns_422(authenticated_client: TestClient, seed_detection, parameters):
     detection_id = seed_detection()
 
-    response = client.get(f"{URL}/{detection_id}/flows", params=parameters)
+    response = authenticated_client.get(f"{URL}/{detection_id}/flows", params=parameters)
 
     assert response.status_code == 422, response.text
     assert all(error["loc"][0] == "query" for error in response.json()["detail"])
 
 
-def test_database_failure_returns_503_without_connection_details(client: TestClient, monkeypatch):
+def test_database_failure_returns_503_without_connection_details(authenticated_client: TestClient, monkeypatch):
     with socket.socket() as unavailable:
         unavailable.bind(("127.0.0.1", 0))
         port = unavailable.getsockname()[1]
         monkeypatch.setenv("DATABASE_URL", f"postgresql://unavailable:private@127.0.0.1:{port}/missing")
-        response = client.get(f"{URL}/{uuid4()}/flows")
+        response = authenticated_client.get(f"{URL}/{uuid4()}/flows")
 
     assert response.status_code == 503, response.text
     assert response.json() == {"detail": "Database storage unavailable"}
     assert "private" not in response.text
 
 
-def test_openapi_documents_public_route_query_constraints_and_response(client: TestClient):
-    schema = client.get("/openapi.json").json()
+def test_openapi_documents_authenticated_route_query_constraints_and_response(authenticated_client: TestClient):
+    schema = authenticated_client.get("/openapi.json").json()
     operation = schema["paths"][URL + "/{id}/flows"]["get"]
     assert "requestBody" not in operation
-    assert operation.get("security", []) == []
-    assert {"200", "404", "422", "503"} <= operation["responses"].keys()
+    assert operation["security"] == [{"HTTPBearer": []}]
+    assert {"200", "401", "404", "422", "503"} <= operation["responses"].keys()
     parameters = {parameter["name"]: parameter for parameter in operation["parameters"]}
     assert set(parameters) == {"id", "page", "page_size", "sort_order"}
     assert parameters["id"]["schema"]["format"] == "uuid"

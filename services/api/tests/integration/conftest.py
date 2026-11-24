@@ -135,3 +135,13 @@ def create_user(db: psycopg.Connection) -> Callable[..., User]:
         return user
 
     return create
+
+
+@pytest.fixture
+def authenticated_client(client: TestClient, create_user) -> TestClient:
+    from app.features.auth.common.dependencies import get_auth
+
+    user = create_user()
+    token = get_auth().create_access_token(uid=str(user.user_id))
+    client.headers["Authorization"] = f"Bearer {token}"
+    return client

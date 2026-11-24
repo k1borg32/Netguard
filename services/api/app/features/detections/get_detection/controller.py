@@ -17,7 +17,7 @@ router = APIRouter()
     summary="Retrieve detection details",
     description=(
         "Returns the detection's classification, confidence, ingestion timestamps, network context, "
-        "window, features, explanation and trace IDs. No token needed for now."
+        "window, features, explanation and trace IDs. Requires a valid Bearer access token."
     ),
     responses={
         404: {"description": "Detection not found"},

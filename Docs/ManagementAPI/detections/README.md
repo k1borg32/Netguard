@@ -2,7 +2,11 @@
 
 ## GET /api/v1/detections
 
-Public endpoint returning a filtered page of detections. No token is required yet.
+Returns a filtered page of detections. Requires a valid access token in the
+`Authorization: Bearer <access_token>` header. All detection routes return `401`
+for missing, invalid or expired access tokens and tokens belonging to accounts
+that no longer exist. Refresh tokens are not accepted. Both USER and ADMIN roles
+can read detections.
 
 | Query parameter | Contract |
 | --- | --- |
@@ -42,8 +46,8 @@ also consume the paginated response.
 
 ## GET /api/v1/detections/{id}
 
-Public lookup by detection UUID; no token is required yet. Returns one JSON object
-with `detection_id`, `configuration_id`, `created_at`, `type`, `method`, `severity`,
+Authenticated lookup by detection UUID; a Bearer access token is required.
+Returns one JSON object with `detection_id`, `configuration_id`, `created_at`, `type`, `method`, `severity`,
 `confidence`, `first_ingested_at`, `last_ingested_at`, source/destination IPs and
 ports, `protocol`, `window_size_s`, `window_start`, `window_end`, `features`,
 `explanation` and `trace_ids`.
@@ -59,6 +63,7 @@ in the database; its domain and ORM mappings are included in this implementation
 | Status | Meaning |
 | --- | --- |
 | `200` | Detection found. |
+| `401` | Missing, invalid or expired access token. |
 | `404` | Valid UUID without a detection: `{"detail": "Detection not found"}`. |
 | `422` | Invalid UUID; validation error points to `path.id`. |
 | `503` | Storage unavailable: `{"detail": "Database storage unavailable"}`. |
@@ -75,8 +80,8 @@ TimescaleDB fixtures and no mocks or dependency overrides.
 
 ## GET /api/v1/detections/{id}/flows
 
-Public endpoint returning stored flows whose `trace_id` matches an entry in the
-detection's `trace_ids`. The detector stores an evidence sample (currently up to
+Requires a Bearer access token. Returns stored flows whose `trace_id` matches
+an entry in the detection's `trace_ids`. The detector stores an evidence sample (currently up to
 20 trace IDs in the port-scan processor). Returned flows therefore represent the
 retained sample, and `total` counts matching stored rows. Expired or missing flows
 are omitted. Repeated trace IDs in the sample do not duplicate response items.

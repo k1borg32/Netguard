@@ -22,7 +22,7 @@ router = APIRouter()
         "Sort by created_at, then detection_id in the same direction; newest first by default. "
         "Returns items, total matching detections, page and page_size. "
         "The legacy limit parameter is an alias for page_size; both must match if provided together. "
-        "No token needed for now."
+        "Requires a valid Bearer access token."
     ),
     responses={
         422: {"description": "Invalid filters or pagination"},

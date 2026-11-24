@@ -23,6 +23,41 @@ automatically. Missing settings fail at startup without exposing their values.
 The Linux container uses `uvicorn app.app:app --host 0.0.0.0 --port 8000`.
 
 Open `/docs` for interactive documentation and `/openapi.json` for the schema.
+
+## Rate limiting
+
+All `/api/v1/` routes share the following limits:
+
+| Requests | Limit | Counter key |
+| --- | --- | --- |
+| Login | 10 per minute | Client IP |
+| Refresh | 30 per minute | Client IP |
+| Other requests with a verified access token | 120 per minute | User ID, shared across routes and access tokens |
+| Other anonymous requests or invalid access tokens | 120 per minute | Client IP |
+
+The limiter does not grant access: each endpoint still performs its existing
+authentication and role checks. A rejected request returns `429` with
+`{"detail": "Too many requests"}` and `Retry-After` in whole seconds.
+The 60-second window starts with the first request for a counter. Rejected
+requests do not extend it. Health checks and API documentation are exempt.
+
+Counters use monotonic time, are protected by a lock, and expired entries are
+removed on incoming requests. At most 10,000 counters are retained; when full,
+new identities receive `429` until a counter expires instead of evicting active
+limits. Counters are local to one application process and reset on restart.
+The current Compose deployment runs one API worker. Multiple workers or API
+replicas require a shared counter store before scaling.
+
+IP limits use the client address supplied by Uvicorn, not raw forwarded headers.
+Behind nginx, configure Uvicorn's `FORWARDED_ALLOW_IPS` environment variable
+with the actual trusted proxy IP addresses or networks. Compose loads this from
+`.env`. Without that configuration, requests through an untrusted proxy share
+the proxy IP's limits. Do not use `*` when clients can reach the API directly.
+The dashboard nginx overwrites `X-Forwarded-For` with the connecting client's
+address so incoming client-supplied values are not forwarded.
+
+## Health and dashboard
+
 `GET /health/ping` returns `{"status": "ok"}` without accessing the database.
 `GET /health` also checks the database and returns `{"status": "ok", "db": "ok"}`; the Compose
 healthcheck uses it. An unavailable database returns HTTP 503 with degraded status.

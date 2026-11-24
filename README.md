@@ -85,6 +85,9 @@ make coverage              # unit tests + coverage report
 make lint                  # ruff lint + format check, same as CI
 ```
 
+For `make test-stack`, set `API_ACCESS_TOKEN` to a valid access token obtained
+from the running API login endpoint.
+
 Without make (activate the venv first: `.venv\Scripts\Activate.ps1` on Windows, `source .venv/bin/activate` elsewhere):
 
 ```bash
