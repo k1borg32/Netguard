@@ -115,8 +115,25 @@ Why not WebSockets or Server-Sent Events now:
 If there is time after week 7, an SSE endpoint `GET /stream/alerts` can replace the 5 s polling of the alert list;
 the screens would not change.
 
-Load: one open dashboard makes about 4 requests per 5 s. The k6 API load test (PT-05) polls the alert list every
-2 s per virtual user, which is more than the dashboard does, so it is a safe upper bound.
+Load, measured in week 8 (#38) with one browser tab against the compose stack, 60 s per screen:
+
+| Screen | Requests per minute | What |
+|---|---|---|
+| Overview | 54 | summary, time series, open alert count, latest 500 detections every 5 s; health every 10 s |
+| Alerts | 18 | alert list every 5 s, health |
+| Alert details | 12 | the alert every 10 s, health |
+| History, Flows, Settings | 6 | health only; data on load, filter change and Refresh |
+
+Every answer took less than 25 ms. With the tab hidden the dashboard sent no request in 20 s, and it refetched
+within 0.5 s after the tab was shown again. With a slow API (7 s per answer) the requests of one query never
+overlap: a new poll starts only after the previous answer. When the API answers 429 the dashboard retries twice with
+a growing delay, keeps the last rows on screen with a "the last refresh failed: too many requests" note and goes
+back to normal on the next successful poll.
+
+The largest request is the Overview's latest 500 detections (about 690 bytes per detection, so up to 345 KB per
+5 s once there are 500 detections). The counts by type in `GET /dashboard/summary` (gap G2) would replace it with
+a few bytes; until then it is the request to include in the API load test. The k6 test (PT-05) polls the alert list
+every 2 s per virtual user, more often than the dashboard does.
 
 ### 4.3 Time ranges
 
@@ -196,7 +213,7 @@ The review was done in week 2. State after PR #50 and the detection engine (#62)
 | Gap | What | State |
 |---|---|---|
 | G1 | Time-series endpoint for the trend charts | Done, see below |
-| G2 | Open alerts and counts by type and severity in the summary | Not needed for now: the UI gets them from `GET /alerts` and `GET /detections` |
+| G2 | Open alerts and counts by type and severity in the summary | Open, nice to have: the UI gets them from `GET /alerts` and the latest 500 detections, which is the largest dashboard request (see 4.2) |
 | G3 | Detection fields in the alert list items | Done, see below |
 | G4 | Something has to create alerts | Done: the engine decides (`alerts` in `config/detection.yaml`: MEDIUM and above, `unknown` from HIGH, one alert per type/source/destination per 5 min) and the persister writes the alert with the detection |
 | G5 | Filters and paging on `GET /detections` | Done |
@@ -277,10 +294,30 @@ services/dashboard/
 Rules: API types in `src/api/` mirror the Pydantic responses; components never call `fetch` directly; all text from
 the API is rendered as text (no HTML), which is what SEC-08 checks.
 
+### 7.1 Loading, error and empty states, accessibility (week 8, #38)
+
+Every screen handles the same four cases with the shared `Loading` and `LoadError` components:
+
+| Case | What the user sees |
+|---|---|
+| Waiting for the first answer | "Loading alerts..." (`role="status"`) |
+| First answer failed | "Could not load alerts." and the reason in plain words (`role="alert"`): the API can't be reached, its database is not reachable (503), internal error (5xx), too many requests (429) |
+| A refresh of a live screen failed | the last data stays on screen with "Showing alerts from 15:04:43: the last refresh failed" and the reason |
+| No data | a sentence that says why the list can be empty (for example, LOW detections don't raise alerts) |
+
+Network errors, 5xx and 429 are retried twice with a growing delay; other 4xx are not, they won't get better.
+
+Accessibility (WCAG 2.1 AA): every screen has its own browser title; a "Skip to content" link is the first Tab stop;
+after moving to another screen the focus goes to its content, not to the menu link; keyboard focus always has a visible
+outline; the charts have a text summary for screen readers; every form field has a label; all colour pairs reach at
+least 4.5:1. Below 800 px the side menu becomes a row and only wide tables scroll, inside their own box.
+Checked with axe-core on all nine screens with real data: no violations.
+
 ## 8. Testing
 
-- **Component tests** (Vitest + Testing Library, `npm test`): API client refresh logic, login form, severity badge,
-  alert table rendering, filter to query-string mapping, time-range helpers. Run in CI next to the Python tests.
+- **Component tests** (Vitest + Testing Library, `npm test`): API client refresh logic, login form, every screen with
+  its filters, the settings form, loading and error states, page titles and keyboard focus, time-range and chart
+  helpers; 78 tests in 12 files. Run in CI next to the Python tests.
 - **End-to-end** (Playwright, week 7 with M5, issue #14): ST-02 attack from an imported file visible on the dashboard,
   ST-03 PCAP import visible, ST-04 history filters, ST-05 live statistics and charts update, SEC-08 HTML in a detection
   field shown as text.
@@ -295,10 +332,10 @@ The dashboard part of the [work schedule](../../WorkSchedule/README.md):
 | 2 | this section, wireframes, API review, React app in `services/dashboard`, Docker build into nginx, login | done |
 | 3-4 | Overview with cards and trend charts (#34) | done |
 | 5 | Alerts list with filters, alert details with evidence, acknowledge (#35) | done |
-| 6 | History and Flows screens (#36) | in review |
-| 7 | Settings: detection thresholds (#37) | in review |
+| 6 | History and Flows screens (#36) | done |
+| 7 | Settings: detection thresholds (#37) | done |
 | 7 | Playwright end-to-end tests with M5 (#14) | planned |
-| 8 | Loading, error and empty states, accessibility, check under API load (#38) | planned |
+| 8 | Loading, error and empty states, accessibility, check under API load (#38) | in review |
 | 9-10 | `npm audit`, screenshots for the test report and the demo, bug fixes (#39) | planned |
 
 ## 10. Open questions

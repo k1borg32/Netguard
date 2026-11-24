@@ -2,7 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useParams, useSearchParams } from 'react-router'
 import { ApiError } from '../api/client'
 import { getFlow } from '../api/flows'
+import { Loading } from '../components/QueryStatus'
+import { describeError } from '../lib/errors'
 import { endpoint, formatDateTime, formatDuration, formatNumber } from '../lib/format'
+import { usePageTitle } from '../lib/usePageTitle'
 
 function perSecond(value: number | null, durationMs: number | null): string {
   if (value === null || !durationMs) return '-'
@@ -14,17 +17,20 @@ export function FlowDetailsPage() {
   const [params] = useSearchParams()
   const tsStart = params.get('tsStart') ?? ''
   const flow = useQuery({ queryKey: ['flow', id, tsStart], queryFn: () => getFlow(id, tsStart) })
+  usePageTitle('Flow details')
 
   if (flow.isError) {
     const notFound = flow.error instanceof ApiError && (flow.error.status === 404 || flow.error.status === 422)
     return (
       <section className="card">
-        <p className="error">{notFound ? 'Flow not found.' : `Could not load the flow: ${flow.error.message}`}</p>
+        <p className="error" role="alert">
+          {notFound ? 'Flow not found.' : `Could not load the flow. ${describeError(flow.error)}`}
+        </p>
         <Link to="/flows">Back to flows</Link>
       </section>
     )
   }
-  if (!flow.data) return <p className="muted">Loading...</p>
+  if (!flow.data) return <Loading what="the flow" />
 
   const f = flow.data
   const rows: [string, string][] = [

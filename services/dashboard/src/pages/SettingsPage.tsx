@@ -4,8 +4,11 @@ import { ApiError } from '../api/client'
 import { getDetectionConfig, getDetectionConfigs, type Parameters } from '../api/detectionConfigs'
 import { useAuth } from '../auth/context'
 import { ConfigForm } from '../components/ConfigForm'
+import { Loading, LoadError } from '../components/QueryStatus'
+import { describeError } from '../lib/errors'
 import { formatType } from '../lib/format'
 import { toFields } from '../lib/parameters'
+import { usePageTitle } from '../lib/usePageTitle'
 
 /** One line per configuration, in the same order as the form. */
 function summary(parameters: Parameters): string {
@@ -16,6 +19,7 @@ function summary(parameters: Parameters): string {
 export function SettingsPage() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
+  usePageTitle('Settings')
   const [params, setParams] = useSearchParams()
   const selected = params.get('config')
   const editingId = selected && selected !== 'new' ? selected : null
@@ -55,15 +59,15 @@ export function SettingsPage() {
       </div>
 
       <p className="notice small">
-        The running detection engine reads its thresholds from <span className="mono">config/detection.yaml</span>{' '}
-        when it starts. Configurations saved and activated here are stored in the database; the engine does not load
-        them yet.
+        The running detection engine reads its thresholds from <span className="mono">config/detection.yaml</span> when
+        it starts. Configurations saved and activated here are stored in the database; the engine does not load them
+        yet.
       </p>
 
       <section className="card section-gap">
         <h2>Detection configurations</h2>
-        {list.isError && <p className="error">Could not load the configurations: {list.error.message}</p>}
-        {list.isPending && <p className="muted">Loading...</p>}
+        {list.isError && <LoadError what="the configurations" error={list.error} updatedAt={list.dataUpdatedAt} />}
+        {list.isPending && <Loading what="configurations" />}
         {list.data && items.length === 0 && <p className="muted">No configurations stored yet.</p>}
         {items.length > 0 && (
           <div className="table-wrap">
@@ -74,7 +78,9 @@ export function SettingsPage() {
                   <th>Method</th>
                   <th>Parameters</th>
                   <th>Status</th>
-                  <th aria-label="Actions" />
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -114,8 +120,8 @@ export function SettingsPage() {
       )}
       {editingId && detail.isError && (
         <section className="card section-gap">
-          <p className="error">
-            {notFound ? 'Configuration not found.' : `Could not load the configuration: ${detail.error.message}`}
+          <p className="error" role="alert">
+            {notFound ? 'Configuration not found.' : `Could not load the configuration. ${describeError(detail.error)}`}
           </p>
           <button type="button" className="btn" onClick={close}>
             Close

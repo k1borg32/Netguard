@@ -5,7 +5,12 @@ import { useAuth } from './context'
 export function RequireAuth({ children }: { children: ReactNode }) {
   const { status } = useAuth()
   const location = useLocation()
-  if (status === 'loading') return <p className="page-loading">Loading...</p>
+  if (status === 'loading')
+    return (
+      <p className="page-loading" role="status">
+        Loading...
+      </p>
+    )
   if (status === 'anonymous') return <Navigate to="/login" replace state={{ from: location.pathname }} />
   return children
 }
