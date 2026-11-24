@@ -445,7 +445,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | ST-01 | Deployment from a clean clone with the documented command | NFR05, NFR09 | all services healthy within 5 min, integration tests pass | automated in CI (first run after push) |
-| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | week 7; input `data/flows/scan-small.csv` |
+| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | first part automated: an imported scan is in the alert list and opens with its explanation (`services/dashboard/e2e/import.e2e.ts`, Playwright, CI job `e2e`); full evidence check with M4 in week 7 |
 | ST-03 | PCAP import -> dashboard | F01, F12, UC-01 | alerts from the file shown | week 7; input `data/pcap/portscan-small.pcap` |
 | ST-04 | History and filters on the dashboard | F13, UC-04, UC-05 | correct rows for each filter | week 7 |
 | ST-05 | Live statistics and trend charts | F12, UC-06 | values update while traffic runs | week 7 |
