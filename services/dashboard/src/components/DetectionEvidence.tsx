@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { getDetectionFlows, type DetectionDetails } from '../api/detections'
 import { endpoint, formatConfidence, formatDateTime, formatNumber, formatTime } from '../lib/format'
+import { Loading, LoadError } from './QueryStatus'
 
 function featureValue(value: unknown): string {
   if (typeof value === 'number') return formatNumber(value)
@@ -82,7 +83,8 @@ export function DetectionEvidence({ detection: d, extraRows = [] }: DetectionEvi
 
       <section className="card section-gap">
         <h2>Contributing flows</h2>
-        {flows.isError && <p className="error">Could not load the flows: {flows.error.message}</p>}
+        {flows.isPending && <Loading what="the flows" />}
+        {flows.isError && <LoadError what="the flows" error={flows.error} />}
         {flows.data?.items.length === 0 && <p className="muted">No stored flows for this detection.</p>}
         {!!flows.data?.items.length && (
           <>

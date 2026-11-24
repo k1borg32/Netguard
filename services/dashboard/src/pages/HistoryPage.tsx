@@ -5,15 +5,18 @@ import { getTimeseries } from '../api/dashboard'
 import { getDetections, SEVERITIES, type DetectionFilters } from '../api/detections'
 import { DetectionsChart } from '../components/DetectionsChart'
 import { Pager } from '../components/Pager'
+import { Loading, LoadError } from '../components/QueryStatus'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { TextFilter } from '../components/TextFilter'
 import { DETECTION_TYPES, formatConfidence, formatDateTime, formatType } from '../lib/format'
 import { chartSpan, localToIso } from '../lib/timeRange'
+import { usePageTitle } from '../lib/usePageTitle'
 import { useUrlFilters } from '../lib/useUrlFilters'
 
 const PAGE_SIZE = 20
 
 export function HistoryPage() {
+  usePageTitle('History')
   const { get, page, setFilter, setPage, reset } = useUrlFilters()
   const from = get('from')
   const to = get('to')
@@ -42,7 +45,8 @@ export function HistoryPage() {
     placeholderData: keepPreviousData,
   })
 
-  const data = detections.data
+  // Rows of the previous filters are not shown under an error for the new ones.
+  const data = detections.isError && detections.isPlaceholderData ? undefined : detections.data
   const invalidFilter = detections.error instanceof ApiError && detections.error.status === 422
   // An impossible time range is already explained once, by the message above the table.
   const chartFailed = chart.isError && !(chart.error instanceof ApiError && chart.error.status === 422)
@@ -99,7 +103,12 @@ export function HistoryPage() {
             <option value="statistical">statistical</option>
           </select>
         </label>
-        <TextFilter label="Source IP" value={filters.src_ip} placeholder="e.g. 10.0.0.5" onApply={(v) => setFilter('src', v)} />
+        <TextFilter
+          label="Source IP"
+          value={filters.src_ip}
+          placeholder="e.g. 10.0.0.5"
+          onApply={(v) => setFilter('src', v)}
+        />
         <TextFilter label="Destination IP" value={filters.dst_ip} onApply={(v) => setFilter('dst', v)} />
         <button type="button" className="btn" onClick={reset}>
           Reset
@@ -110,14 +119,19 @@ export function HistoryPage() {
         <h2>
           Detections per {span.label}, {span.description}
         </h2>
-        {chartFailed && <p className="error">Could not load the chart: {chart.error?.message}</p>}
+        {chartFailed && chart.error && <LoadError what="the chart" error={chart.error} />}
         {chart.data && <DetectionsChart data={chart.data.data} showSeconds={false} />}
         <p className="muted small">Uses the time filters only; type, severity, method and IP filter the table below.</p>
       </section>
 
       {invalidFilter && <p className="error">Check the filters: an IP address or the time range is not valid.</p>}
+      {detections.isPending && <Loading what="detections" />}
       {detections.isError && !invalidFilter && (
-        <p className="error">Could not load detections: {detections.error.message}</p>
+        <LoadError
+          what="detections"
+          error={detections.error}
+          updatedAt={detections.isPlaceholderData ? 0 : detections.dataUpdatedAt}
+        />
       )}
       {data?.items.length === 0 && (
         <section className="card">

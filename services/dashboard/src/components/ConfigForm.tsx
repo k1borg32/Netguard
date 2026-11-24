@@ -8,6 +8,7 @@ import {
   updateDetectionConfig,
   type DetectionConfig,
 } from '../api/detectionConfigs'
+import { describeError } from '../lib/errors'
 import { DETECTION_TYPES, formatType } from '../lib/format'
 import {
   fromFields,
@@ -32,7 +33,7 @@ function errorLines(error: Error): string[] {
     if (error.status === 403) return ['Only administrators can change detection settings.']
     if (error.status === 422) return validationMessages(error.detail)
   }
-  return [error.message]
+  return [describeError(error)]
 }
 
 export function ConfigForm({ config, canEdit, onCreated, onClose }: ConfigFormProps) {

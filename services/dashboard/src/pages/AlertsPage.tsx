@@ -6,10 +6,12 @@ import { SEVERITIES } from '../api/detections'
 import { AcknowledgeButton } from '../components/AcknowledgeButton'
 import { AlertStatusBadge } from '../components/AlertStatusBadge'
 import { Pager } from '../components/Pager'
+import { Loading, LoadError } from '../components/QueryStatus'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { TextFilter } from '../components/TextFilter'
 import { DETECTION_TYPES, formatConfidence, formatDateTime, formatType } from '../lib/format'
 import { RANGES, rangeToTimes, type RangeId } from '../lib/timeRange'
+import { usePageTitle } from '../lib/usePageTitle'
 import { useUrlFilters } from '../lib/useUrlFilters'
 
 const REFRESH_MS = 5_000
@@ -38,6 +40,7 @@ function AlertRow({ alert }: { alert: AlertListItem }) {
 }
 
 export function AlertsPage() {
+  usePageTitle('Alerts')
   const { get, page, setFilter, setPage, reset } = useUrlFilters()
   const range = get('range') as RangeId | undefined
   const filters: AlertFilters = {
@@ -58,7 +61,8 @@ export function AlertsPage() {
     placeholderData: keepPreviousData,
   })
 
-  const data = alerts.data
+  // Rows of the previous filters are not shown under an error for the new ones.
+  const data = alerts.isError && alerts.isPlaceholderData ? undefined : alerts.data
   const invalidFilter = alerts.error instanceof ApiError && alerts.error.status === 422
 
   return (
@@ -120,7 +124,10 @@ export function AlertsPage() {
       </form>
 
       {invalidFilter && <p className="error">Check the filters: the IP address is not valid.</p>}
-      {alerts.isError && !invalidFilter && <p className="error">Could not load alerts: {alerts.error.message}</p>}
+      {alerts.isPending && <Loading what="alerts" />}
+      {alerts.isError && !invalidFilter && (
+        <LoadError what="alerts" error={alerts.error} updatedAt={alerts.isPlaceholderData ? 0 : alerts.dataUpdatedAt} />
+      )}
       {data?.items.length === 0 && (
         <section className="card">
           <p className="muted">
@@ -141,7 +148,9 @@ export function AlertsPage() {
                   <th>Destination</th>
                   <th>Confidence</th>
                   <th>Status</th>
-                  <th aria-label="Actions" />
+                  <th>
+                    <span className="sr-only">Actions</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>

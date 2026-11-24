@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { acknowledgeAlert } from '../api/alerts'
+import { describeError } from '../lib/errors'
 
 /** Every alert query starts with 'alerts', so the list, the details and the open count all update at once. */
 export function AcknowledgeButton({ alertId, primary = false }: { alertId: string; primary?: boolean }) {
@@ -21,7 +22,7 @@ export function AcknowledgeButton({ alertId, primary = false }: { alertId: strin
       {mutation.isError && (
         <span className="error small" role="alert">
           {' '}
-          Could not acknowledge
+          Could not acknowledge. {describeError(mutation.error)}
         </span>
       )}
     </>
