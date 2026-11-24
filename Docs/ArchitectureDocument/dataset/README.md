@@ -153,3 +153,31 @@ Four slices went through the stack with 0 rejected flows. Precision, recall and 
 | dos | `dos-001`, first 120 s | missed: peak 180 flows/s and 1,884 packets/s, the rule needs 500 connections/s or 20,000 packets/s; one source (NAT), so the DDoS check (10 or more sources) cannot apply |
 
 The misses come from the detection thresholds, not from the import.
+
+## 11. Import speed on large files (PT-07)
+
+Measured on a MacBook (Darwin arm64, 10 CPUs, Python 3.14) on 2026-11-22 with `tests/performance/import_speed.py`. The test files are generated (a 1,000,000-flow CSV of 74 MB, PCAPs of 150 MB and 60 MB) and are not committed (`data/tmp/`).
+
+Importer alone (read, check, encode; no broker):
+
+| File | Flows | Seconds | Flows/s | Peak memory |
+|---|---|---|---|---|
+| CSV, 74 MB, schema check only (before) | 1,000,000 | 83.1 | 12,037 | 38 MB |
+| CSV, 74 MB, fast check (now) | 1,000,000 | 15.6 | 64,180 | 38 MB |
+| PCAP, 150 MB, 10 packets per flow | 209,466 | 23.0 | 9,126 | 274 MB |
+| PCAP, 60 MB, 1 packet per flow (worst case) | 837,012 | 18.7 | 44,665 | 934 MB |
+
+Into the running stack (`make import`, 1,000,000 flows, timed from the importer's own log lines):
+
+| Processor and persister | Seconds | Flows/s |
+|---|---|---|
+| running | 92.8 | 10,780 |
+| stopped | 85.5 | 11,692 |
+
+What we found:
+
+- The JSON schema check took most of the time. The importer now runs a fast check in plain Python and asks the schema only when it is not sure, so the rejection reasons are the same. The CSV import is 5.3 times faster (UT-26 compares the two checks).
+- A CSV needs the same memory (38 MB) for any size, because it is read in a stream.
+- A PCAP is read completely into memory. The memory depends on the number of flows, about 1.1 KB per flow, not on the file size: 934 MB for 837,012 one-packet flows. So the limit of 200 MB (`MAX_PCAP_MB`) stays. A 200 MB capture of one-packet flows could need about 3 GB. Bigger captures are converted to a flow CSV first.
+- Reading a PCAP is the slow part: 20.3 s of the 23.0 s for the 150 MB capture, about 105,000 packets per second.
+- Into the stack the import reaches about 10,800 flows/s, above the 5,000 flows/s of NFR01. The consumers are not the limit (stopped: 11,692 flows/s). The limit is between the importer and the broker (producer settings with acks=all and idempotence, or the single-core broker). We did not look further because the target is met.
