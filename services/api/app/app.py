@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import RequestValidationError
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
@@ -21,6 +21,7 @@ from app.features.health.ping.controller import router as ping_router
 from app.infrastructure.config import Settings
 from app.infrastructure.database import dispose_engine
 from app.infrastructure.persistence.mappings import configure_mappings
+from app.infrastructure.security.rate_limiting import RateLimiter, enforce_rate_limit
 
 
 @asynccontextmanager
@@ -33,6 +34,7 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
             f"Missing or invalid API settings: {fields}. Set environment variables or run python run.py."
         ) from None
     configure_mappings()
+    application.state.rate_limiter = RateLimiter()
     try:
         yield
     finally:
@@ -41,7 +43,13 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     configure_mappings()
-    application = FastAPI(title="NetGuard API", version="0.1.0", lifespan=lifespan)
+    application = FastAPI(
+        title="NetGuard API",
+        version="0.1.0",
+        lifespan=lifespan,
+        dependencies=[Depends(enforce_rate_limit)],
+        responses={429: {"description": "Request limit exceeded; retry after the Retry-After delay"}},
+    )
     application.add_exception_handler(AppException, app_exception_handler)
     application.add_exception_handler(RequestValidationError, validation_exception_handler)
     application.add_exception_handler(SQLAlchemyError, database_exception_handler)
