@@ -40,6 +40,11 @@ Why key by src_ip: flows from one source always hit the same partition, so they'
 - Every downstream message copies it (detections carry a sample in `trace_ids`).
 - Every log line is emitted inside `with trace_context(trace_id):` so it appears in the JSON.
 - Debug any event: `make trace ID=<trace_id>`.
+- The persister logs `batch written` after both the database and consumer commits.
+  Its `trace_ids` field contains all distinct flow trace IDs and detection evidence
+  trace IDs in that batch. The singular `trace_id` is the first ID in that list,
+  or null when no trace IDs are present; it is a representative event, not a batch ID.
+  Trace lookup matches the complete JSON line, including the `trace_ids` array.
 
 ## 4. Latency measurement (NFR02)
 

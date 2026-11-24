@@ -19,7 +19,7 @@ import uuid
 
 import psycopg
 
-from netguard_common import get_logger, setup_logging, topics
+from netguard_common import get_logger, setup_logging, topics, trace_context
 from netguard_common.messages import NETGUARD_NS
 
 log = get_logger("persister")
@@ -95,6 +95,31 @@ def alert_row(d: dict) -> tuple:
     return (str(uuid.uuid5(NETGUARD_NS, f"alert|{d['detection_id']}")), d["detection_id"], d["created_at"])
 
 
+def log_written_batch(flows: list[dict], detections: list[dict], alert_count: int) -> None:
+    trace_ids = []
+    for flow in flows:
+        if flow.get("trace_id"):
+            trace_ids.append(flow["trace_id"])
+    for detection in detections:
+        trace_ids.extend(detection.get("trace_ids", []))
+    trace_ids = list(dict.fromkeys(trace_ids))
+
+    # A batch can contain unrelated events; keep every ID for trace lookups.
+    representative_trace_id = None
+    if trace_ids:
+        representative_trace_id = trace_ids[0]
+    with trace_context(representative_trace_id):
+        log.info(
+            "batch written",
+            extra={
+                "flows": len(flows),
+                "detections": len(detections),
+                "alerts": alert_count,
+                "trace_ids": trace_ids,
+            },
+        )
+
+
 SEVERITY_ORDER = "ARRAY['LOW','MEDIUM','HIGH','CRITICAL']"
 DET_SQL = (
     "INSERT INTO detections (detection_id, created_at, first_ingested_at, last_ingested_at, type, method, "
@@ -142,7 +167,7 @@ def main() -> None:
                 cur.executemany(ALERT_SQL, alerts)
         conn.commit()
         consumer.commit(asynchronous=False)  # only after DB commit -> at-least-once
-        log.info("batch written", extra={"flows": len(flows), "detections": len(dets), "alerts": len(alerts)})
+        log_written_batch(flows, dets, len(alerts))
 
 
 if __name__ == "__main__":
