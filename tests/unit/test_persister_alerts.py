@@ -46,4 +46,6 @@ def test_sql_is_idempotent_and_only_escalates():
     assert "ON CONFLICT (detection_id) DO NOTHING" in ALERT_SQL
     assert "ON CONFLICT (detection_id) DO UPDATE" in DET_SQL
     assert "EXCLUDED.severity) > array_position" in DET_SQL  # never downgrades
-    assert "created_at =" not in DET_SQL.split("DO UPDATE")[1]  # latency stays measured to the first detection
+    update = DET_SQL.split("DO UPDATE")[1]
+    # latency stays measured to the first detection: moving only last_ingested_at made it negative
+    assert "created_at =" not in update and "last_ingested_at =" not in update

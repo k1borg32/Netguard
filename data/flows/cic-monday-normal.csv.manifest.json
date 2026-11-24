@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "dataset": "NORMAL/cic-monday-normal",
+  "source": "flowfile",
+  "seed": null,
+  "created_at": 1794178609.131,
+  "episodes": [],
+  "notes": "CIC-IDS2017 Monday (TrafficLabelling, UNB), 09:00 to 09:30, all flows labelled BENIGN. No attack episodes: every detection on this file is a false alarm (DQ-02). Converted with convert_cic.py --spread-minutes --from-time 09:00 --to-time 09:30, 30,352 flows."
+}

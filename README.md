@@ -1,11 +1,15 @@
 # NetGuard - Network Anomaly Detection Platform
 
-Defensive, lab-only platform: imports PCAP/flow data or simulated traffic, processes it as a stream,
+Defensive, lab-only platform: imports PCAP and flow files, processes them as a stream,
 detects and classifies anomalies (rules + statistical method), stores results, and shows them in an API and dashboard.
 **No real networks, no real attacks, no production data.**
 
-> Status: week 2. The pipeline runs end to end with a placeholder port-scan rule, and the API has login, alerts and a
-> dashboard summary. The other detection rules, the PCAP importer and the dashboard pages follow the schedule.
+> Status: week 4 (mid-term). PCAP and flow files, also the CIC-IDS2017 dataset converted to our flow format, go
+> through the importer into the stream processor. It keeps 1, 10 and 60 s windows per source and runs four detection
+> rules and a z-score method; detections and alerts are stored. The API has login, detections, flows, alerts, the
+> dashboard summary and time series and the detection configuration; the dashboard has login and the overview.
+> Detection quality on the labelled data, threshold tuning and the other dashboard pages follow the
+> [work schedule](Docs/WorkSchedule/README.md).
 
 ## Architecture
 
@@ -35,7 +39,7 @@ All ports are published on `127.0.0.1` only, so the DB and broker (no real auth 
 ```bash
 cp .env.example .env      # edit passwords if you like
 docker compose up -d --build
-make sim                  # start traffic, Ctrl+C to stop
+make import FILE=data/pcap/sample.pcap   # sample capture with a port scan
 ```
 
 Windows PowerShell, without make:
@@ -43,7 +47,7 @@ Windows PowerShell, without make:
 ```powershell
 Copy-Item .env.example .env
 docker compose up -d --build
-docker compose --profile sim run --rm simulator
+docker compose --profile import run --rm -e FLOW_FILE=/app/data/pcap/sample.pcap importer
 ```
 
 Create the first dashboard user once per DB volume (asks for a username and a password of 12+ characters):
@@ -52,7 +56,8 @@ Create the first dashboard user once per DB volume (asks for a username and a pa
 docker compose exec api python -m app.infrastructure.bootstrap_admin
 ```
 
-Open http://localhost:3000 and sign in - port-scan detections appear within ~15 s.
+Open http://localhost:3000 and sign in - the port scan from the sample capture shows up within a few seconds.
+`make import` without `FILE` imports `data/flows/sample.csv`; any file under `data/` works the same way.
 Dashboard development: [services/dashboard/README.md](services/dashboard/README.md).
 API docs: http://localhost:8000/docs. Broker UI: `docker compose --profile debug up -d`, then http://localhost:8081.
 
@@ -62,7 +67,7 @@ Stop: `make down`. Wipe all data: `make reset` (`docker compose down -v`).
 
 | File | What |
 |---|---|
-| `.env` | Credentials, log level, simulator rate. Never committed. |
+| `.env` | Credentials, log level, load generator rate. Never committed. |
 | `config/detection.yaml` | Windows (1/10/60 s), rule thresholds, statistical method parameters, which detections become alerts ([design](Docs/ArchitectureDocument/detection/README.md)) |
 | `libs/common/.../schemas/*.json` | Message contracts |
 
@@ -100,9 +105,9 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
 
 | Requirement | Command |
 |---|---|
-| NFR01 load (5,000 flows/s, 5 min) | `make perf` (generates the load; measuring is part of the performance tests) |
+| NFR01/NFR02 throughput and latency | `make baseline`: 100, 1,000 and 5,000 flows/s, measures lag, lost flows, detection latency and CPU per container ([results](Docs/TestReport/README.md)). `make perf` only generates the 5,000 flows/s load |
 | NFR03 scaling | `make scale` (3 processor instances) |
-| NFR04 resilience | `make kill-one` while `make sim` runs - detections keep coming. The killed container stays down (`docker kill` counts as a manual stop); the others take over its partitions within ~10 s. |
+| NFR04 resilience | `make kill-one` while `make load` runs - detections keep coming. The killed container stays down (`docker kill` counts as a manual stop); the others take over its partitions within ~10 s. |
 | F15 traceability | copy a `trace_id` from a detection, `make trace ID=<id>` |
 
 ## Troubleshooting
@@ -122,6 +127,6 @@ See [API test structure and seeds](services/api/tests/README.md) for adding new 
   [deployment, CI/CD and testing](Docs/ArchitectureDocument/deployment/README.md)
 - [Domain Data Model](Docs/ArchitectureDocument/DomainDataModel/README.md) and [Database Schema](Docs/ArchitectureDocument/DatabaseSchema/README.md)
 - [Data Access and Management API](Docs/ManagementAPI/README.md) - API, authentication, endpoints
-- [Test Plan](Docs/TestPlan/README.md)
+- [Test Plan](Docs/TestPlan/README.md) and [Test Report](Docs/TestReport/README.md)
 - [Work Schedule](Docs/WorkSchedule/README.md) - plan per week and team member
 - [Team conventions](Docs/CONVENTIONS.md) - topics, schemas, trace IDs, branching, definition of done

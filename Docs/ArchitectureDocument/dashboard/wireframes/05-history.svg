@@ -4,9 +4,6 @@
 <rect x="1" y="1" width="1278" height="56" fill="#fff"/><line x1="0" y1="56" x2="1280" y2="56" stroke="#9aa0a6"/>
 <rect x="20" y="16" width="24" height="24" rx="5" fill="#3b5bdb" stroke="#3b5bdb" stroke-width="1"/>
 <text x="54" y="34" font-size="18" font-weight="700" fill="#202124" text-anchor="start">NetGuard</text>
-<rect x="720" y="13" width="250" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
-<circle cx="738" cy="28" r="5" fill="#2f9e44"/>
-<text x="750" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Simulator running · 200 flows/s</text>
 <rect x="980" y="13" width="110" height="30" rx="15" fill="#fff" stroke="#9aa0a6" stroke-width="1"/>
 <circle cx="998" cy="28" r="5" fill="#2f9e44"/>
 <text x="1010" y="33" font-size="12" font-weight="400" fill="#202124" text-anchor="start">API · DB ok</text>
@@ -114,7 +111,7 @@
 <text x="1121.7419354838707" y="414" font-size="12" font-weight="700" fill="#6b7280" text-anchor="start">Alert</text>
 <text x="234" y="460" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2026-10-20 12:41</text>
 <text x="400.4516129032258" y="460" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
-<rect x="566.9032258064516" y="446" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<rect x="566.9032258064516" y="446" width="46" height="19" rx="9" fill="#b0420f" stroke="#b0420f" stroke-width="1"/>
 <text x="589.9032258064516" y="460" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
 <text x="677.8709677419355" y="460" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
 <text x="777.741935483871" y="460" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
@@ -125,7 +122,7 @@
 <line x1="224" y1="478" x2="1256" y2="478" stroke="#d0d4da"/>
 <text x="234" y="506" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2026-10-20 12:28</text>
 <text x="400.4516129032258" y="506" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
-<rect x="566.9032258064516" y="492" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<rect x="566.9032258064516" y="492" width="46" height="19" rx="9" fill="#b0420f" stroke="#b0420f" stroke-width="1"/>
 <text x="589.9032258064516" y="506" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
 <text x="677.8709677419355" y="506" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
 <text x="777.741935483871" y="506" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
@@ -136,7 +133,7 @@
 <line x1="224" y1="524" x2="1256" y2="524" stroke="#d0d4da"/>
 <text x="234" y="552" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2026-10-20 09:12</text>
 <text x="400.4516129032258" y="552" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
-<rect x="566.9032258064516" y="538" width="76" height="19" rx="9" fill="#c92a2a" stroke="#c92a2a" stroke-width="1"/>
+<rect x="566.9032258064516" y="538" width="76" height="19" rx="9" fill="#6f1a12" stroke="#6f1a12" stroke-width="1"/>
 <text x="604.9032258064516" y="552" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">CRITICAL</text>
 <text x="677.8709677419355" y="552" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
 <text x="777.741935483871" y="552" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
@@ -147,7 +144,7 @@
 <line x1="224" y1="570" x2="1256" y2="570" stroke="#d0d4da"/>
 <text x="234" y="598" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2026-10-19 22:03</text>
 <text x="400.4516129032258" y="598" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
-<rect x="566.9032258064516" y="584" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<rect x="566.9032258064516" y="584" width="46" height="19" rx="9" fill="#b0420f" stroke="#b0420f" stroke-width="1"/>
 <text x="589.9032258064516" y="598" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
 <text x="677.8709677419355" y="598" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
 <text x="777.741935483871" y="598" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
@@ -158,7 +155,7 @@
 <line x1="224" y1="616" x2="1256" y2="616" stroke="#d0d4da"/>
 <text x="234" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2026-10-19 17:45</text>
 <text x="400.4516129032258" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
-<rect x="566.9032258064516" y="630" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<rect x="566.9032258064516" y="630" width="46" height="19" rx="9" fill="#b0420f" stroke="#b0420f" stroke-width="1"/>
 <text x="589.9032258064516" y="644" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
 <text x="677.8709677419355" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">statistical</text>
 <text x="777.741935483871" y="644" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>
@@ -168,7 +165,7 @@
 <line x1="224" y1="662" x2="1256" y2="662" stroke="#d0d4da"/>
 <text x="234" y="690" font-size="12" font-weight="400" fill="#202124" text-anchor="start">2026-10-19 14:20</text>
 <text x="400.4516129032258" y="690" font-size="12" font-weight="400" fill="#202124" text-anchor="start">Port Scan</text>
-<rect x="566.9032258064516" y="676" width="46" height="19" rx="9" fill="#e8590c" stroke="#e8590c" stroke-width="1"/>
+<rect x="566.9032258064516" y="676" width="46" height="19" rx="9" fill="#b0420f" stroke="#b0420f" stroke-width="1"/>
 <text x="589.9032258064516" y="690" font-size="11" font-weight="700" fill="#fff" text-anchor="middle">HIGH</text>
 <text x="677.8709677419355" y="690" font-size="12" font-weight="400" fill="#202124" text-anchor="start">rule</text>
 <text x="777.741935483871" y="690" font-size="12" font-weight="400" fill="#202124" text-anchor="start">10.66.6.6</text>

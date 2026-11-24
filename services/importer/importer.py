@@ -20,8 +20,10 @@ Run locally (broker must be up):
 from __future__ import annotations
 
 import csv
+import ipaddress
 import json
 import os
+import re
 import time
 from collections import defaultdict
 from importlib import resources
@@ -60,6 +62,115 @@ CSV_EXTENSIONS = (".csv",)
 PCAP_EXTENSIONS = (".pcap", ".cap")
 # The PCAP path keeps all flows in memory; big captures must be converted to flow CSV first.
 MAX_PCAP_MB = int(os.getenv("MAX_PCAP_MB", "200"))
+MAX_LOGGED_REJECTIONS = int(os.getenv("MAX_LOGGED_REJECTIONS", "20"))
+MAX_REASON_KEYS = 50
+
+
+_FLOW_KEYS = frozenset(
+    ("schema_version", "flow_id", "trace_id", "ingested_at", "ts_start", "duration_ms", "src_ip", "dst_ip",
+     "src_port", "dst_port", "protocol", "packets", "bytes", "source")
+)  # fmt: skip
+_FLOW_KEYS_ALLOWED = _FLOW_KEYS | {"tcp_flags", "label"}
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+_TCP_FLAGS = re.compile(r"[FSRPAUEC]*")
+_SOURCES = ("pcap", "flowfile", "simulator")
+_LABELS = (None, "normal", "port_scan", "dos", "brute_force", "abnormal_traffic", "suspicious_pattern")
+
+
+def _ip_ok(value) -> bool:
+    if type(value) is not str or "%" in value:
+        return False
+    try:
+        ipaddress.ip_address(value)
+    except ValueError:
+        return False
+    return True
+
+
+def flow_is_valid_fast(flow: dict) -> bool:
+    """True only when the flow certainly follows flow.v1. False means "not sure", not "invalid".
+
+    The JSON schema check (jsonschema) is the single source of truth but takes about 85 % of the import time. This
+    check does the same for the normal case in plain Python. Anything unusual (another type, a float for a port, a
+    wrong value) gives False and the caller asks the schema, so the rejection reasons stay exactly the same.
+    tests/unit/test_importer_fast_validation.py compares the two on many generated flows.
+    """
+    keys = flow.keys()
+    if not (_FLOW_KEYS <= keys <= _FLOW_KEYS_ALLOWED):
+        return False
+    get = flow.__getitem__
+    for name in ("src_port", "dst_port"):
+        v = get(name)
+        if type(v) is not int or not 0 <= v <= 65535:
+            return False
+    for name in ("packets", "bytes"):
+        v = get(name)
+        if type(v) is not int or v < 0:
+            return False
+    for name in ("ingested_at", "ts_start"):
+        if type(get(name)) not in (int, float):
+            return False
+    d = get("duration_ms")
+    if type(d) not in (int, float) or not d >= 0:
+        return False
+    fid, tid = get("flow_id"), get("trace_id")
+    if type(fid) is not str or _UUID.fullmatch(fid) is None:
+        return False
+    if type(tid) is not str or not 8 <= len(tid) <= 64:
+        return False
+    flags = flow.get("tcp_flags")
+    if flags is not None and (type(flags) is not str or _TCP_FLAGS.fullmatch(flags) is None):
+        return False
+    label = flow.get("label")
+    if label is not None and (type(label) is not str or label not in _LABELS):
+        return False
+    version, protocol, source = get("schema_version"), get("protocol"), get("source")
+    return (
+        type(version) is int
+        and version == 1
+        and type(protocol) is str
+        and protocol in VALID_PROTOCOLS
+        and type(source) is str
+        and source in _SOURCES
+        and _ip_ok(get("src_ip"))
+        and _ip_ok(get("dst_ip"))
+    )
+
+
+def check_flow(flow: dict) -> None:
+    """Validate a flow: the fast check first, the schema only when the fast check is not sure."""
+    if not flow_is_valid_fast(flow):
+        validate_flow(flow)
+
+
+class RejectionReporter:
+    """Logs rejected rows and sends them to the dead-letter topic, but only the first `limit` of them.
+
+    A big file with mostly bad rows must not flood the logs and the broker. The summary still counts every row.
+    """
+
+    def __init__(self, send, limit: int = MAX_LOGGED_REJECTIONS):
+        self.send = send
+        self.limit = limit
+        self.reported = 0
+        self.suppressed = 0
+
+    def report(self, index: int, reason: str, trace_id: str) -> None:
+        if self.reported >= self.limit:
+            self.suppressed += 1
+            return
+        self.reported += 1
+        with trace_context(trace_id):
+            log.error("flow rejected", extra={"row": index, "reason": reason})
+        self.send({"row": index, "reason": reason})
+
+
+def count_reason(reasons: dict[str, int], reason: str) -> None:
+    """Counts a rejection reason; after MAX_REASON_KEYS different reasons the rest is counted as one."""
+    key = reason[:80]
+    if key not in reasons and len(reasons) >= MAX_REASON_KEYS:
+        key = "other reasons"
+    reasons[key] += 1
 
 
 def _protocol(raw: str) -> str:
@@ -195,6 +306,7 @@ def main() -> None:
     warnings: list[str] = []
     fatal: str | None = None
     producer = None
+    reporter = RejectionReporter(lambda payload: producer.produce(topics.DEAD_LETTER, value=encode(payload)))
 
     try:
         if not os.path.exists(flow_file):
@@ -203,24 +315,34 @@ def main() -> None:
         producer = make_producer()
         log.info("importer started", extra={"flow_file": flow_file})
 
+        replayer = None
+        speed = os.getenv("REPLAY_SPEED")
+        if speed:
+            from replay import Replayer
+
+            max_gap = os.getenv("REPLAY_MAX_GAP_S")
+            replayer = Replayer(float(speed), float(max_gap) if max_gap else None)
+            log.info("replay mode", extra={"speed": float(speed), "max_gap_s": max_gap})
+
         for index, (kind, rec, source) in enumerate(_raw_records(flow_file, warnings)):
             trace_id = new_trace_id()
             ingested_at = time.time()
             try:
                 fields = normalise_row(rec) if kind == "row" else rec
+                if replayer is not None:
+                    fields["ts_start"] = replayer.rebase(fields["ts_start"])
+                    ingested_at = time.time()
                 flow = finalise_flow(fields, source_name, index, ingested_at, trace_id, source)
-                validate_flow(flow)
+                check_flow(flow)
             except (ValueError, SchemaError) as e:
                 rejected += 1
-                reasons[str(e)[:80]] += 1
-                with trace_context(trace_id):
-                    log.error("flow rejected", extra={"row": index, "reason": str(e)})
-                producer.produce(topics.DEAD_LETTER, value=encode({"row": index, "reason": str(e)}))
+                count_reason(reasons, str(e))
+                reporter.report(index, str(e), trace_id)
                 continue
             with trace_context(trace_id):
                 producer.produce(topics.FLOWS_RAW, key=flow["src_ip"], value=encode(flow))
             accepted += 1
-            if (index + 1) % 1000 == 0:
+            if replayer is not None or (index + 1) % 1000 == 0:
                 producer.poll(0)
     except InputError as e:
         fatal = str(e)
@@ -232,6 +354,10 @@ def main() -> None:
 
     if fatal is None and accepted + rejected == 0:
         warnings.append("input contained no records")
+    if reporter.suppressed:
+        warnings.append(
+            f"{reporter.suppressed} more rejected rows were counted but not logged (limit {reporter.limit})"
+        )
 
     extra = {
         "accepted": accepted,

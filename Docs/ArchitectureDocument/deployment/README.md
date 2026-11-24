@@ -25,7 +25,8 @@ Source: [`diagrams/deployment.puml`](diagrams/deployment.puml)
 | `persister` | same Dockerfile, `SERVICE=persister` | - | - | redpanda, db | unless-stopped |
 | `api` | same Dockerfile, `SERVICE=api`, uvicorn | 127.0.0.1:8000 | `GET /health` is `ok` (checks the DB too) | db | unless-stopped |
 | `dashboard` | `services/dashboard/Dockerfile`: Node 24 build, served by `nginx-unprivileged:1.27` | 127.0.0.1:3000 | `GET /` | api | unless-stopped |
-| `simulator` | same Python Dockerfile, profile `sim` (`make sim`, `make perf`) | - | - | redpanda | started on demand |
+| `importer` | same Python Dockerfile, profile `import` (`make import`), `data/` mounted read-only | - | - | redpanda | started on demand |
+| `loadgen` | same Python Dockerfile, profile `perf` (`make load`, `make perf`); test tooling, not part of the product | - | - | redpanda | started on demand |
 | `redpanda-console` | `redpandadata/console:v2.7.2`, profile `debug` | 127.0.0.1:8081 | - | redpanda | - |
 
 All Python services share one Dockerfile (`python:3.12-slim`, user with uid 10001, `libs/common` installed before the
@@ -51,7 +52,7 @@ docker compose up -d --build
 
 | What | Where | Changed by |
 |---|---|---|
-| Credentials, log level, simulator rate | `.env` (from `.env.example`, never committed) | everyone locally |
+| Credentials, log level, load generator rate | `.env` (from `.env.example`, never committed) | everyone locally |
 | Windows, rule thresholds, statistical method | `config/detection.yaml`, copied into the images | M2 (rebuild the processor after a change) |
 | Message formats | `libs/common/src/netguard_common/schemas/*.json` | PR + test + whole team (CONVENTIONS, section 2) |
 | Image versions, ports, scaling | `docker-compose.yml` | M5 |
@@ -166,7 +167,8 @@ Format: `libs/common/src/netguard_common/schemas/manifest.v1.json`, checked with
 - Containers run as non-root: uid 10001 for the Python services, `nginx-unprivileged` for the dashboard.
 - `.dockerignore` keeps `.env`, `.venv` and `.git` out of the image builds.
 - Image versions are pinned, so a rebuild next month gives the same system.
-- Nothing leaves the machine: the simulator generates flow records, not packets, and PCAPs are only read from files.
+- Nothing leaves the machine: PCAPs and flow files are only read from disk, and the load generator creates flow
+  records, not packets.
 
 ## 10. Key decisions
 
@@ -174,7 +176,7 @@ Format: `libs/common/src/netguard_common/schemas/manifest.v1.json`, checked with
 |---|---|---|
 | Redpanda (Kafka API) as the broker | Apache Kafka, RabbitMQ | Kafka protocol: partitions and consumer groups give us scaling, ordering per source and replay. One binary, about 1 GB RAM in dev mode, starts in seconds on a laptop. RabbitMQ has no replay and no ordering by key across consumers. |
 | Flows keyed by `src_ip` | round robin | per-source windows stay in one processor instance, so the processor scales without shared state (NFR03) |
-| JSON messages with JSON Schema in `libs/common` | Avro or Protobuf with a schema registry | readable in logs and the broker console, no extra service. Validation costs about 0.12 ms per flow (risk R1), so it is done once at the edge (importer, simulator) |
+| JSON messages with JSON Schema in `libs/common` | Avro or Protobuf with a schema registry | readable in logs and the broker console, no extra service. Validation costs about 0.12 ms per flow (risk R1), so it is done once at the edge (importer, load generator) |
 | At-least-once delivery + idempotent writes | exactly-once (Kafka transactions) | much simpler; deterministic IDs and `ON CONFLICT DO NOTHING` give the same end result (CONVENTIONS, section 5) |
 | Separate persister service | processor writes to the DB | detection doesn't wait for the DB; writes are batched (NFR01); DB problems don't stop detection |
 | TimescaleDB (PostgreSQL 16) | plain PostgreSQL, InfluxDB, Elasticsearch | normal SQL for detections, alerts and users, plus a hypertable for the large flow table, in one database |

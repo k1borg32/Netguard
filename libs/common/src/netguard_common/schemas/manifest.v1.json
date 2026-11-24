@@ -9,7 +9,7 @@
     "schema_version": { "const": 1 },
     "dataset":        { "type": "string", "minLength": 1, "description": "Dataset ID from the test plan (section 5), e.g. SIM-SCEN or PCAP-SET/<file>." },
     "source":         { "enum": ["simulator", "pcap", "flowfile"] },
-    "seed":           { "type": ["integer", "null"], "description": "Simulator seed, so the run can be reproduced. Null for files." },
+    "seed":           { "type": ["integer", "null"], "description": "Seed of generated test data, so the run can be reproduced. Null for files." },
     "created_at":     { "type": "number", "description": "Epoch seconds when the manifest was written." },
     "notes":          { "type": "string", "description": "Free text, e.g. how a hand-written manifest was checked (second person)." },
     "episodes": {

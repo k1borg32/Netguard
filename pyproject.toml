@@ -1,7 +1,7 @@
 # Repo-level tool config only (each service/lib has its own deps).
 [tool.pytest.ini_options]
 testpaths = ["tests", "services/api/tests"]
-pythonpath = ["services/processor", "services/simulator", "services/persister", "services/api"]
+pythonpath = ["services/processor", "services/loadgen", "services/persister", "services/api"]
 addopts = "--strict-markers -m \"not stack\""
 markers = [
     "unit: domain model tests without external infrastructure",

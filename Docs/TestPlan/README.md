@@ -1,8 +1,12 @@
-# NetGuard - Test Plan v0.4
+# NetGuard - Test Plan v0.5
 
-Version 0.4, week 3 (2026-10-27), updated after the supervisors removed the traffic simulator from the requirements
-(Vision v1.2). Owner: Vlad (M5, Infrastructure, Testing & DevOps). Next update: week 5 (after the first version of the
-detection engine).
+Version 0.5, week 5 (2026-11-09), after the first detection quality run. Owner: Vlad (M5, Infrastructure, Testing &
+DevOps). Next update: week 6 (after the tuning of the detection and the API tests).
+
+Changes in v0.5: first detection quality results, in the test report (section 3); episodes with fewer than 10 flows
+left out of recall, macro F1 over the classes with labelled episodes, threshold sweep and content check scripts,
+targets reviewed and kept (3.6); new UT-24; status of DQ-01 to DQ-04 and DQ-06 to DQ-08 (12); new risk R15, R14 also
+seen during a dataset import.
 
 Changes in v0.4: the simulator is no longer part of the product. Test data comes from prepared PCAP and flow files and
 a public labelled dataset (3.6, 5); the load for the performance tests comes from a load generator that is only test
@@ -37,15 +41,15 @@ References:
 
 ### 2.1 Test items
 
-| Component | Code | Owner | State in week 3 |
+| Component | Code | Owner | State in week 4 |
 |---|---|---|---|
-| Load generator (test tooling, not part of the product) | `services/simulator` for now | M5 | normal traffic + port scan, used by CI and the performance tests |
-| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import in review (PR #51) |
+| Load generator (test tooling, not part of the product) | `services/loadgen` | M5 | normal traffic + port scan, used by CI and the performance tests |
+| PCAP / flow-file importer | `services/importer` | M1 | CSV and PCAP import (#51), CIC-IDS2017 converter, manifests and replay mode (#63) |
 | Broker + message contracts | Redpanda, `libs/common` | M5 | working |
-| Flow processor / detection engine | `services/processor` | M2 | placeholder port scan rule |
-| Persister + database | `services/persister`, `db/` | M3 | working, schema by M3 (flows hypertable, detections, alerts, users) |
-| REST API | `services/api` | M3 | login (JWT), detections, alerts, dashboard summary; flows, detection details and time series in review (PR #50) |
-| Dashboard | `services/dashboard` | M4 | React app skeleton in the nginx container, screens from week 4 |
+| Flow processor / detection engine | `services/processor` | M2 | 1/10/60 s windows, four rules, z-score method, severity and alert policy (#62) |
+| Persister + database | `services/persister`, `db/` | M3 | writes flows, detections and alerts; schema by M3 (flows hypertable, detections, alerts, users) |
+| REST API | `services/api` | M3 | login (JWT), detections, flows, alerts, dashboard summary and time series, detection configuration (#50) |
+| Dashboard | `services/dashboard` | M4 | login and the overview page; trend charts (#68) and the alert screens next |
 | Deployment and CI | `docker-compose.yml`, `.github/` | M5 | working, dashboard job and build cache added in week 2 |
 
 ### 2.2 In scope
@@ -140,24 +144,36 @@ manifest is stored next to its data file as `<file>.manifest.json`. Example and 
   sources) belongs to the episode, and the detection window overlaps the episode time (plus/minus one window)
 - precision of class c = detections of class c that match an episode of class c / all detections of class c
 - recall of class c = episodes of class c matched by at least one detection of class c / all episodes of class c
-- F1 = 2PR / (P + R), macro average over the five attack classes
+- F1 = 2PR / (P + R), macro average over the attack classes that have episodes in the test set
 - several detections of one episode (for example one per window) count as one match for recall. We also report
   alerts per episode, because too many alerts are a problem for the operator
 - a detection with the wrong class counts as a false positive for the predicted class and a false negative for the
   real class (unless another detection got it right). `unknown` detections that hit an episode are reported
   separately as "detected but not classified"
 - false alarms: alerts per hour on the normal-only dataset
+- episodes with fewer than 10 labelled flows (stray labels of the dataset, for example one flow labelled PortScan
+  minutes before the scan) don't count for recall, but a detection that hits them still counts as correct
+  (`--min-flows 10`, since week 5)
+
+The matching is implemented in `tests/quality/evaluate.py` (week 4): it reads the manifest next to an imported
+labelled file and the detections of the same time range from the database. `tests/quality/sweep.py` (week 5) runs
+the engine of the processor directly on a file, without the stack, and scores it the same way; at the default config
+it gives the same detections as the stack (test report, 3.1). `tests/quality/check_content.py` checks the content of
+every detection (DQ-08) the same way.
 
 We report a table per class, a confusion matrix (real class x predicted class + "missed"), and for every false
 positive / false negative of the final run the reason (threshold, window boundary, traffic mix) and what we changed.
 
-**Threshold sweep.** For the main threshold of every rule we plot precision and recall over a range of values (for
-example 20-200 unique ports) to justify the default in `config/detection.yaml`.
+**Threshold sweep.** For the main threshold of every rule we measure precision and recall over a range of values (for
+example 20-200 unique ports) and the false alarms on the normal-only file, to justify the default in
+`config/detection.yaml` (test report, 3.4).
 
-**Targets** (NFR11, reviewed in week 5 after the first measurement):
+**Targets** (NFR11, reviewed in week 5 after the first measurement and kept: the first run is below them, but nothing
+was tuned yet, see the test report, section 3):
 
 - port scan, DoS, brute force (rule based): precision >= 0.90 and recall >= 0.90 on the labelled test set
-- macro F1 >= 0.80 over all five attack classes on the labelled test set
+- macro F1 >= 0.80 over the attack classes with labelled episodes in the test set. CIC-IDS2017 only has port scan,
+  DoS and brute force; abnormal traffic and suspicious connection patterns need labelled captures of our own (R15)
 - at least 30 min of normal-only traffic: no HIGH/CRITICAL alert and at most 2 alerts per 10 minutes
 - small hand-made captures and the held-out part of the dataset: no fixed target, results reported together with
   the error analysis
@@ -169,7 +185,9 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 - throughput: flows/s accepted (sent to `flows.raw`), processed and stored
 - detection latency (NFR02): from the ingestion of the last flow that contributed to a detection until the detection
   is created, so `created_at - last_ingested_at` (`latency_s` in the `detection_latency` view). Added to the
-  detection contract in week 2 (PR #44, risk R2). `created_at - first_ingested_at` is reported as time to detect
+  detection contract in week 2 (PR #44, risk R2). `created_at - first_ingested_at` is reported as time to detect.
+  The processor logs the same value with every detection it sends; the baseline script (`make baseline`) uses that
+  log line, because escalated detections had a wrong `latency_s` in the view until #65
 - p50 / p95 / p99 / max of the latency
 - consumer lag of the processor and persister groups, sampled every 5 s. Lag that keeps growing means the system
   can't keep up
@@ -178,8 +196,9 @@ example 20-200 unique ports) to justify the default in `config/detection.yaml`.
 
 **Load levels (NFR01):** 100, 1,000, 5,000 and 10,000 flows/s, then further steps up to 50,000 flows/s or until the
 system saturates; we report how far one machine gets. Every level gets 1 min of warm-up (not measured)
-and 5 min of measurement. About 2 % attack traffic is mixed in, so detections (and therefore latency values) exist
-during the run. The generator has to reach the requested rate, otherwise the run is invalid. For high rates we run
+and 5 min of measurement. The load generator mixes in 5 % port scan flows from one source, so detections (and
+therefore latency values) exist during the run; at 100 flows/s that is below the port scan threshold, so latency is
+measured from 1,000 flows/s up. The generator has to reach the requested rate, otherwise the run is invalid. For high rates we run
 several generator instances. The load comes from a load generator that is only test tooling: the former simulator
 code, kept for this and for the CI pipeline test (M5). Replaying the public dataset at a fixed rate is the alternative
 once the importer can replay at a set rate with the timestamps moved to the present (R12).
@@ -304,7 +323,7 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 
 | ID | Risk / finding | Impact | What we do |
 |---|---|---|---|
-| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | performance baseline already in week 4; validate everything at the edge (importer, load generator) instead of again in every consumer; batch DB writes; scale the processor |
+| R1 | The Python pipeline may not reach 5,000 flows/s. Full JSON-schema validation alone costs about 0.12 ms per flow (measured), that is about 60 % of one CPU core at 5,000 flows/s. | NFR01 | week 4 baseline: 5,000 flows/s are reached without loss, but the persister and the database (5 indexes per flow row, a checkpoint every minute) fall behind (test report). Next: batch inserts with `COPY`, fewer indexes, larger `max_wal_size`; validate everything at the edge (importer, load generator) instead of again in every consumer; batch DB writes; scale the processor |
 | R2 | Vision v1.1 measures NFR02 from the last flow that contributed to a detection, but the detection contract only has `first_ingested_at`. Measured from the first flow, the latency contains the whole window (>= 10 s for a 10 s window), so 3 s can never pass. | NFR02 can't be measured correctly yet | week 2: `last_ingested_at` in the detection contract, DB column and `detection_latency` view (PR #44). Still open: a rule that fires only when its window closes adds up to one window to the latency, so M2 fires rules as soon as the threshold is crossed |
 | R3 | One malformed message on `flows.raw` makes the consumers crash in a loop (processor: missing field -> KeyError; persister: invalid IP -> DB error). The offset is never committed, so they read the same message again after every restart. Reproduced in week 1. | pipeline stops (critical) | importer and load generator validate everything they send (the importer puts rejected records on `flows.deadletter`, PR #51); consumers isolate a failing record (skip it and put it on `flows.deadletter`, which exists but is unused) instead of crashing; RT-06, SEC-01 |
 | R4 | Slow failover: after killing one of two processors its partitions waited 44 s (librdkafka default session timeout is 45 s). A crashed persister also blocked its own restart for about 45 s. The CI step "kill one processor" waits only 40 s, so it would fail about half of the time. | NFR04, flaky CI | session timeout lowered to 10 s in `libs/common` (week 1), to be re-measured with RT-01; the persister should close its consumer when it exits (M3) |
@@ -317,6 +336,8 @@ table below. After the week-1 fixes the stack was rebuilt from scratch and the i
 | R11 | Windows/Linux differences (line endings, make, paths). | "works on my machine" | `.gitattributes` (LF), everything runs in Docker, CI on Linux, Windows steps in the README |
 | R12 | Replaying a dataset with old timestamps: the processor closes windows by the wall clock, so with a big file every window is closed after each batch and an attack is split into parts below the threshold (found in the week 3 review of the importer). | wrong detection results on the dataset (DQ) | week 4, with M1 and M2: windows by event time in the processor, or the importer moves the timestamps to the present when it replays |
 | R13 | The traffic simulator was removed from the requirements in week 3. The controllable load for the performance tests and the input of the CI pipeline test came from it. | NFR01/NFR02 can't be measured without a load source | its code stays only as a load generator in the test tooling (M5), not as a product component |
+| R14 | Each window's clock also moves with the wall clock, so flows that reach the processor more than 1 to 2 s late find their window closed and are dropped (found in the week 4 baseline: 4.7 % at 5,000 flows/s). In week 5 also during a dataset import without any stall: 0.3 to 1.3 % of the flows. | detections missed under load, without an error | M2: no closing while the processor is behind; the late-flow counter is part of every performance and detection quality run |
+| R15 | The public labelled dataset covers only three of our five attack classes (no abnormal traffic, no suspicious connection pattern) and has a single DDoS episode (found in week 5). | per-class quality (NFR11) can't be measured for two classes; DoS recall depends on one attack | macro F1 over the classes with episodes; the Wednesday file of CIC-IDS2017 for more DoS episodes; small labelled captures of our own for the other two classes (M1, M5) |
 
 Also fixed in week 1: the DB, broker, API and dashboard were published on all network interfaces with a default
 password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the whole repository including `.venv` and
@@ -343,7 +364,7 @@ password (now 127.0.0.1 only, SEC-11), and there was no `.dockerignore`, so the 
 | F15 Traceability | UT-04, IT-06 |
 | F16 Detection configuration | UT-17, API-07, DQ-04 |
 | F17 Alert management | IT-08, API-08 |
-| NFR01 Performance | UT-05, PT-01, PT-02, PT-06 |
+| NFR01 Performance | UT-05, UT-26, PT-01, PT-02, PT-06, PT-07 |
 | NFR02 Latency | PT-03 |
 | NFR03 Scalability | PT-04, RT-01 |
 | NFR04 Resilience | UT-03, UT-09, UT-10, RT-01 to RT-07 |
@@ -374,15 +395,22 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | UT-08 | Normal traffic | F06 | no port scan detection | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-09 | Same flows processed twice | NFR04 | same `detection_id` | `tests/unit/test_pipeline_logic.py` | pass |
 | UT-10 | Consumer helper gets an undecodable message | NFR04 | message skipped and logged, the rest is processed | `tests/unit/test_broker.py` | pass |
-| UT-11 | PCAP parser on a known PCAP | F01, F02 | expected flows (5-tuple, packets, bytes, duration) | | week 3 |
+| UT-11 | PCAP parser on a known PCAP | F01, F02 | expected flows (5-tuple, packets, bytes, duration) | `tests/unit/test_pcap_reader.py` | pass |
 | UT-12 | Feature extraction per window | F03 | correct connection rate and unique ports/addresses | | week 3-5 |
-| UT-13 | 1 s, 10 s and 60 s windows, flows on window boundaries | F05 | each flow counted in the right window | | week 5 |
-| UT-14 | DoS, brute force and suspicious connection pattern rules | F06 | fire above the threshold, silent below | | week 5 |
-| UT-15 | Statistical method | F07 | baseline built, abnormal traffic detected as a deviation from it, other anomalies reported as `unknown`, no result before the minimum number of baseline windows | | week 5 |
-| UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | | week 5 |
-| UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | | week 5 |
+| UT-13 | 1 s, 10 s and 60 s windows, flows on window boundaries | F05 | each flow counted in the right window | `tests/unit/test_detection_engine.py` | pass |
+| UT-14 | DoS, brute force and suspicious connection pattern rules | F06 | fire above the threshold, silent below | `tests/unit/test_detection_engine.py` | pass |
+| UT-15 | Statistical method | F07 | baseline built, abnormal traffic detected as a deviation from it, other anomalies reported as `unknown`, no result before the minimum number of baseline windows | `tests/unit/test_detection_engine.py` | pass |
+| UT-16 | Severity and confidence | F08 | values follow the ratios in `detection.yaml` | `tests/unit/test_detection_engine.py` | pass |
+| UT-17 | Invalid or missing values in `detection.yaml` | F16 | service refuses to start with a clear error | `tests/unit/test_detection_engine.py` | pass |
 | UT-18 | Removed in v0.4 (simulator parameters, F14) | - | - | | - |
 | UT-19 | Ground-truth manifest: valid manifest accepted; unknown class, empty attackers, end before start, duplicate episode IDs rejected | NFR11 | `SchemaError` naming the problem | `tests/unit/test_manifest.py` | pass |
+| UT-20 | CIC-IDS2017 converter: label mapping, 12-hour clock without AM/PM, negative durations skipped, time window | F01, NFR09 | correct flow.v1 rows and class labels | `tests/unit/test_convert_cic.py` | pass |
+| UT-21 | Importer replay: timestamps moved to the present, speed and maximum gap respected | F01, NFR05 | rebased timestamps, waits as configured | `tests/unit/test_replay.py` | pass |
+| UT-22 | Manifest generator and checker: episodes built from labels, counts compared with the CSV | NFR11 | valid manifest; checker reports OK or FAILED | `tests/unit/test_make_manifest.py`, `tests/unit/test_check_manifest.py` | pass |
+| UT-23 | Importer robustness: bad rows rejected with reason, broken file gives clear error and exit code 1 | F01, SEC-02 | summary line always printed | `tests/unit/test_importer_robustness.py` | pass |
+| UT-24 | Detection quality matching: same class, attacker or target, window give or take one window; wrong class, `unknown`, several detections per episode, small episodes left out of recall | NFR11 | the rules of section 3.6 | `tests/unit/test_detection_quality.py` | pass |
+| UT-25 | Scan test files and slice tool: identical on every run, valid flows, manifest matches the CSV, PCAP gives the same scan, slice with its own manifest | NFR05, NFR11 | all checks hold | `tests/unit/test_scan_fixtures.py` | pass |
+| UT-26 | Fast flow check of the importer agrees with the JSON schema: never accepts what the schema rejects, same rejection reason | NFR01, F01 | all checks hold | `tests/unit/test_importer_fast_validation.py` | pass |
 
 ### Integration tests (IT)
 
@@ -390,12 +418,13 @@ which the test is planned. Automated tests carry their ID in the docstring.
 |---|---|---|---|---|---|
 | IT-01 | API health | F11 | `status: ok`, DB reachable | `tests/integration/test_stack.py` | pass |
 | IT-02 | Port scan flows sent to the broker | F04, F06, F10, F11 | detection visible in the API within 40 s | `tests/integration/test_stack.py` | pass |
-| IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | | week 3 |
-| IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | | week 5 |
-| IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | | week 3 |
+| IT-03 | PCAP import | F01, F02, F10 | flows on the broker and stored with `source = pcap` | `tests/integration/test_import.py` | pass |
+| IT-04 | One sample of every attack class from the labelled dataset | F04, F06 | the expected detection type end to end | procedure: [dataset doc, section 10](../ArchitectureDocument/dataset/README.md) | done: 2 of 3 classes detected, see dataset doc 10.5 |
+| IT-05 | Same PCAP imported twice | F10, NFR04 | no duplicate flows | `tests/integration/test_import.py` | pass |
 | IT-06 | Follow one trace_id | F15, NFR08 | found in the logs of every service and in the detection | | week 3 |
 | IT-07 | Stored detection | F08, F09 | type, severity, confidence, time, source, destination, ID, features and window present | | week 6 |
 | IT-08 | Alert created from a detection | F17 | alert with status `new` in the alert list, linked to its detection | | week 6 |
+| IT-09 | Port scan file (PCAP and flow file, a new attacker address in every run) through the stack | F01, F04, F06, F10 | flows stored with their source; a `port_scan` detection for the attacker within 90 s | `tests/integration/test_e2e_import.py` | pass |
 
 ### API tests (API)
 
@@ -416,8 +445,8 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | ST-01 | Deployment from a clean clone with the documented command | NFR05, NFR09 | all services healthy within 5 min, integration tests pass | automated in CI (first run after push) |
-| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | week 7 |
-| ST-03 | PCAP import -> dashboard | F01, F12, UC-01 | alerts from the file shown | week 7 |
+| ST-02 | Flow file with a known attack -> dashboard | F09, F12 | alert shown with its evidence | week 7; input `data/flows/scan-small.csv` |
+| ST-03 | PCAP import -> dashboard | F01, F12, UC-01 | alerts from the file shown | week 7; input `data/pcap/portscan-small.pcap` |
 | ST-04 | History and filters on the dashboard | F13, UC-04, UC-05 | correct rows for each filter | week 7 |
 | ST-05 | Live statistics and trend charts | F12, UC-06 | values update while traffic runs | week 7 |
 | ST-06 | README procedure done by someone who didn't write it, on a clean machine | NFR05, NFR10 | system runs and demo works without extra help | weeks 4 and 10 (manual) |
@@ -426,25 +455,26 @@ which the test is planned. Automated tests carry their ID in the docstring.
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| DQ-01 | Precision, recall, F1 per class on LABELLED | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | weeks 5 and 9 |
-| DQ-02 | False alarms on NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | weeks 5 and 9 |
-| DQ-03 | Confusion matrix including `unknown` | F08, NFR11 | reported, errors analysed | weeks 5 and 9 |
-| DQ-04 | Threshold sweep for every rule | F06, F16 | default thresholds justified by the curves | week 5 |
+| DQ-01 | Precision, recall, F1 per class on LABELLED | F06, F07, F08, NFR11 | NFR11 targets (section 3.6) | fails in week 5 (test report, 3.7), re-test in weeks 6 and 9 |
+| DQ-02 | False alarms on NORMAL | F06, F07, NFR11 | no HIGH/CRITICAL, at most 2 alerts per 10 min | fails in week 5 (19.7 alerts per 10 min), re-test in weeks 6 and 9 |
+| DQ-03 | Confusion matrix including `unknown` | F08, NFR11 | reported, errors analysed | pass in week 5, again in week 9 |
+| DQ-04 | Threshold sweep for every rule | F06, F16 | default thresholds justified by the curves | done in week 5 (`tests/quality/sweep.py`), 3 defaults to change; again after the tuning |
 | DQ-05 | Metrics on the held-out part of the dataset (not used for tuning) and on PCAP-SMALL | F01, F06, NFR11 | reported with error analysis | week 9 |
-| DQ-06 | Hard cases: scan split across two windows, slow scan just below the threshold, attack hidden in heavy normal traffic | F05, F06 | behaviour documented, misses explained | week 5 |
-| DQ-07 | Detection with the labels removed | F08 | exactly the same detections | week 5 |
-| DQ-08 | Content of every detection | F09 | key features, threshold or deviation, window, source/destination, severity and confidence present | week 5 |
+| DQ-06 | Hard cases: scan split across two windows, slow scan just below the threshold, attack hidden in heavy normal traffic | F05, F06 | behaviour documented, misses explained | pass (`tests/unit/test_detection_hard_cases.py`) |
+| DQ-07 | Detection with the labels removed | F08 | exactly the same detections | pass (`tests/unit/test_detection_engine.py`) |
+| DQ-08 | Content of every detection | F09 | key features, threshold or deviation, window, source/destination, severity and confidence present | pass (`tests/quality/check_content.py`) |
 
 ### Performance (PT)
 
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
-| PT-01 | Load ladder 100 / 1,000 / 5,000 / 10,000 flows/s and up, 1 processor | NFR01 | throughput, lag and resources per level, saturation point found | week 4 (baseline), week 8 |
-| PT-02 | 5,000 flows/s for 5 min | NFR01 | lag does not grow, nothing lost | weeks 4 and 8 |
-| PT-03 | Latency at 5,000 flows/s | NFR02 | p95 <= 3 s (p50, p99, max reported) | week 8 |
+| PT-01 | Load ladder 100 / 1,000 / 5,000 / 10,000 flows/s and up, 1 processor | NFR01 | throughput, lag and resources per level, saturation point found | baseline done in week 4 (test report): stable at 1,000, at 5,000 the lag grows; week 8 |
+| PT-02 | 5,000 flows/s for 5 min | NFR01 | lag does not grow, nothing lost | fails on the laptop in week 4 (nothing lost, but the persister falls behind and 4.7 % of the flows come late); re-test after the persister changes and in week 8 |
+| PT-03 | Latency at 5,000 flows/s | NFR02 | p95 <= 3 s (p50, p99, max reported) | pass on the laptop in week 4 (p95 1.24 s), official in week 8 |
 | PT-04 | Saturation point with 1 vs 3 processor instances | NFR03 | higher with 3 instances | week 8 |
 | PT-05 | API under dashboard-like load (k6, 50 users) | F11 | p95 response time reported | week 8 |
-| PT-06 | CPU and memory per container per load level | NFR01 | reported, no container hits its memory limit | week 8 |
+| PT-06 | CPU and memory per container per load level | NFR01 | reported, no container hits its memory limit | baseline in week 4 (test report), week 8 |
+| PT-07 | Import of large files: 1,000,000-flow CSV and a 150 MB PCAP, importer alone and into the stack | NFR01, F01 | flows/s and peak memory reported; CSV import faster than 5,000 flows/s, memory does not grow with the file | `tests/performance/import_speed.py` | pass, see dataset doc 11 |
 
 ### Resilience (RT)
 
@@ -455,7 +485,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | RT-03 | Persister restart under load | F10, NFR04 | no flow lost, no duplicate detections | week 8 |
 | RT-04 | DB down for 30 s | NFR04 | API reports `degraded`; persister recovers; data complete afterwards | week 8 |
 | RT-05 | Broker down for 30 s | NFR04 | producers and consumers reconnect; nothing lost within the producer timeout | week 8 |
-| RT-06 | Malformed message on `flows.raw` | NFR04, NFR06 | consumers skip it (dead-letter topic) and keep working | fails (R3), re-test week 5 |
+| RT-06 | Malformed message on `flows.raw` | NFR04, NFR06 | consumers skip it (dead-letter topic) and keep working | fails (R3): the processor skips it since week 3, the persister still crashes; re-test week 6 |
 | RT-07 | Full restart without wiping volumes | F10, NFR05 | data kept, processing continues | week 8 |
 
 ### Security (SEC)
@@ -463,7 +493,7 @@ which the test is planned. Automated tests carry their ID in the docstring.
 | ID | Test | Req. | Expected result | Status |
 |---|---|---|---|---|
 | SEC-01 | Schema-invalid flows sent into the pipeline | NFR06 | rejected at the edge, never crash a consumer | fails (R3), re-test week 3 |
-| SEC-02 | Broken, oversized and non-PCAP files imported | F01, NFR06 | rejected with an error report, importer keeps running | week 3 |
+| SEC-02 | Broken, oversized and non-PCAP files imported | F01, NFR06 | rejected with an error report, importer keeps running | pass (`tests/integration/test_import.py`) |
 | SEC-03 | Request without a token | NFR06 | 401 | week 6 |
 | SEC-04 | Non-admin token on administrative operations (thresholds) | NFR06 | 403 | week 6 |
 | SEC-05 | Tampered or expired JWT | NFR06 | 401 | week 6 |

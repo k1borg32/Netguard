@@ -1,19 +1,24 @@
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { getSummary } from '../api/dashboard'
+import { getOpenAlertCount } from '../api/alerts'
+import { getSummary, getTimeseries } from '../api/dashboard'
 import { getLatestDetections } from '../api/detections'
 import { DetectionsChart } from '../components/DetectionsChart'
+import { Loading, LoadError } from '../components/QueryStatus'
 import { SeverityBadge } from '../components/SeverityBadge'
 import { StatCard } from '../components/StatCard'
-import { bucketBySeverity } from '../lib/buckets'
+import { TrafficChart } from '../components/TrafficChart'
+import { TypeBreakdown } from '../components/TypeBreakdown'
 import { formatConfidence, formatNumber, formatTime, formatType } from '../lib/format'
 import { getRange, RANGES, rangeToTimes, type RangeId } from '../lib/timeRange'
+import { usePageTitle } from '../lib/usePageTitle'
 
 const REFRESH_MS = 5_000
 
 export function OverviewPage() {
   const [rangeId, setRangeId] = useState<RangeId>('15m')
   const range = getRange(rangeId)
+  usePageTitle('Overview')
 
   // Times are computed inside queryFn, so every refetch moves the window to "now".
   const summary = useQuery({
@@ -22,16 +27,26 @@ export function OverviewPage() {
     refetchInterval: REFRESH_MS,
     placeholderData: keepPreviousData,
   })
+  const timeseries = useQuery({
+    queryKey: ['dashboard-timeseries', rangeId],
+    queryFn: () => getTimeseries(rangeToTimes(rangeId), range.interval),
+    refetchInterval: REFRESH_MS,
+    placeholderData: keepPreviousData,
+  })
+  const openAlerts = useQuery({
+    queryKey: ['alerts', 'open-count'],
+    queryFn: getOpenAlertCount,
+    refetchInterval: REFRESH_MS,
+  })
   const detections = useQuery({
     queryKey: ['detections', 'latest'],
     queryFn: () => getLatestDetections(500),
     refetchInterval: REFRESH_MS,
   })
 
-  // The chart window ends at the time of the last fetch, so it moves with every refresh.
-  const end = new Date(detections.dataUpdatedAt)
-  const start = new Date(end.getTime() - range.seconds * 1000)
-  const buckets = detections.data ? bucketBySeverity(detections.data, start, end, range.bucketSeconds) : []
+  // The breakdown by type ends at the time of the last fetch, so it moves with every refresh.
+  const start = detections.dataUpdatedAt - range.seconds * 1000
+  const inRange = (detections.data ?? []).filter((d) => Date.parse(d.created_at) >= start)
   const s = summary.data
 
   return (
@@ -55,7 +70,7 @@ export function OverviewPage() {
         </div>
       </div>
 
-      {summary.isError && <p className="error">Could not load statistics: {summary.error.message}</p>}
+      {summary.isError && <LoadError what="statistics" error={summary.error} updatedAt={summary.dataUpdatedAt} />}
       <div className="cards">
         <StatCard label="Flows" value={s ? formatNumber(s.flow_count) : '-'} hint={range.label} />
         <StatCard
@@ -64,20 +79,47 @@ export function OverviewPage() {
           hint={range.label}
         />
         <StatCard label="Detections" value={s ? formatNumber(s.detection_count) : '-'} hint={range.label} />
-        <StatCard label="Alerts" value={s ? formatNumber(s.alert_count) : '-'} hint={range.label} />
+        <StatCard
+          label="Open alerts"
+          value={openAlerts.data === undefined ? '-' : formatNumber(openAlerts.data)}
+          hint={s ? `Not acknowledged · ${formatNumber(s.alert_count)} raised in range` : 'Not acknowledged'}
+        />
       </div>
 
       <div className="grid-2">
         <section className="card">
+          <h2>Traffic - flows per {range.intervalLabel}</h2>
+          {timeseries.isPending && <Loading what="traffic" />}
+          {timeseries.isError && !timeseries.data && <LoadError what="traffic" error={timeseries.error} />}
+          {timeseries.data && <TrafficChart data={timeseries.data.data} showSeconds={range.showSeconds} />}
+          {s?.flow_count === 0 && (
+            <p className="muted small">
+              No flows in this range. Flows count by their own start time, so a file with older timestamps only shows
+              up here when it is imported with REPLAY_SPEED. Its detections show up either way.
+            </p>
+          )}
+        </section>
+
+        <section className="card">
+          <h2>Detections by type</h2>
+          <TypeBreakdown types={inRange.map((d) => d.type)} />
+          <p className="muted small">From the latest 500 detections, {range.label.toLowerCase()}.</p>
+        </section>
+
+        <section className="card">
           <h2>Detections over time, by severity</h2>
-          <DetectionsChart data={buckets} />
-          <p className="muted small">Built from the latest 500 detections until the API has a time-series endpoint.</p>
+          {timeseries.data && <DetectionsChart data={timeseries.data.data} showSeconds={range.showSeconds} />}
         </section>
 
         <section className="card">
           <h2>Latest detections</h2>
-          {detections.isError && <p className="error">Could not load detections: {detections.error.message}</p>}
-          {detections.data?.length === 0 && <p className="muted">No detections yet. Start the simulator: make sim</p>}
+          {detections.isPending && <Loading what="detections" />}
+          {detections.isError && (
+            <LoadError what="detections" error={detections.error} updatedAt={detections.dataUpdatedAt} />
+          )}
+          {detections.data?.length === 0 && (
+            <p className="muted">No detections yet. Import a capture: make import FILE=data/pcap/sample.pcap</p>
+          )}
           {!!detections.data?.length && (
             <div className="table-wrap">
               <table className="table">
