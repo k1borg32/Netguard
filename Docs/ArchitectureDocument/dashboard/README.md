@@ -222,9 +222,12 @@ one SQL statement over `[start_time, end_time)`; the four severity counts sum to
 "Flows/s" card can use `flows_count` divided by the bucket length of the last full bucket. A 15-minute live chart
 can use `10s`, `30s` or `1m` buckets.
 
-**G2 - More numbers in the summary.** Add to `GET /dashboard/summary`: `open_alert_count` (status NEW),
-`detections_by_type` and `detections_by_severity` (objects `{type: count}`) for the same range. One extra
-`GROUP BY` each; avoids three more requests every 5 s.
+**G2 - More numbers in the summary (partially implemented).** `GET /dashboard/summary` returns
+`detections_by_type` and `detections_by_severity` for the same `[start_time, end_time)` range,
+without a 500-record limit. All severity keys are present, including zeros; absent types are omitted.
+The dashboard can use these aggregates instead of fetching 500 detections for counting;
+its latest-detections table still needs a small list request. `open_alert_count` (status NEW)
+remains a separate follow-up.
 
 **G3 - Detection fields in the alert list (implemented).** `GET /alerts` items include the alert fields and a nested
 `detection` summary (`type`, `severity`, `confidence`, `src_ip`, `dst_ip`, `protocol`) from the existing join, avoiding

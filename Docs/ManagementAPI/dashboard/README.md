@@ -9,7 +9,11 @@ Flows use `network_flows.ts_start`; detections and alerts use their own `created
 `GET /api/v1/dashboard/summary`
 
 Required parameters: `start_time`, `end_time` (ISO 8601, `start_time < end_time`).
-Returns independent row counts; all alert statuses count. Empty ranges return zeros.
+Returns independent row counts; all alert statuses count.
+`detections_by_type` and `detections_by_severity` count all detections in the same range,
+without a row limit. Each breakdown sums to `detection_count`. All four severity keys
+are always present; types with no detections are omitted. Empty ranges return zero
+counts, an empty type object, and zero counts for every severity.
 
 ```http
 GET /api/v1/dashboard/summary?start_time=2026-10-20T00:00:00Z&end_time=2026-10-21T00:00:00Z
@@ -17,7 +21,13 @@ Authorization: Bearer <access_token>
 ```
 
 ```json
-{"flow_count": 1200, "detection_count": 15, "alert_count": 3}
+{
+  "flow_count": 1200,
+  "detection_count": 15,
+  "alert_count": 3,
+  "detections_by_type": {"port_scan": 12, "unknown": 3},
+  "detections_by_severity": {"LOW": 0, "MEDIUM": 8, "HIGH": 6, "CRITICAL": 1}
+}
 ```
 
 ## Time series

@@ -28,12 +28,14 @@ def headers(tokens: dict[str, str]) -> dict[str, str]:
     return {"Authorization": f"Bearer {tokens['access_token']}"}
 
 
-def insert_detection(db: psycopg.Connection, created_at: datetime):
+def insert_detection(
+    db: psycopg.Connection, created_at: datetime, detection_type: str = "port_scan", severity: str = "HIGH"
+):
     detection_id = uuid4()
     db.execute(
         "INSERT INTO detections (detection_id, created_at, type, method, severity, first_ingested_at) "
-        "VALUES (%s, %s, 'port_scan', 'threshold', 'HIGH', %s)",
-        (detection_id, created_at, START),
+        "VALUES (%s, %s, %s, 'threshold', %s, %s)",
+        (detection_id, created_at, detection_type, severity, START),
     )
     return detection_id
 
@@ -47,7 +49,13 @@ def test_empty_summary_is_accessible_to_both_roles(client: TestClient, create_us
     response = client.get(URL, params=PARAMS, headers={"Authorization": f"Bearer {login.json()['access_token']}"})
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"flow_count": 0, "detection_count": 0, "alert_count": 0}
+    assert response.json() == {
+        "flow_count": 0,
+        "detection_count": 0,
+        "alert_count": 0,
+        "detections_by_type": {},
+        "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0},
+    }
 
 
 def test_counts_use_independent_timestamps_and_half_open_boundaries(
@@ -82,7 +90,13 @@ def test_counts_use_independent_timestamps_and_half_open_boundaries(
     response = client.get(URL, params=PARAMS, headers=headers)
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"flow_count": 3, "detection_count": 4, "alert_count": 2}
+    assert response.json() == {
+        "flow_count": 3,
+        "detection_count": 4,
+        "alert_count": 2,
+        "detections_by_type": {"port_scan": 4},
+        "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 4, "CRITICAL": 0},
+    }
     # Requests are read-only.
     assert db.execute("SELECT count(*) FROM network_flows").fetchone() == (6,)
     assert db.execute("SELECT count(*) FROM detections").fetchone() == (12,)
@@ -97,7 +111,13 @@ def test_flows_count_when_other_tables_are_empty(
     response = client.get(URL, params=PARAMS, headers=headers)
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"flow_count": 1, "detection_count": 0, "alert_count": 0}
+    assert response.json() == {
+        "flow_count": 1,
+        "detection_count": 0,
+        "alert_count": 0,
+        "detections_by_type": {},
+        "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0},
+    }
 
 
 def test_equivalent_offsets_select_the_same_range(
@@ -113,7 +133,13 @@ def test_equivalent_offsets_select_the_same_range(
     )
 
     assert response.status_code == 200, response.text
-    assert response.json() == {"flow_count": 0, "detection_count": 1, "alert_count": 0}
+    assert response.json() == {
+        "flow_count": 0,
+        "detection_count": 1,
+        "alert_count": 0,
+        "detections_by_type": {"port_scan": 1},
+        "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 1, "CRITICAL": 0},
+    }
 
 
 def test_adjacent_ranges_count_boundary_records_once(
@@ -135,8 +161,20 @@ def test_adjacent_ranges_count_boundary_records_once(
 
     assert previous.status_code == 200, previous.text
     assert following.status_code == 200, following.text
-    assert previous.json() == {"flow_count": 0, "detection_count": 0, "alert_count": 0}
-    assert following.json() == {"flow_count": 1, "detection_count": 1, "alert_count": 1}
+    assert previous.json() == {
+        "flow_count": 0,
+        "detection_count": 0,
+        "alert_count": 0,
+        "detections_by_type": {},
+        "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 0, "CRITICAL": 0},
+    }
+    assert following.json() == {
+        "flow_count": 1,
+        "detection_count": 1,
+        "alert_count": 1,
+        "detections_by_type": {"port_scan": 1},
+        "detections_by_severity": {"LOW": 0, "MEDIUM": 0, "HIGH": 1, "CRITICAL": 0},
+    }
 
 
 def test_json_body_does_not_replace_required_query_parameters(client: TestClient, headers: dict[str, str]) -> None:
@@ -206,4 +244,28 @@ def test_openapi_documents_query_parameters_and_bearer_auth(client: TestClient) 
         "flow_count",
         "detection_count",
         "alert_count",
+        "detections_by_type",
+        "detections_by_severity",
     }
+
+
+def test_breakdowns_cover_all_detections_in_range(
+    client: TestClient, db: psycopg.Connection, headers: dict[str, str]
+) -> None:
+    for _ in range(501):
+        insert_detection(db, START, "port_scan", "LOW")
+    insert_detection(db, END - MICROSECOND, "unknown", "MEDIUM")
+    insert_detection(db, START, "unknown", "HIGH")
+    insert_detection(db, START, "port_scan", "CRITICAL")
+    insert_detection(db, START - MICROSECOND, "outside", "CRITICAL")
+    insert_detection(db, END, "outside", "CRITICAL")
+
+    response = client.get(URL, params=PARAMS, headers=headers)
+
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["detection_count"] == 504
+    assert body["detections_by_type"] == {"port_scan": 502, "unknown": 2}
+    assert body["detections_by_severity"] == {"LOW": 501, "MEDIUM": 1, "HIGH": 1, "CRITICAL": 1}
+    assert sum(body["detections_by_type"].values()) == body["detection_count"]
+    assert sum(body["detections_by_severity"].values()) == body["detection_count"]
