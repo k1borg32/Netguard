@@ -37,8 +37,15 @@ def test_health_reports_database_outage_but_ping_stays_available(client: TestCli
     assert client.get("/health/ping").status_code == 200
 
 
-def test_detections_preserve_public_list_contract_and_limit(client: TestClient, db: psycopg.Connection) -> None:
-    assert client.get("/api/v1/detections").json() == {"items": [], "total": 0, "page": 1, "page_size": 50}
+def test_detections_preserve_authenticated_list_contract_and_limit(
+    authenticated_client: TestClient, db: psycopg.Connection
+) -> None:
+    assert authenticated_client.get("/api/v1/detections").json() == {
+        "items": [],
+        "total": 0,
+        "page": 1,
+        "page_size": 50,
+    }
     identifiers = [uuid4() for _ in range(55)]
     for index, detection_id in enumerate(identifiers):
         db.execute(
@@ -49,13 +56,13 @@ def test_detections_preserve_public_list_contract_and_limit(client: TestClient, 
             (detection_id, START + timedelta(seconds=index)),
         )
 
-    response = client.get("/api/v1/detections")
+    response = authenticated_client.get("/api/v1/detections")
     assert response.status_code == 200, response.text
     body = response.json()
     assert (body["total"], body["page"], body["page_size"]) == (55, 1, 50)
     assert len(body["items"]) == 50
     assert [item["detection_id"] for item in body["items"]] == [str(value) for value in reversed(identifiers[5:])]
-    item = client.get("/api/v1/detections", params={"limit": 1}).json()["items"][0]
+    item = authenticated_client.get("/api/v1/detections", params={"limit": 1}).json()["items"][0]
     assert set(item) == {
         "detection_id",
         "created_at",
@@ -75,11 +82,11 @@ def test_detections_preserve_public_list_contract_and_limit(client: TestClient, 
     assert item["dst_ip"] == "2001:db8::1"
     assert item["features"] == {"unique_dst_ports": 150}
     assert item["confidence"] == 0.9
-    assert len(client.get("/api/v1/detections", params={"limit": 500}).json()["items"]) == 55
+    assert len(authenticated_client.get("/api/v1/detections", params={"limit": 500}).json()["items"]) == 55
 
 
 def test_detections_allow_nullable_evidence_and_order_timestamp_ties(
-    client: TestClient, db: psycopg.Connection
+    authenticated_client: TestClient, db: psycopg.Connection
 ) -> None:
     identifiers = sorted([uuid4(), uuid4()], reverse=True)
     for detection_id in identifiers:
@@ -88,7 +95,7 @@ def test_detections_allow_nullable_evidence_and_order_timestamp_ties(
             "VALUES (%s, %s, 'port_scan', 'threshold', 'HIGH')",
             (detection_id, START),
         )
-    response = client.get("/api/v1/detections")
+    response = authenticated_client.get("/api/v1/detections")
     assert response.status_code == 200, response.text
     assert [row["detection_id"] for row in response.json()["items"]] == [str(value) for value in identifiers]
     assert response.json()["items"][0]["src_ip"] is None
@@ -96,8 +103,8 @@ def test_detections_allow_nullable_evidence_and_order_timestamp_ties(
 
 
 @pytest.mark.parametrize("limit", [0, 501, -1, "invalid"])
-def test_detections_reject_invalid_limit(client: TestClient, limit) -> None:
-    assert client.get("/api/v1/detections", params={"limit": limit}).status_code == 422
+def test_detections_reject_invalid_limit(authenticated_client: TestClient, limit) -> None:
+    assert authenticated_client.get("/api/v1/detections", params={"limit": limit}).status_code == 422
 
 
 def test_persister_writes_labels_and_deduplicates_composite_key(db: psycopg.Connection, database_url: str) -> None:

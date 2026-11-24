@@ -11,8 +11,9 @@ pytestmark = [pytest.mark.integration, pytest.mark.stack]
 API = os.getenv("API_URL", "http://localhost:8000")
 
 
-def _get(path):
-    with urllib.request.urlopen(API + path, timeout=5) as r:
+def _get(path, headers=None):
+    request = urllib.request.Request(API + path, headers=headers or {})
+    with urllib.request.urlopen(request, timeout=5) as r:
         return json.loads(r.read())
 
 
@@ -28,6 +29,10 @@ def test_port_scan_reaches_api():
     from netguard_common import topics
     from netguard_common.broker import encode, make_producer
 
+    token = os.getenv("API_ACCESS_TOKEN")
+    assert token, "Set API_ACCESS_TOKEN to a valid access token for the running API."
+    headers = {"Authorization": f"Bearer {token}"}
+
     p = make_producer()
     now = time.time()
     attacker = f"10.99.{int(now) % 250}.{int(now * 10) % 250}"
@@ -39,7 +44,7 @@ def test_port_scan_reaches_api():
 
     deadline = time.time() + 40
     while time.time() < deadline:
-        if any(d["src_ip"] == attacker for d in _get("/api/v1/detections?limit=200")["items"]):
+        if any(d["src_ip"] == attacker for d in _get("/api/v1/detections?limit=200", headers=headers)["items"]):
             return
         time.sleep(2)
     pytest.fail(f"no detection for {attacker} within 40 s")

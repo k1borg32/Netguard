@@ -22,7 +22,7 @@ router = APIRouter()
         "These trace IDs are an evidence sample; total counts matching stored flows. "
         "Returns an empty page when an existing detection has no matching flows. "
         "Sort by ts_start, then flow_id in the same direction; newest first by default. "
-        "No token needed for now."
+        "Requires a valid Bearer access token."
     ),
     responses={
         404: {"description": "Detection not found"},
